@@ -11,11 +11,11 @@ struct FlaskTubeView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 26)
-                .fill(GameColor.glassFill)
+                .fill(flask.isPlayable ? GameColor.glassFill : GameColor.glassFill.opacity(0.42))
                 .overlay(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.18),
+                            Color.white.opacity(flask.isPlayable ? 0.18 : 0.08),
                             Color.white.opacity(0.02)
                         ],
                         startPoint: .topLeading,
@@ -31,8 +31,12 @@ struct FlaskTubeView: View {
 
             RoundedRectangle(cornerRadius: 26)
                 .stroke(
-                    isSelected ? GameColor.selectedStroke : GameColor.glassStroke.opacity(0.82),
-                    lineWidth: isSelected ? 4 : 3
+                    strokeColor,
+                    style: StrokeStyle(
+                        lineWidth: isSelected ? 4 : 3,
+                        lineCap: .round,
+                        dash: flask.isPlayable ? [] : [8, 8]
+                    )
                 )
 
             RoundedRectangle(cornerRadius: 18)
@@ -56,6 +60,10 @@ struct FlaskTubeView: View {
                 .padding(.top, 11)
                 .padding(.leading, 10)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            if !flask.isPlayable {
+                lockedOverlay
+            }
         }
         .frame(width: GameMetric.flaskWidth, height: GameMetric.flaskHeight)
         .offset(y: isSelected ? -14 : 0)
@@ -68,7 +76,7 @@ struct FlaskTubeView: View {
         .animation(.snappy(duration: 0.2), value: isSelected)
         .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
         .accessibilityLabel("Flask")
-        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityValue(accessibilityValue)
     }
 
     private var liquidStack: some View {
@@ -92,5 +100,38 @@ struct FlaskTubeView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .bottom)
+    }
+
+    private var strokeColor: Color {
+        if !flask.isPlayable {
+            return GameColor.lockedStroke
+        }
+
+        return isSelected ? GameColor.selectedStroke : GameColor.glassStroke.opacity(0.82)
+    }
+
+    private var accessibilityValue: String {
+        if !flask.isPlayable {
+            return "Locked bonus flask"
+        }
+
+        return isSelected ? "Selected" : "Not selected"
+    }
+
+    private var lockedOverlay: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 24)
+                .fill(GameColor.lockedOverlay)
+
+            Image(systemName: "lock.fill")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                .padding(18)
+                .background(
+                    Circle()
+                        .fill(GameColor.controlSurface.opacity(0.72))
+                )
+        }
+        .padding(8)
     }
 }

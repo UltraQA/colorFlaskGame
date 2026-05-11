@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
-    private let columns = 3
+    private let columns = 4
 
     init(viewModel: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -24,6 +24,7 @@ struct HomeView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .disabled(!flask.isPlayable)
                     .position(flaskCenter(for: index, in: proxy.size))
                     .zIndex(GameLayer.board)
                 }
@@ -116,7 +117,7 @@ struct HomeView: View {
     private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
         let column = index % columns
         let row = index / columns
-        let horizontalPadding: CGFloat = 30
+        let horizontalPadding: CGFloat = 18
         let verticalCenter = size.height * 0.48
         let cellWidth = (size.width - horizontalPadding * 2) / CGFloat(columns)
         let rowSpacing: CGFloat = min(230, size.height * 0.26)

@@ -9,35 +9,45 @@ struct PourAnimation: Identifiable, Equatable {
 }
 
 final class HomeViewModel: ObservableObject {
+    private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
+
     @Published private(set) var gameManager: GameManager
     @Published private(set) var selectedFlaskIndex: Int?
     @Published private(set) var pourAnimation: PourAnimation?
     @Published private(set) var moves = 0
+    @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
 
     private var cancellables: Set<AnyCancellable> = []
     private let pourAnimationDuration: TimeInterval = 0.55
 
-    init(gameManager: GameManager = .makeInitialLevel()) {
-        self.gameManager = gameManager
+    init(
+        gameManager: GameManager? = nil,
+        isBonusFlaskPermanentlyUnlocked: Bool = UserDefaults.standard.bool(forKey: bonusFlaskPurchaseKey)
+    ) {
+        self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
+        self.gameManager = gameManager ?? .makeInitialLevel(isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked)
         bindGameManager()
     }
 
     var progress: Double {
-        guard !gameManager.flasks.isEmpty else { return 0 }
-        let solvedCount = gameManager.flasks.filter(\.isSolved).count
-        return Double(solvedCount) / Double(gameManager.flasks.count)
+        let playableFlasks = gameManager.playableFlasks
+        guard !playableFlasks.isEmpty else { return 0 }
+        let solvedCount = playableFlasks.filter(\.isSolved).count
+        return Double(solvedCount) / Double(playableFlasks.count)
     }
 
     var completedFlasks: Int {
-        gameManager.flasks.filter(\.isSolved).count
+        gameManager.playableFlasks.filter(\.isSolved).count
     }
 
     var totalFlasks: Int {
-        gameManager.flasks.count
+        gameManager.playableFlasks.count
     }
 
     func handleFlaskTap(at index: Int) {
-        guard gameManager.flasks.indices.contains(index), pourAnimation == nil else { return }
+        guard gameManager.flasks.indices.contains(index),
+              gameManager.flasks[index].isPlayable,
+              pourAnimation == nil else { return }
 
         guard let sourceIndex = selectedFlaskIndex else {
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? nil : index
@@ -61,8 +71,20 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         pourAnimation = nil
         moves = 0
-        gameManager = .makeInitialLevel()
+        gameManager = .makeInitialLevel(isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked)
         bindGameManager()
+        objectWillChange.send()
+    }
+
+    func unlockBonusFlaskForCurrentRound() {
+        gameManager.unlockBonusFlaskForCurrentRound()
+        objectWillChange.send()
+    }
+
+    func unlockBonusFlaskPermanently() {
+        isBonusFlaskPermanentlyUnlocked = true
+        UserDefaults.standard.set(true, forKey: Self.bonusFlaskPurchaseKey)
+        gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
     }
 

@@ -1,15 +1,37 @@
 import SwiftUI
 
+enum FlaskKind: Equatable {
+    case regular
+    case bonus
+}
+
 struct Flask: Identifiable, Equatable {
     static let maxCapacity = 4
 
     let id: UUID
+    let kind: FlaskKind
     private(set) var colors: [Color]
+    private(set) var isUnlocked: Bool
 
-    init(id: UUID = UUID(), colors: [Color] = []) {
+    init(
+        id: UUID = UUID(),
+        kind: FlaskKind = .regular,
+        colors: [Color] = [],
+        isUnlocked: Bool = true
+    ) {
         precondition(colors.count <= Self.maxCapacity, "Flask cannot exceed max capacity")
         self.id = id
+        self.kind = kind
         self.colors = colors
+        self.isUnlocked = isUnlocked
+    }
+
+    var isPlayable: Bool {
+        isUnlocked
+    }
+
+    var isBonus: Bool {
+        kind == .bonus
     }
 
     var isEmpty: Bool {
@@ -42,17 +64,23 @@ struct Flask: Identifiable, Equatable {
     }
 
     mutating func push(_ color: Color) {
-        guard !isFull else { return }
+        guard isPlayable, !isFull else { return }
         colors.append(color)
     }
 
     mutating func pop() -> Color? {
-        colors.popLast()
+        guard isPlayable else { return nil }
+        return colors.popLast()
+    }
+
+    mutating func unlock() {
+        isUnlocked = true
     }
 }
 
 enum PourError: LocalizedError, Equatable {
     case sameFlask
+    case flaskIsLocked
     case sourceIsEmpty
     case targetIsFull
     case colorMismatch
@@ -62,6 +90,8 @@ enum PourError: LocalizedError, Equatable {
         switch self {
         case .sameFlask:
             return "Cannot pour into the same flask."
+        case .flaskIsLocked:
+            return "This flask is locked."
         case .sourceIsEmpty:
             return "Cannot pour from an empty flask."
         case .targetIsFull:
@@ -82,8 +112,10 @@ struct PourPlan: Equatable {
 }
 
 final class GameManager: ObservableObject {
-    static let defaultFlaskCount = 6
-    static let emptyFlaskCount = 1
+    static let defaultFilledFlaskCount = 5
+    static let startingEmptyFlaskCount = 2
+    static let bonusEmptyFlaskCount = 1
+    static let defaultFlaskCount = defaultFilledFlaskCount + startingEmptyFlaskCount + bonusEmptyFlaskCount
 
     @Published private(set) var flasks: [Flask]
 
@@ -91,10 +123,13 @@ final class GameManager: ObservableObject {
         self.flasks = flasks
     }
 
-    static func makeInitialLevel(flaskCount: Int = defaultFlaskCount) -> GameManager {
-        precondition(flaskCount > emptyFlaskCount, "Level must contain at least one filled flask")
+    static func makeInitialLevel(
+        filledFlaskCount: Int = defaultFilledFlaskCount,
+        isBonusFlaskUnlocked: Bool = false
+    ) -> GameManager {
+        precondition(filledFlaskCount > 0, "Level must contain at least one filled flask")
 
-        let colorCount = flaskCount - emptyFlaskCount
+        let colorCount = filledFlaskCount
         let colors = Array(levelPalette.prefix(colorCount))
         precondition(colors.count == colorCount, "Not enough colors in level palette")
 
@@ -107,13 +142,31 @@ final class GameManager: ObservableObject {
             .chunked(into: Flask.maxCapacity)
             .map { Flask(colors: $0) }
 
-        flasks.append(contentsOf: Array(repeating: Flask(), count: emptyFlaskCount))
+        flasks.append(contentsOf: (0..<startingEmptyFlaskCount).map { _ in Flask() })
+        flasks.append(
+            Flask(
+                kind: .bonus,
+                colors: [],
+                isUnlocked: isBonusFlaskUnlocked
+            )
+        )
 
         return GameManager(flasks: flasks)
     }
 
     var isRoundCompleted: Bool {
-        flasks.allSatisfy(\.isSolved)
+        flasks
+            .filter(\.isPlayable)
+            .allSatisfy(\.isSolved)
+    }
+
+    var playableFlasks: [Flask] {
+        flasks.filter(\.isPlayable)
+    }
+
+    func unlockBonusFlaskForCurrentRound() {
+        guard let bonusIndex = flasks.firstIndex(where: { $0.isBonus }) else { return }
+        flasks[bonusIndex].unlock()
     }
 
     func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {
@@ -128,6 +181,10 @@ final class GameManager: ObservableObject {
 
         let source = flasks[sourceIndex]
         let target = flasks[targetIndex]
+
+        guard source.isPlayable, target.isPlayable else {
+            return .failure(.flaskIsLocked)
+        }
 
         guard let sourceTopColor = source.topColor else {
             return .failure(.sourceIsEmpty)

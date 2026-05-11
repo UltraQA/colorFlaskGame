@@ -67,4 +67,6 @@ enum GameColor {
     static let glassHighlight = Color.white.opacity(0.36)
     static let selectedStroke = Color(red: 1.00, green: 0.72, blue: 0.25)
     static let selectedGlow = Color(red: 0.72, green: 0.36, blue: 1.00)
+    static let lockedStroke = Color.white.opacity(0.24)
+    static let lockedOverlay = Color(red: 0.08, green: 0.06, blue: 0.12).opacity(0.58)
 }
