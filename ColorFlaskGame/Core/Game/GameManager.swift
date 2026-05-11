@@ -74,32 +74,49 @@ enum PourError: LocalizedError, Equatable {
     }
 }
 
+struct PourPlan: Equatable {
+    let sourceIndex: Int
+    let targetIndex: Int
+    let color: Color
+    let amount: Int
+}
+
 final class GameManager: ObservableObject {
+    static let defaultFlaskCount = 6
+    static let emptyFlaskCount = 1
+
     @Published private(set) var flasks: [Flask]
 
     init(flasks: [Flask]) {
         self.flasks = flasks
     }
 
-    static func makeInitialLevel() -> GameManager {
-        GameManager(
-            flasks: [
-                Flask(colors: [.red, .green, .yellow, .red]),
-                Flask(colors: [.green, .yellow, .red, .green]),
-                Flask(colors: [.yellow, .red, .green, .yellow]),
-                Flask(colors: [.red, .yellow, .green, .red]),
-                Flask(colors: [.green, .red, .yellow, .green]),
-                Flask(colors: [])
-            ]
-        )
+    static func makeInitialLevel(flaskCount: Int = defaultFlaskCount) -> GameManager {
+        precondition(flaskCount > emptyFlaskCount, "Level must contain at least one filled flask")
+
+        let colorCount = flaskCount - emptyFlaskCount
+        let colors = Array(levelPalette.prefix(colorCount))
+        precondition(colors.count == colorCount, "Not enough colors in level palette")
+
+        let sections = colors.flatMap { color in
+            Array(repeating: color, count: Flask.maxCapacity)
+        }
+
+        var flasks = sections
+            .shuffled()
+            .chunked(into: Flask.maxCapacity)
+            .map { Flask(colors: $0) }
+
+        flasks.append(contentsOf: Array(repeating: Flask(), count: emptyFlaskCount))
+
+        return GameManager(flasks: flasks)
     }
 
     var isRoundCompleted: Bool {
         flasks.allSatisfy(\.isSolved)
     }
 
-    @discardableResult
-    func pour(from sourceIndex: Int, to targetIndex: Int) -> Result<Int, PourError> {
+    func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {
         guard flasks.indices.contains(sourceIndex),
               flasks.indices.contains(targetIndex) else {
             return .failure(.invalidFlaskIndex)
@@ -129,11 +146,47 @@ final class GameManager: ObservableObject {
             return .failure(.targetIsFull)
         }
 
-        for _ in 0..<amountToPour {
-            _ = flasks[sourceIndex].pop()
-            flasks[targetIndex].push(sourceTopColor)
+        return .success(
+            PourPlan(
+                sourceIndex: sourceIndex,
+                targetIndex: targetIndex,
+                color: sourceTopColor,
+                amount: amountToPour
+            )
+        )
+    }
+
+    @discardableResult
+    func pour(from sourceIndex: Int, to targetIndex: Int) -> Result<Int, PourError> {
+        let planResult = pourPlan(from: sourceIndex, to: targetIndex)
+        guard case let .success(plan) = planResult else {
+            return planResult.map(\.amount)
         }
 
-        return .success(amountToPour)
+        for _ in 0..<plan.amount {
+            _ = flasks[sourceIndex].pop()
+            flasks[targetIndex].push(plan.color)
+        }
+
+        return .success(plan.amount)
+    }
+
+    private static let levelPalette: [Color] = [
+        .red,
+        .green,
+        .yellow,
+        .blue,
+        .orange,
+        .purple,
+        .pink,
+        .cyan
+    ]
+}
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map { startIndex in
+            Array(self[startIndex..<Swift.min(startIndex + size, count)])
+        }
     }
 }

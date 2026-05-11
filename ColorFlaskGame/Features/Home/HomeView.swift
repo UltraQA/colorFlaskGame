@@ -2,98 +2,65 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
+    private let columns = 3
 
     init(viewModel: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
-        ZStack {
+        GeometryReader { proxy in
             DSColor.background.ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: DSSpacing.lg) {
-                    header
-                    flaskBoard
-                    progressCard
-                    actionArea
+            ZStack {
+                ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
+                    Button {
+                        viewModel.handleFlaskTap(at: index)
+                    } label: {
+                        FlaskTubeView(
+                            flask: flask,
+                            isSelected: viewModel.selectedFlaskIndex == index
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .position(flaskCenter(for: index, in: proxy.size))
                 }
-                .padding(DSSpacing.lg)
-            }
-        }
-        .navigationTitle("Color Flask")
-    }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.xs) {
-            Text("Sort colors. Fill flasks.")
-                .font(DSTypography.largeTitle)
-                .foregroundStyle(DSColor.textPrimary)
-
-            Text("A clean SwiftUI foundation for the puzzle game.")
-                .font(DSTypography.body)
-                .foregroundStyle(DSColor.textSecondary)
-        }
-    }
-
-    private var flaskBoard: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: DSSpacing.md), count: 3),
-            spacing: DSSpacing.lg
-        ) {
-            ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
-                Button {
-                    viewModel.selectFlask(at: index)
-                } label: {
-                    FlaskTubeView(
-                        flask: flask,
-                        isSelected: viewModel.selectedFlaskIndex == index
+                if let animation = viewModel.pourAnimation {
+                    PourStreamView(
+                        from: pourStartPoint(for: animation.sourceIndex, in: proxy.size),
+                        to: pourEndPoint(for: animation.targetIndex, in: proxy.size),
+                        color: animation.color
                     )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.vertical, DSSpacing.md)
-    }
-
-    private var progressCard: some View {
-        DSCard {
-            HStack(spacing: DSSpacing.lg) {
-                FlaskProgressView(progress: viewModel.progress)
-
-                VStack(alignment: .leading, spacing: DSSpacing.md) {
-                    Text("Current run")
-                        .font(DSTypography.title)
-                        .foregroundStyle(DSColor.textPrimary)
-
-                    metric(title: "Solved flasks", value: "\(viewModel.completedFlasks)/\(viewModel.totalFlasks)")
-                    metric(title: "Moves", value: "\(viewModel.moves)")
-
-                    Spacer(minLength: 0)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 }
             }
         }
+        .navigationBarBackButtonHidden()
+        .toolbar(.hidden, for: .navigationBar)
     }
 
-    private var actionArea: some View {
-        Button {
-            viewModel.startNewGame()
-        } label: {
-            Label("New Game", systemImage: "play.fill")
-        }
-        .buttonStyle(.dsPrimary)
-        .accessibilityHint("Starts a new color sorting puzzle")
+    private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
+        let column = index % columns
+        let row = index / columns
+        let horizontalPadding: CGFloat = 36
+        let verticalCenter = size.height * 0.5
+        let cellWidth = (size.width - horizontalPadding * 2) / CGFloat(columns)
+        let rowSpacing: CGFloat = min(220, size.height * 0.28)
+
+        return CGPoint(
+            x: horizontalPadding + cellWidth * (CGFloat(column) + 0.5),
+            y: verticalCenter + (CGFloat(row) - 0.5) * rowSpacing
+        )
     }
 
-    private func metric(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-            Text(title)
-                .font(DSTypography.caption)
-                .foregroundStyle(DSColor.textSecondary)
+    private func pourStartPoint(for index: Int, in size: CGSize) -> CGPoint {
+        let center = flaskCenter(for: index, in: size)
+        return CGPoint(x: center.x, y: center.y - 92)
+    }
 
-            Text(value)
-                .font(DSTypography.headline)
-                .foregroundStyle(DSColor.textPrimary)
-        }
+    private func pourEndPoint(for index: Int, in size: CGSize) -> CGPoint {
+        let center = flaskCenter(for: index, in: size)
+        return CGPoint(x: center.x, y: center.y - 76)
     }
 }
