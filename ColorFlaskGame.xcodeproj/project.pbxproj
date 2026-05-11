@@ -1,0 +1,396 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F17274B3FAD42E2A8270B10 /* ColorFlaskGameApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */; };
+		C211964E482F4769A9665487 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */; };
+		181B85D6B95B4385A4831F9F /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */; };
+		79E02A0BC5CF48DCA7A0269C /* DSButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A643FC55544ACC9184FE42 /* DSButtonStyle.swift */; };
+		138E74F8AF3C474EB5B0FEA0 /* DSCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2A4CD530F48EBB1FAD49B /* DSCard.swift */; };
+		EC6EBE6960F34CB899E6BAB4 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA4F68DABF84F99B45671D3 /* HomeView.swift */; };
+		F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD005B111BF2456AA02DC68F /* HomeViewModel.swift */; };
+		C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */; };
+		5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A95EC223B46D40169C8DAFF2 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ColorFlaskGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorFlaskGameApp.swift; sourceTree = "<group>"; };
+		8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		50A643FC55544ACC9184FE42 /* DSButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DSButtonStyle.swift; sourceTree = "<group>"; };
+		A5E2A4CD530F48EBB1FAD49B /* DSCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DSCard.swift; sourceTree = "<group>"; };
+		7DA4F68DABF84F99B45671D3 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		FD005B111BF2456AA02DC68F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlaskProgressView.swift; sourceTree = "<group>"; };
+		A95EC223B46D40169C8DAFF2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3EE7828C35774D2DB4A07A85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C8DDBE2C256848F9A7E0D3B7 = {
+			isa = PBXGroup;
+			children = (
+				53A54885423C4D2EB644F58B /* ColorFlaskGame */,
+				340FCED606E244ADAC41D957 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		340FCED606E244ADAC41D957 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		53A54885423C4D2EB644F58B /* ColorFlaskGame */ = {
+			isa = PBXGroup;
+			children = (
+				6FAA902FCFB44EB6B1AFEB91 /* App */,
+				879CDEEAEE3048A1A4DEE765 /* DesignSystem */,
+				8E45C211954B47F2B99DF47D /* Features */,
+				ECFC8063C9A74CCEA073325A /* Resources */,
+			);
+			path = ColorFlaskGame;
+			sourceTree = "<group>";
+		};
+		6FAA902FCFB44EB6B1AFEB91 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */,
+				8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		879CDEEAEE3048A1A4DEE765 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */,
+				50A643FC55544ACC9184FE42 /* DSButtonStyle.swift */,
+				A5E2A4CD530F48EBB1FAD49B /* DSCard.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		8E45C211954B47F2B99DF47D /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				7564E30177744B269F762BDD /* Home */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		7564E30177744B269F762BDD /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				7DA4F68DABF84F99B45671D3 /* HomeView.swift */,
+				FD005B111BF2456AA02DC68F /* HomeViewModel.swift */,
+				751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		ECFC8063C9A74CCEA073325A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A95EC223B46D40169C8DAFF2 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3FC9D9A9244D4AC88DA63BC5 /* ColorFlaskGame */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 109EA58520784571AD98732C /* Build configuration list for PBXNativeTarget "ColorFlaskGame" */;
+			buildPhases = (
+				963132A3B7FC4C06AC1CFB03 /* Sources */,
+				3EE7828C35774D2DB4A07A85 /* Frameworks */,
+				5C5A3AEEF6A74061BD2A89F0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ColorFlaskGame;
+			productName = ColorFlaskGame;
+			productReference = 70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AC5F9A77F6BB423C8BCE2570 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					3FC9D9A9244D4AC88DA63BC5 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 5741C4BBA2D349BDB72ED0D2 /* Build configuration list for PBXProject "ColorFlaskGame" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C8DDBE2C256848F9A7E0D3B7;
+			productRefGroup = 340FCED606E244ADAC41D957 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3FC9D9A9244D4AC88DA63BC5 /* ColorFlaskGame */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5C5A3AEEF6A74061BD2A89F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		963132A3B7FC4C06AC1CFB03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F17274B3FAD42E2A8270B10 /* ColorFlaskGameApp.swift in Sources */,
+				C211964E482F4769A9665487 /* AppRootView.swift in Sources */,
+				181B85D6B95B4385A4831F9F /* DesignSystem.swift in Sources */,
+				79E02A0BC5CF48DCA7A0269C /* DSButtonStyle.swift in Sources */,
+				138E74F8AF3C474EB5B0FEA0 /* DSCard.swift in Sources */,
+				EC6EBE6960F34CB899E6BAB4 /* HomeView.swift in Sources */,
+				F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */,
+				C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		929D84ECE99949C1A9CE192E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		5632BDA287E64C0F8D3F0682 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		03D5A8FE4506410EAF685D7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Flask Game";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fantasma.ColorFlaskGame;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4E824ADFB13C4205818A3321 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Color Flask Game";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fantasma.ColorFlaskGame;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5741C4BBA2D349BDB72ED0D2 /* Build configuration list for PBXProject "ColorFlaskGame" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				929D84ECE99949C1A9CE192E /* Debug */,
+				5632BDA287E64C0F8D3F0682 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		109EA58520784571AD98732C /* Build configuration list for PBXNativeTarget "ColorFlaskGame" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03D5A8FE4506410EAF685D7F /* Debug */,
+				4E824ADFB13C4205818A3321 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AC5F9A77F6BB423C8BCE2570 /* Project object */;
+}
