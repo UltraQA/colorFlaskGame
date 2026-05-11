@@ -26,6 +26,24 @@ enum RoundState: Equatable {
     case completing
 }
 
+struct HomeViewModelTiming: Equatable {
+    let pourAnimationDuration: TimeInterval
+    let completionDuration: TimeInterval
+    let invalidFeedbackDuration: TimeInterval
+
+    static let live = HomeViewModelTiming(
+        pourAnimationDuration: 0.55,
+        completionDuration: 1.15,
+        invalidFeedbackDuration: 0.32
+    )
+
+    static let immediate = HomeViewModelTiming(
+        pourAnimationDuration: 0,
+        completionDuration: 0,
+        invalidFeedbackDuration: 0
+    )
+}
+
 final class HomeViewModel: ObservableObject {
     private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
     private static let currentLevelIndexKey = "waterSort.progress.currentLevelIndex"
@@ -45,23 +63,28 @@ final class HomeViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
     private let levelRepository: any LevelRepository
-    private let pourAnimationDuration: TimeInterval = 0.55
-    private let completionDuration: TimeInterval = 1.15
-    private let invalidFeedbackDuration: TimeInterval = 0.32
+    private let userDefaults: UserDefaults
+    private let timing: HomeViewModelTiming
 
     init(
         gameManager: GameManager? = nil,
         levelRepository: any LevelRepository = HandcraftedLevelRepository(),
-        currentLevelIndex: Int = UserDefaults.standard.integer(forKey: currentLevelIndexKey),
-        isBonusFlaskPermanentlyUnlocked: Bool = UserDefaults.standard.bool(forKey: bonusFlaskPurchaseKey)
+        userDefaults: UserDefaults = .standard,
+        currentLevelIndex: Int? = nil,
+        isBonusFlaskPermanentlyUnlocked: Bool? = nil,
+        timing: HomeViewModelTiming = .live
     ) {
         self.levelRepository = levelRepository
-        self.currentLevelIndex = currentLevelIndex
-        self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
+        self.userDefaults = userDefaults
+        self.timing = timing
+        let resolvedLevelIndex = currentLevelIndex ?? userDefaults.integer(forKey: Self.currentLevelIndexKey)
+        let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? userDefaults.bool(forKey: Self.bonusFlaskPurchaseKey)
+        self.currentLevelIndex = resolvedLevelIndex
+        self.isBonusFlaskPermanentlyUnlocked = resolvedBonusUnlock
         self.gameManager = gameManager ?? .makeInitialLevel(
-            levelIndex: currentLevelIndex,
+            levelIndex: resolvedLevelIndex,
             levelRepository: levelRepository,
-            isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked
+            isBonusFlaskUnlocked: resolvedBonusUnlock
         )
         bindGameManager()
     }
@@ -170,7 +193,7 @@ final class HomeViewModel: ObservableObject {
         history.removeAll()
         moves = 0
         currentLevelIndex = levelIndex
-        UserDefaults.standard.set(levelIndex, forKey: Self.currentLevelIndexKey)
+        userDefaults.set(levelIndex, forKey: Self.currentLevelIndexKey)
         gameManager = .makeInitialLevel(
             levelIndex: levelIndex,
             levelRepository: levelRepository,
@@ -195,7 +218,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         hintMove = nil
         isBonusFlaskPermanentlyUnlocked = true
-        UserDefaults.standard.set(true, forKey: Self.bonusFlaskPurchaseKey)
+        userDefaults.set(true, forKey: Self.bonusFlaskPurchaseKey)
         gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
     }
@@ -211,7 +234,7 @@ final class HomeViewModel: ObservableObject {
             color: plan.color
         )
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + pourAnimationDuration) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.pourAnimationDuration) { [weak self] in
             guard let self else { return }
 
             withAnimation(.snappy(duration: 0.25)) {
@@ -227,11 +250,11 @@ final class HomeViewModel: ObservableObject {
 
     private func showInvalidMoveFeedback(sourceIndex: Int, targetIndex: Int) {
         invalidFlaskIndices = [sourceIndex, targetIndex]
-        withAnimation(.linear(duration: invalidFeedbackDuration)) {
+        withAnimation(.linear(duration: timing.invalidFeedbackDuration)) {
             invalidMoveCount += 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + invalidFeedbackDuration) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.invalidFeedbackDuration) { [weak self] in
             self?.invalidFlaskIndices.removeAll()
         }
     }
@@ -243,7 +266,7 @@ final class HomeViewModel: ObservableObject {
         hintMove = nil
         roundState = .completing
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + completionDuration) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + timing.completionDuration) { [weak self] in
             guard let self, self.roundState == .completing else { return }
 
             withAnimation(.snappy(duration: 0.35)) {

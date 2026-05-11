@@ -10,6 +10,7 @@
 		0F17274B3FAD42E2A8270B10 /* ColorFlaskGameApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */; };
 		23456789ABCDEF0123456789 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 123456789ABCDEF012345678 /* XCTest.framework */; };
 		7A2F4E8C1D3B5A697089ABCD /* GameManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */; };
+		AA12BB34CC56DD78EE90FF12 /* HomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB23CC45DD67EE89FF01AA23 /* HomeViewModelTests.swift */; };
 		C211964E482F4769A9665487 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */; };
 		181B85D6B95B4385A4831F9F /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */; };
 		79E02A0BC5CF48DCA7A0269C /* DSButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A643FC55544ACC9184FE42 /* DSButtonStyle.swift */; };
@@ -38,6 +39,7 @@
 		4B8D0E2F6A9C1E3B5D7F8091 /* ColorFlaskGameTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ColorFlaskGameTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ColorFlaskGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameManagerTests.swift; sourceTree = "<group>"; };
+		BB23CC45DD67EE89FF01AA23 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
 		9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorFlaskGameApp.swift; sourceTree = "<group>"; };
 		8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 			isa = PBXGroup;
 			children = (
 				F0123456789ABCDEF0123456 /* Core */,
+				CC34DD56EE78FF90AA12BB34 /* Features */,
 			);
 			path = ColorFlaskGameTests;
 			sourceTree = "<group>";
@@ -195,6 +198,22 @@
 				91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */,
 			);
 			path = Game;
+			sourceTree = "<group>";
+		};
+		CC34DD56EE78FF90AA12BB34 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				DD45EE67FF89AA01BB23CC45 /* Home */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		DD45EE67FF89AA01BB23CC45 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				BB23CC45DD67EE89FF01AA23 /* HomeViewModelTests.swift */,
+			);
+			path = Home;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -315,6 +334,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7A2F4E8C1D3B5A697089ABCD /* GameManagerTests.swift in Sources */,
+				AA12BB34CC56DD78EE90FF12 /* HomeViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,0 +1,206 @@
+import SwiftUI
+import XCTest
+@testable import ColorFlaskGame
+
+@MainActor
+final class HomeViewModelTests: XCTestCase {
+    private let red = Color.red
+    private let green = Color.green
+    private let blue = Color.blue
+
+    override func tearDown() {
+        testUserDefaults.removePersistentDomain(forName: Self.testSuiteName)
+        super.tearDown()
+    }
+
+    func testLockedBonusFlaskTapShowsUnlockPrompt() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(),
+                Flask(kind: .bonus, isUnlocked: false)
+            ]
+        )
+
+        viewModel.handleFlaskTap(at: 2)
+
+        XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 2))
+        XCTAssertNil(viewModel.selectedFlaskIndex)
+    }
+
+    func testUnlockBonusFlaskForCurrentRoundClearsPromptAndUnlocksFlask() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ]
+        )
+
+        viewModel.handleFlaskTap(at: 1)
+        viewModel.unlockBonusFlaskForCurrentRound()
+
+        XCTAssertNil(viewModel.bonusUnlockPrompt)
+        XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertFalse(viewModel.isBonusFlaskPermanentlyUnlocked)
+    }
+
+    func testUnlockBonusFlaskPermanentlyPersistsChoice() {
+        let defaults = testUserDefaults
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            userDefaults: defaults
+        )
+
+        viewModel.unlockBonusFlaskPermanently()
+
+        XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
+    }
+
+    func testValidTapFlowAnimatesPourAndEnablesUndo() async {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red, red]),
+                Flask(colors: [red])
+            ]
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.selectedFlaskIndex)
+        XCTAssertNil(viewModel.pourAnimation)
+        XCTAssertEqual(viewModel.moves, 1)
+        XCTAssertTrue(viewModel.canUndo)
+        XCTAssertTrue(viewModel.gameManager.flasks[0].isEmpty)
+        XCTAssertEqual(viewModel.gameManager.flasks[1].colors, [red, red, red])
+    }
+
+    func testUndoRestoresPreviousFlasksAfterValidMove() async {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [blue]),
+                Flask(colors: [])
+            ]
+        )
+        let initialFlasks = viewModel.gameManager.flasks
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+        viewModel.undo()
+
+        XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertFalse(viewModel.canUndo)
+    }
+
+    func testInvalidMoveDoesNotEnterUndoHistory() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [green])
+            ]
+        )
+        let initialFlasks = viewModel.gameManager.flasks
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+
+        XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertFalse(viewModel.canUndo)
+        XCTAssertEqual(viewModel.invalidMoveCount, 1)
+        XCTAssertEqual(viewModel.selectedFlaskIndex, 1)
+    }
+
+    func testHintHighlightsFirstValidMoveWithoutPouring() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [])
+            ]
+        )
+        let initialFlasks = viewModel.gameManager.flasks
+
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 1))
+        XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
+        XCTAssertEqual(viewModel.moves, 0)
+    }
+
+    func testStartNewGameClearsTemporaryBonusUnlockAndHistory() async {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+
+        viewModel.unlockBonusFlaskForCurrentRound()
+        XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+        XCTAssertTrue(viewModel.canUndo)
+
+        viewModel.startNewGame()
+
+        XCTAssertFalse(viewModel.canUndo)
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertTrue(viewModel.gameManager.flasks.last?.isBonus == true)
+        XCTAssertFalse(viewModel.gameManager.flasks.last?.isPlayable == true)
+    }
+
+    private func makeViewModel(
+        flasks: [Flask],
+        userDefaults: UserDefaults? = nil
+    ) -> HomeViewModel {
+        HomeViewModel(
+            gameManager: GameManager(flasks: flasks),
+            userDefaults: userDefaults ?? testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+    }
+
+    private func waitForScheduledMainQueueWork() async {
+        try? await Task.sleep(nanoseconds: 50_000_000)
+    }
+
+    private var testUserDefaults: UserDefaults {
+        let defaults = UserDefaults(suiteName: Self.testSuiteName)!
+        defaults.removePersistentDomain(forName: Self.testSuiteName)
+        return defaults
+    }
+
+    private static let testSuiteName = "ColorFlaskGame.HomeViewModelTests"
+}
+
+private struct SingleLevelRepository: LevelRepository {
+    let levels = [
+        Level(
+            id: 1,
+            difficulty: .tutorial,
+            filledFlasks: [
+                Flask(colors: [.red]),
+                Flask(colors: [])
+            ],
+            availableEmptyFlaskCount: 0,
+            hasLockedBonusFlask: true
+        )
+    ]
+
+    func level(at index: Int) -> Level {
+        levels[index]
+    }
+}
