@@ -24,7 +24,7 @@ struct HomeView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(!flask.isPlayable || !viewModel.canInteractWithBoard)
+                    .disabled(!isFlaskTappable(flask))
                     .modifier(
                         InvalidMoveShakeEffect(
                             shakes: viewModel.invalidFlaskIndices.contains(index) ? CGFloat(viewModel.invalidMoveCount) : 0
@@ -60,6 +60,18 @@ struct HomeView: View {
         }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(item: $viewModel.bonusUnlockPrompt) { _ in
+            BonusUnlockSheet(
+                onUnlockForRound: {
+                    viewModel.unlockBonusFlaskForCurrentRound()
+                },
+                onUnlockForever: {
+                    viewModel.unlockBonusFlaskPermanently()
+                }
+            )
+            .presentationDetents([.height(244)])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     private func gameBackground(in size: CGSize) -> some View {
@@ -167,6 +179,11 @@ struct HomeView: View {
         return flask.isEmpty ? .empty : .normal
     }
 
+    private func isFlaskTappable(_ flask: Flask) -> Bool {
+        guard viewModel.canInteractWithBoard else { return false }
+        return flask.isPlayable || flask.isBonus
+    }
+
     private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
         let column = index % columns
         let row = index / columns
@@ -209,6 +226,83 @@ private struct InvalidMoveShakeEffect: GeometryEffect {
     func effectValue(size: CGSize) -> ProjectionTransform {
         let translationX = sin(shakes * .pi * oscillations) * amplitude
         return ProjectionTransform(CGAffineTransform(translationX: translationX, y: 0))
+    }
+}
+
+private struct BonusUnlockSheet: View {
+    let onUnlockForRound: () -> Void
+    let onUnlockForever: () -> Void
+
+    var body: some View {
+        VStack(spacing: DSSpacing.lg) {
+            Capsule()
+                .fill(GameColor.controlAccent.opacity(0.26))
+                .frame(width: 64, height: 6)
+
+            HStack(spacing: DSSpacing.lg) {
+                unlockAction(
+                    systemName: "play.rectangle.fill",
+                    title: "Ad",
+                    subtitle: "This round",
+                    action: onUnlockForRound
+                )
+
+                unlockAction(
+                    systemName: "sparkles",
+                    title: "Forever",
+                    subtitle: "Always open",
+                    action: onUnlockForever
+                )
+            }
+        }
+        .padding(.horizontal, DSSpacing.xl)
+        .padding(.top, DSSpacing.lg)
+        .padding(.bottom, DSSpacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(GameColor.potionBackground)
+    }
+
+    private func unlockAction(
+        systemName: String,
+        title: String,
+        subtitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: DSSpacing.sm) {
+                Image(systemName: systemName)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
+                    .background(
+                        Circle()
+                            .fill(GameColor.controlAccent)
+                    )
+
+                VStack(spacing: DSSpacing.xxs) {
+                    Text(title)
+                        .font(DSTypography.headline)
+                        .foregroundStyle(GameColor.glassStroke)
+
+                    Text(subtitle)
+                        .font(DSTypography.caption)
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.68))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DSSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                    .fill(GameColor.controlSurface.opacity(0.74))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                    .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityHint(subtitle)
     }
 }
 

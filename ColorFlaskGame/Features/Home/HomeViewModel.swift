@@ -13,6 +13,14 @@ struct HintMove: Equatable {
     let targetIndex: Int
 }
 
+struct BonusUnlockPrompt: Identifiable, Equatable {
+    let flaskIndex: Int
+
+    var id: Int {
+        flaskIndex
+    }
+}
+
 enum RoundState: Equatable {
     case playing
     case completing
@@ -28,6 +36,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var hintMove: HintMove?
     @Published private(set) var invalidFlaskIndices: Set<Int> = []
     @Published private(set) var invalidMoveCount = 0
+    @Published var bonusUnlockPrompt: BonusUnlockPrompt?
     @Published private(set) var roundState: RoundState = .playing
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
@@ -92,9 +101,16 @@ final class HomeViewModel: ObservableObject {
     }
 
     func handleFlaskTap(at index: Int) {
-        guard gameManager.flasks.indices.contains(index),
-              gameManager.flasks[index].isPlayable,
-              canInteractWithBoard else { return }
+        guard gameManager.flasks.indices.contains(index), canInteractWithBoard else { return }
+
+        let flask = gameManager.flasks[index]
+
+        guard flask.isPlayable else {
+            if flask.isBonus {
+                bonusUnlockPrompt = BonusUnlockPrompt(flaskIndex: index)
+            }
+            return
+        }
 
         hintMove = nil
 
@@ -148,6 +164,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         pourAnimation = nil
         hintMove = nil
+        bonusUnlockPrompt = nil
         invalidFlaskIndices.removeAll()
         roundState = .playing
         history.removeAll()
@@ -165,12 +182,18 @@ final class HomeViewModel: ObservableObject {
 
     func unlockBonusFlaskForCurrentRound() {
         guard roundState == .playing else { return }
+        bonusUnlockPrompt = nil
+        selectedFlaskIndex = nil
+        hintMove = nil
         gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
     }
 
     func unlockBonusFlaskPermanently() {
         guard roundState == .playing else { return }
+        bonusUnlockPrompt = nil
+        selectedFlaskIndex = nil
+        hintMove = nil
         isBonusFlaskPermanentlyUnlocked = true
         UserDefaults.standard.set(true, forKey: Self.bonusFlaskPurchaseKey)
         gameManager.unlockBonusFlaskForCurrentRound()
