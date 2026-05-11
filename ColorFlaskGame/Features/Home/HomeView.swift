@@ -14,6 +14,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DSSpacing.lg) {
                     header
+                    flaskBoard
                     progressCard
                     actionArea
                 }
@@ -33,6 +34,26 @@ struct HomeView: View {
                 .font(DSTypography.body)
                 .foregroundStyle(DSColor.textSecondary)
         }
+    }
+
+    private var flaskBoard: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: DSSpacing.md), count: 3),
+            spacing: DSSpacing.lg
+        ) {
+            ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
+                Button {
+                    viewModel.selectFlask(at: index)
+                } label: {
+                    FlaskTubeView(
+                        flask: flask,
+                        isSelected: viewModel.selectedFlaskIndex == index
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, DSSpacing.md)
     }
 
     private var progressCard: some View {

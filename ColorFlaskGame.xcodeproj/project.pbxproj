@@ -16,6 +16,7 @@
 		F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD005B111BF2456AA02DC68F /* HomeViewModel.swift */; };
 		C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */; };
 		97C0B73202364BA9B3EF3431 /* GameManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00695FA54A604DC186EDAF9F /* GameManager.swift */; };
+		EBFBEA59C0424B3C976B90B6 /* FlaskTubeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F79A20F278C4A0F95ECBDA1 /* FlaskTubeView.swift */; };
 		5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A95EC223B46D40169C8DAFF2 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -30,6 +31,7 @@
 		FD005B111BF2456AA02DC68F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlaskProgressView.swift; sourceTree = "<group>"; };
 		00695FA54A604DC186EDAF9F /* GameManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameManager.swift; sourceTree = "<group>"; };
+		9F79A20F278C4A0F95ECBDA1 /* FlaskTubeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlaskTubeView.swift; sourceTree = "<group>"; };
 		A95EC223B46D40169C8DAFF2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -121,6 +123,7 @@
 				7DA4F68DABF84F99B45671D3 /* HomeView.swift */,
 				FD005B111BF2456AA02DC68F /* HomeViewModel.swift */,
 				751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */,
+				9F79A20F278C4A0F95ECBDA1 /* FlaskTubeView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -211,6 +214,7 @@
 				EC6EBE6960F34CB899E6BAB4 /* HomeView.swift in Sources */,
 				F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */,
 				C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */,
+				EBFBEA59C0424B3C976B90B6 /* FlaskTubeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

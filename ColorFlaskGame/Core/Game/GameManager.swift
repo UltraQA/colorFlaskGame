@@ -81,6 +81,19 @@ final class GameManager: ObservableObject {
         self.flasks = flasks
     }
 
+    static func makeInitialLevel() -> GameManager {
+        GameManager(
+            flasks: [
+                Flask(colors: [.red, .green, .yellow, .red]),
+                Flask(colors: [.green, .yellow, .red, .green]),
+                Flask(colors: [.yellow, .red, .green, .yellow]),
+                Flask(colors: [.red, .yellow, .green, .red]),
+                Flask(colors: [.green, .red, .yellow, .green]),
+                Flask(colors: [])
+            ]
+        )
+    }
+
     var isRoundCompleted: Bool {
         flasks.allSatisfy(\.isSolved)
     }
