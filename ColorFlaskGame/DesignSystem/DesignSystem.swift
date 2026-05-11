@@ -34,3 +34,37 @@ enum DSCornerRadius {
     static let md: CGFloat = 12
     static let lg: CGFloat = 20
 }
+
+enum GameLayer {
+    static let background: Double = 0
+    static let board: Double = 10
+    static let controls: Double = 20
+    static let animation: Double = 30
+}
+
+enum GameMetric {
+    static let flaskWidth: CGFloat = 78
+    static let flaskHeight: CGFloat = 172
+    static let flaskHitWidth: CGFloat = 104
+    static let flaskHitHeight: CGFloat = 196
+    static let liquidInset: CGFloat = 9
+    static let liquidBottomInset: CGFloat = 9
+    static let resetButtonWidth: CGFloat = 104
+    static let resetButtonHeight: CGFloat = 72
+    static let iconButtonSize: CGFloat = 68
+    static let horizontalInset: CGFloat = 28
+    static let topControlInset: CGFloat = 22
+    static let bottomControlInset: CGFloat = 30
+}
+
+enum GameColor {
+    static let potionBackground = Color(red: 0.13, green: 0.10, blue: 0.19)
+    static let controlSurface = Color(red: 0.10, green: 0.08, blue: 0.15)
+    static let controlMuted = Color(red: 0.28, green: 0.30, blue: 0.34)
+    static let controlAccent = Color(red: 1.00, green: 0.72, blue: 0.25)
+    static let glassFill = Color.white.opacity(0.11)
+    static let glassStroke = Color(red: 0.87, green: 0.82, blue: 0.95)
+    static let glassHighlight = Color.white.opacity(0.36)
+    static let selectedStroke = Color(red: 1.00, green: 0.72, blue: 0.25)
+    static let selectedGlow = Color(red: 0.72, green: 0.36, blue: 1.00)
+}

@@ -172,14 +172,14 @@ final class GameManager: ObservableObject {
     }
 
     private static let levelPalette: [Color] = [
-        .red,
-        .green,
-        .yellow,
-        .blue,
-        .orange,
-        .purple,
-        .pink,
-        .cyan
+        Color(red: 1.00, green: 0.32, blue: 0.48),
+        Color(red: 0.34, green: 0.88, blue: 0.68),
+        Color(red: 1.00, green: 0.78, blue: 0.27),
+        Color(red: 0.33, green: 0.59, blue: 1.00),
+        Color(red: 0.72, green: 0.43, blue: 1.00),
+        Color(red: 1.00, green: 0.52, blue: 0.25),
+        Color(red: 1.00, green: 0.42, blue: 0.77),
+        Color(red: 0.29, green: 0.91, blue: 0.96)
     ]
 }
 
