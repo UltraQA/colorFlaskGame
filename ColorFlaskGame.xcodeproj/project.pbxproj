@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0F17274B3FAD42E2A8270B10 /* ColorFlaskGameApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */; };
+		23456789ABCDEF0123456789 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 123456789ABCDEF012345678 /* XCTest.framework */; };
+		7A2F4E8C1D3B5A697089ABCD /* GameManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */; };
 		C211964E482F4769A9665487 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */; };
 		181B85D6B95B4385A4831F9F /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */; };
 		79E02A0BC5CF48DCA7A0269C /* DSButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A643FC55544ACC9184FE42 /* DSButtonStyle.swift */; };
@@ -21,8 +23,21 @@
 		5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A95EC223B46D40169C8DAFF2 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		EF345678091A2B3C4D5E6F70 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC5F9A77F6BB423C8BCE2570 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3FC9D9A9244D4AC88DA63BC5;
+			remoteInfo = ColorFlaskGame;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		123456789ABCDEF012345678 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		4B8D0E2F6A9C1E3B5D7F8091 /* ColorFlaskGameTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ColorFlaskGameTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ColorFlaskGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameManagerTests.swift; sourceTree = "<group>"; };
 		9FCC7A0CB33644AD9A12B886 /* ColorFlaskGameApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorFlaskGameApp.swift; sourceTree = "<group>"; };
 		8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		9F3813B97F0143BD8D41A3DB /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -45,6 +60,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B44D6E8F902A4C6D8E0F1234 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23456789ABCDEF0123456789 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -52,6 +75,8 @@
 			isa = PBXGroup;
 			children = (
 				53A54885423C4D2EB644F58B /* ColorFlaskGame */,
+				E77A9012B3C4D5E6F708192A /* ColorFlaskGameTests */,
+				3456789ABCDEF0123456789A /* Frameworks */,
 				340FCED606E244ADAC41D957 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -60,8 +85,17 @@
 			isa = PBXGroup;
 			children = (
 				70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */,
+				4B8D0E2F6A9C1E3B5D7F8091 /* ColorFlaskGameTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3456789ABCDEF0123456789A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				123456789ABCDEF012345678 /* XCTest.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		53A54885423C4D2EB644F58B /* ColorFlaskGame */ = {
@@ -139,6 +173,30 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		E77A9012B3C4D5E6F708192A /* ColorFlaskGameTests */ = {
+			isa = PBXGroup;
+			children = (
+				F0123456789ABCDEF0123456 /* Core */,
+			);
+			path = ColorFlaskGameTests;
+			sourceTree = "<group>";
+		};
+		F0123456789ABCDEF0123456 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				0123456789ABCDEF01234567 /* Game */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		0123456789ABCDEF01234567 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				91C4E2A8B6D04F7E9A1C2B3D /* GameManagerTests.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -159,6 +217,24 @@
 			productReference = 70F4D33EAB3D4254A1363D38 /* ColorFlaskGame.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F88B0123C4D5E6F708192A3B /* ColorFlaskGameTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB901234C5D6E7F8091A2B3C /* Build configuration list for PBXNativeTarget "ColorFlaskGameTests" */;
+			buildPhases = (
+				C55E7F901A2B4C6D8E0F1234 /* Sources */,
+				B44D6E8F902A4C6D8E0F1234 /* Frameworks */,
+				D66F8091A2B3C4D5E6F70819 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DE234567F8091A2B3C4D5E6F /* PBXTargetDependency */,
+			);
+			name = ColorFlaskGameTests;
+			productName = ColorFlaskGameTests;
+			productReference = 4B8D0E2F6A9C1E3B5D7F8091 /* ColorFlaskGameTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -171,6 +247,10 @@
 				TargetAttributes = {
 					3FC9D9A9244D4AC88DA63BC5 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					F88B0123C4D5E6F708192A3B = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 3FC9D9A9244D4AC88DA63BC5;
 					};
 				};
 			};
@@ -188,6 +268,7 @@
 			projectRoot = "";
 			targets = (
 				3FC9D9A9244D4AC88DA63BC5 /* ColorFlaskGame */,
+				F88B0123C4D5E6F708192A3B /* ColorFlaskGameTests */,
 			);
 		};
 /* End PBXProject section */
@@ -198,6 +279,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66F8091A2B3C4D5E6F70819 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,7 +310,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C55E7F901A2B4C6D8E0F1234 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A2F4E8C1D3B5A697089ABCD /* GameManagerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DE234567F8091A2B3C4D5E6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3FC9D9A9244D4AC88DA63BC5 /* ColorFlaskGame */;
+			targetProxy = EF345678091A2B3C4D5E6F70 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		929D84ECE99949C1A9CE192E /* Debug */ = {
@@ -397,6 +501,40 @@
 			};
 			name = Release;
 		};
+		BC012345D6E7F8091A2B3C4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fantasma.ColorFlaskGameTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ColorFlaskGame.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ColorFlaskGame";
+			};
+			name = Debug;
+		};
+		CD123456E7F8091A2B3C4D5E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fantasma.ColorFlaskGameTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ColorFlaskGame.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ColorFlaskGame";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -414,6 +552,15 @@
 			buildConfigurations = (
 				03D5A8FE4506410EAF685D7F /* Debug */,
 				4E824ADFB13C4205818A3321 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB901234C5D6E7F8091A2B3C /* Build configuration list for PBXNativeTarget "ColorFlaskGameTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC012345D6E7F8091A2B3C4D /* Debug */,
+				CD123456E7F8091A2B3C4D5E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
