@@ -24,7 +24,7 @@ struct HomeView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(!flask.isPlayable)
+                    .disabled(!flask.isPlayable || !viewModel.canInteractWithBoard)
                     .position(flaskCenter(for: index, in: proxy.size))
                     .zIndex(GameLayer.board)
                 }
@@ -43,6 +43,12 @@ struct HomeView: View {
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(GameLayer.animation)
+                }
+
+                if viewModel.roundState == .completing {
+                    WinCelebrationView()
+                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                        .zIndex(GameLayer.celebration)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -241,5 +247,61 @@ private struct GameIconButton: View {
         case .muted:
             return Color.white.opacity(0.08)
         }
+    }
+}
+
+private struct WinCelebrationView: View {
+    private let sparkles: [Sparkle] = [
+        Sparkle(x: 0.18, y: 0.26, size: 10, delay: 0.0),
+        Sparkle(x: 0.34, y: 0.18, size: 7, delay: 0.18),
+        Sparkle(x: 0.68, y: 0.22, size: 11, delay: 0.06),
+        Sparkle(x: 0.82, y: 0.34, size: 8, delay: 0.24),
+        Sparkle(x: 0.26, y: 0.66, size: 9, delay: 0.12),
+        Sparkle(x: 0.74, y: 0.64, size: 10, delay: 0.3),
+        Sparkle(x: 0.50, y: 0.46, size: 12, delay: 0.16)
+    ]
+
+    var body: some View {
+        GeometryReader { proxy in
+            TimelineView(.animation) { timeline in
+                Canvas { context, size in
+                    let time = timeline.date.timeIntervalSinceReferenceDate
+
+                    for sparkle in sparkles {
+                        let phase = (time + sparkle.delay).truncatingRemainder(dividingBy: 1.1) / 1.1
+                        let opacity = max(0, 1 - phase)
+                        let radius = sparkle.size * (0.8 + phase * 1.8)
+                        let center = CGPoint(
+                            x: size.width * sparkle.x,
+                            y: size.height * sparkle.y - phase * 34
+                        )
+
+                        var path = Path()
+                        path.addEllipse(
+                            in: CGRect(
+                                x: center.x - radius / 2,
+                                y: center.y - radius / 2,
+                                width: radius,
+                                height: radius
+                            )
+                        )
+
+                        context.fill(
+                            path,
+                            with: .color(GameColor.controlAccent.opacity(opacity * 0.9))
+                        )
+                    }
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private struct Sparkle {
+        let x: CGFloat
+        let y: CGFloat
+        let size: CGFloat
+        let delay: TimeInterval
     }
 }

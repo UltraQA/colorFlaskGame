@@ -13,6 +13,11 @@ struct HintMove: Equatable {
     let targetIndex: Int
 }
 
+enum RoundState: Equatable {
+    case playing
+    case completing
+}
+
 final class HomeViewModel: ObservableObject {
     private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
     private static let currentLevelIndexKey = "waterSort.progress.currentLevelIndex"
@@ -21,6 +26,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var selectedFlaskIndex: Int?
     @Published private(set) var pourAnimation: PourAnimation?
     @Published private(set) var hintMove: HintMove?
+    @Published private(set) var roundState: RoundState = .playing
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
     @Published private(set) var currentLevelIndex: Int
@@ -29,6 +35,7 @@ final class HomeViewModel: ObservableObject {
     private var history: [[Flask]] = []
     private let levelRepository: any LevelRepository
     private let pourAnimationDuration: TimeInterval = 0.55
+    private let completionDuration: TimeInterval = 1.15
 
     init(
         gameManager: GameManager? = nil,
@@ -67,17 +74,24 @@ final class HomeViewModel: ObservableObject {
     }
 
     var canUndo: Bool {
-        !history.isEmpty && pourAnimation == nil
+        roundState == .playing && !history.isEmpty && pourAnimation == nil
     }
 
     var canShowHint: Bool {
-        pourAnimation == nil && !gameManager.isRoundCompleted && gameManager.firstValidMove() != nil
+        roundState == .playing
+            && pourAnimation == nil
+            && !gameManager.isRoundCompleted
+            && gameManager.firstValidMove() != nil
+    }
+
+    var canInteractWithBoard: Bool {
+        roundState == .playing && pourAnimation == nil
     }
 
     func handleFlaskTap(at index: Int) {
         guard gameManager.flasks.indices.contains(index),
               gameManager.flasks[index].isPlayable,
-              pourAnimation == nil else { return }
+              canInteractWithBoard else { return }
 
         hintMove = nil
 
@@ -128,6 +142,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         pourAnimation = nil
         hintMove = nil
+        roundState = .playing
         history.removeAll()
         moves = 0
         currentLevelIndex = levelIndex
@@ -142,11 +157,13 @@ final class HomeViewModel: ObservableObject {
     }
 
     func unlockBonusFlaskForCurrentRound() {
+        guard roundState == .playing else { return }
         gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
     }
 
     func unlockBonusFlaskPermanently() {
+        guard roundState == .playing else { return }
         isBonusFlaskPermanentlyUnlocked = true
         UserDefaults.standard.set(true, forKey: Self.bonusFlaskPurchaseKey)
         gameManager.unlockBonusFlaskForCurrentRound()
@@ -171,6 +188,24 @@ final class HomeViewModel: ObservableObject {
                     self.moves += 1
                 }
                 self.pourAnimation = nil
+            }
+
+            self.completeRoundIfNeeded()
+        }
+    }
+
+    private func completeRoundIfNeeded() {
+        guard gameManager.isRoundCompleted, roundState == .playing else { return }
+
+        selectedFlaskIndex = nil
+        hintMove = nil
+        roundState = .completing
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + completionDuration) { [weak self] in
+            guard let self, self.roundState == .completing else { return }
+
+            withAnimation(.snappy(duration: 0.35)) {
+                self.advanceToNextLevel()
             }
         }
     }

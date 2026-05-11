@@ -40,6 +40,7 @@ enum GameLayer {
     static let board: Double = 10
     static let controls: Double = 20
     static let animation: Double = 30
+    static let celebration: Double = 40
 }
 
 enum GameMetric {
