@@ -164,9 +164,25 @@ final class GameManager: ObservableObject {
         flasks.filter(\.isPlayable)
     }
 
+    func restore(flasks: [Flask]) {
+        self.flasks = flasks
+    }
+
     func unlockBonusFlaskForCurrentRound() {
         guard let bonusIndex = flasks.firstIndex(where: { $0.isBonus }) else { return }
         flasks[bonusIndex].unlock()
+    }
+
+    func firstValidMove() -> PourPlan? {
+        for sourceIndex in flasks.indices {
+            for targetIndex in flasks.indices where sourceIndex != targetIndex {
+                if case let .success(plan) = pourPlan(from: sourceIndex, to: targetIndex) {
+                    return plan
+                }
+            }
+        }
+
+        return nil
     }
 
     func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {

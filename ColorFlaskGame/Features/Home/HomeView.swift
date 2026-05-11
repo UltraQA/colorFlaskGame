@@ -20,7 +20,7 @@ struct HomeView: View {
                     } label: {
                         FlaskTubeView(
                             flask: flask,
-                            isSelected: viewModel.selectedFlaskIndex == index
+                            visualState: flaskVisualState(for: flask, at: index)
                         )
                     }
                     .buttonStyle(.plain)
@@ -89,7 +89,14 @@ struct HomeView: View {
     }
 
     private func topControls(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
-        GameIconButton(systemName: "arrow.uturn.backward", title: "Undo", style: .muted) {}
+        GameIconButton(
+            systemName: "arrow.uturn.backward",
+            title: "Undo",
+            style: .muted,
+            isEnabled: viewModel.canUndo
+        ) {
+            viewModel.undo()
+        }
             .position(
                 x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
                 y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
@@ -105,13 +112,44 @@ struct HomeView: View {
                     y: bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets)
                 )
 
-            GameIconButton(systemName: "lightbulb.fill", title: "Hint", style: .accent) {}
+            GameIconButton(
+                systemName: "lightbulb.fill",
+                title: "Hint",
+                style: .accent,
+                isEnabled: viewModel.canShowHint
+            ) {
+                viewModel.showHint()
+            }
                 .position(
                     x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
                     y: bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets)
                 )
                 .accessibilityLabel("Hint")
         }
+    }
+
+    private func flaskVisualState(for flask: Flask, at index: Int) -> FlaskVisualState {
+        if !flask.isPlayable {
+            return .lockedBonus
+        }
+
+        if viewModel.selectedFlaskIndex == index {
+            return .selected
+        }
+
+        if viewModel.hintMove?.sourceIndex == index {
+            return .hintSource
+        }
+
+        if viewModel.hintMove?.targetIndex == index {
+            return .hintTarget
+        }
+
+        if flask.isSolved && !flask.isEmpty {
+            return .completed
+        }
+
+        return flask.isEmpty ? .empty : .normal
     }
 
     private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
@@ -152,6 +190,7 @@ private struct GameIconButton: View {
     let systemName: String
     let title: String
     let style: Style
+    var isEnabled = true
     let action: () -> Void
 
     var body: some View {
@@ -172,6 +211,8 @@ private struct GameIconButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.36)
         .accessibilityLabel(title)
     }
 

@@ -1,8 +1,18 @@
 import SwiftUI
 
+enum FlaskVisualState: Equatable {
+    case normal
+    case empty
+    case selected
+    case completed
+    case lockedBonus
+    case hintSource
+    case hintTarget
+}
+
 struct FlaskTubeView: View {
     let flask: Flask
-    let isSelected: Bool
+    let visualState: FlaskVisualState
 
     private var sectionHeight: CGFloat {
         (GameMetric.flaskHeight - GameMetric.liquidBottomInset * 2) / CGFloat(Flask.maxCapacity)
@@ -33,7 +43,7 @@ struct FlaskTubeView: View {
                 .stroke(
                     strokeColor,
                     style: StrokeStyle(
-                        lineWidth: isSelected ? 4 : 3,
+                        lineWidth: strokeWidth,
                         lineCap: .round,
                         dash: flask.isPlayable ? [] : [8, 8]
                     )
@@ -66,14 +76,14 @@ struct FlaskTubeView: View {
             }
         }
         .frame(width: GameMetric.flaskWidth, height: GameMetric.flaskHeight)
-        .offset(y: isSelected ? -14 : 0)
+        .offset(y: visualState == .selected ? -14 : 0)
         .shadow(
-            color: isSelected ? GameColor.selectedGlow.opacity(0.34) : .black.opacity(0.28),
-            radius: isSelected ? 18 : 12,
+            color: shadowColor,
+            radius: visualState == .selected ? 18 : 12,
             x: 0,
-            y: isSelected ? 12 : 10
+            y: visualState == .selected ? 12 : 10
         )
-        .animation(.snappy(duration: 0.2), value: isSelected)
+        .animation(.snappy(duration: 0.2), value: visualState)
         .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
         .accessibilityLabel("Flask")
         .accessibilityValue(accessibilityValue)
@@ -107,7 +117,38 @@ struct FlaskTubeView: View {
             return GameColor.lockedStroke
         }
 
-        return isSelected ? GameColor.selectedStroke : GameColor.glassStroke.opacity(0.82)
+        switch visualState {
+        case .selected:
+            return GameColor.selectedStroke
+        case .completed:
+            return GameColor.controlAccent.opacity(0.9)
+        case .hintSource, .hintTarget:
+            return GameColor.controlAccent
+        case .normal, .empty, .lockedBonus:
+            return GameColor.glassStroke.opacity(0.82)
+        }
+    }
+
+    private var strokeWidth: CGFloat {
+        switch visualState {
+        case .selected, .hintSource, .hintTarget:
+            return 4
+        default:
+            return 3
+        }
+    }
+
+    private var shadowColor: Color {
+        switch visualState {
+        case .selected:
+            return GameColor.selectedGlow.opacity(0.34)
+        case .hintSource, .hintTarget:
+            return GameColor.controlAccent.opacity(0.32)
+        case .completed:
+            return GameColor.controlAccent.opacity(0.22)
+        default:
+            return .black.opacity(0.28)
+        }
     }
 
     private var accessibilityValue: String {
@@ -115,7 +156,20 @@ struct FlaskTubeView: View {
             return "Locked bonus flask"
         }
 
-        return isSelected ? "Selected" : "Not selected"
+        switch visualState {
+        case .selected:
+            return "Selected"
+        case .hintSource:
+            return "Hint source"
+        case .hintTarget:
+            return "Hint target"
+        case .completed:
+            return "Completed"
+        case .empty:
+            return "Empty"
+        case .normal, .lockedBonus:
+            return "Not selected"
+        }
     }
 
     private var lockedOverlay: some View {

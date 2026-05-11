@@ -8,16 +8,23 @@ struct PourAnimation: Identifiable, Equatable {
     let color: Color
 }
 
+struct HintMove: Equatable {
+    let sourceIndex: Int
+    let targetIndex: Int
+}
+
 final class HomeViewModel: ObservableObject {
     private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
 
     @Published private(set) var gameManager: GameManager
     @Published private(set) var selectedFlaskIndex: Int?
     @Published private(set) var pourAnimation: PourAnimation?
+    @Published private(set) var hintMove: HintMove?
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
 
     private var cancellables: Set<AnyCancellable> = []
+    private var history: [[Flask]] = []
     private let pourAnimationDuration: TimeInterval = 0.55
 
     init(
@@ -44,10 +51,20 @@ final class HomeViewModel: ObservableObject {
         gameManager.playableFlasks.count
     }
 
+    var canUndo: Bool {
+        !history.isEmpty && pourAnimation == nil
+    }
+
+    var canShowHint: Bool {
+        pourAnimation == nil && !gameManager.isRoundCompleted && gameManager.firstValidMove() != nil
+    }
+
     func handleFlaskTap(at index: Int) {
         guard gameManager.flasks.indices.contains(index),
               gameManager.flasks[index].isPlayable,
               pourAnimation == nil else { return }
+
+        hintMove = nil
 
         guard let sourceIndex = selectedFlaskIndex else {
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? nil : index
@@ -67,9 +84,28 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
+    func undo() {
+        guard canUndo, let previousFlasks = history.popLast() else { return }
+
+        selectedFlaskIndex = nil
+        hintMove = nil
+        gameManager.restore(flasks: previousFlasks)
+        moves = max(0, moves - 1)
+        objectWillChange.send()
+    }
+
+    func showHint() {
+        guard pourAnimation == nil, let plan = gameManager.firstValidMove() else { return }
+
+        selectedFlaskIndex = nil
+        hintMove = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
+    }
+
     func startNewGame() {
         selectedFlaskIndex = nil
         pourAnimation = nil
+        hintMove = nil
+        history.removeAll()
         moves = 0
         gameManager = .makeInitialLevel(isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked)
         bindGameManager()
@@ -90,6 +126,8 @@ final class HomeViewModel: ObservableObject {
 
     private func animatePour(_ plan: PourPlan) {
         selectedFlaskIndex = nil
+        hintMove = nil
+        history.append(gameManager.flasks)
         pourAnimation = PourAnimation(
             sourceIndex: plan.sourceIndex,
             targetIndex: plan.targetIndex,
