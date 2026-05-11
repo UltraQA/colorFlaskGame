@@ -111,6 +111,41 @@ struct PourPlan: Equatable {
     let amount: Int
 }
 
+enum Difficulty: String, Equatable {
+    case tutorial
+    case easy
+    case medium
+}
+
+struct Level: Identifiable, Equatable {
+    let id: Int
+    let difficulty: Difficulty
+    let filledFlasks: [Flask]
+    let availableEmptyFlaskCount: Int
+    let hasLockedBonusFlask: Bool
+}
+
+protocol LevelRepository {
+    var levels: [Level] { get }
+    func level(at index: Int) -> Level
+}
+
+struct HandcraftedLevelRepository: LevelRepository {
+    let levels: [Level]
+
+    init() {
+        self.levels = Self.makeLevels()
+    }
+
+    func level(at index: Int) -> Level {
+        guard !levels.isEmpty else {
+            preconditionFailure("Level repository must contain at least one level")
+        }
+
+        return levels[index % levels.count]
+    }
+}
+
 final class GameManager: ObservableObject {
     static let defaultFilledFlaskCount = 5
     static let startingEmptyFlaskCount = 2
@@ -118,12 +153,34 @@ final class GameManager: ObservableObject {
     static let defaultFlaskCount = defaultFilledFlaskCount + startingEmptyFlaskCount + bonusEmptyFlaskCount
 
     @Published private(set) var flasks: [Flask]
+    let level: Level?
 
-    init(flasks: [Flask]) {
+    init(flasks: [Flask], level: Level? = nil) {
         self.flasks = flasks
+        self.level = level
     }
 
     static func makeInitialLevel(
+        filledFlaskCount: Int? = nil,
+        levelIndex: Int = 0,
+        levelRepository: LevelRepository = HandcraftedLevelRepository(),
+        isBonusFlaskUnlocked: Bool = false
+    ) -> GameManager {
+        if let filledFlaskCount {
+            return makeGeneratedLevel(
+                filledFlaskCount: filledFlaskCount,
+                isBonusFlaskUnlocked: isBonusFlaskUnlocked
+            )
+        }
+
+        let level = levelRepository.level(at: levelIndex)
+        return GameManager(
+            flasks: makeFlasks(from: level, isBonusFlaskUnlocked: isBonusFlaskUnlocked),
+            level: level
+        )
+    }
+
+    private static func makeGeneratedLevel(
         filledFlaskCount: Int = defaultFilledFlaskCount,
         isBonusFlaskUnlocked: Bool = false
     ) -> GameManager {
@@ -152,6 +209,23 @@ final class GameManager: ObservableObject {
         )
 
         return GameManager(flasks: flasks)
+    }
+
+    private static func makeFlasks(from level: Level, isBonusFlaskUnlocked: Bool) -> [Flask] {
+        var flasks = level.filledFlasks
+        flasks.append(contentsOf: (0..<level.availableEmptyFlaskCount).map { _ in Flask() })
+
+        if level.hasLockedBonusFlask {
+            flasks.append(
+                Flask(
+                    kind: .bonus,
+                    colors: [],
+                    isUnlocked: isBonusFlaskUnlocked
+                )
+            )
+        }
+
+        return flasks
     }
 
     var isRoundCompleted: Bool {
@@ -253,6 +327,137 @@ final class GameManager: ObservableObject {
         Color(red: 1.00, green: 0.52, blue: 0.25),
         Color(red: 1.00, green: 0.42, blue: 0.77),
         Color(red: 0.29, green: 0.91, blue: 0.96)
+    ]
+}
+
+private extension HandcraftedLevelRepository {
+    static func makeLevels() -> [Level] {
+        [
+            makeLevel(
+                id: 1,
+                difficulty: .tutorial,
+                rows: [
+                    [0, 0, 1, 1],
+                    [1, 1, 2, 2],
+                    [2, 2, 0, 0]
+                ]
+            ),
+            makeLevel(
+                id: 2,
+                difficulty: .tutorial,
+                rows: [
+                    [0, 1, 0, 1],
+                    [1, 2, 1, 2],
+                    [2, 0, 2, 0]
+                ]
+            ),
+            makeLevel(
+                id: 3,
+                difficulty: .tutorial,
+                rows: [
+                    [0, 1, 0, 2],
+                    [1, 2, 3, 0],
+                    [2, 3, 1, 3],
+                    [3, 0, 2, 1]
+                ]
+            ),
+            makeLevel(
+                id: 4,
+                difficulty: .easy,
+                rows: [
+                    [0, 1, 2, 3],
+                    [1, 0, 3, 2],
+                    [2, 3, 0, 1],
+                    [3, 2, 1, 0]
+                ]
+            ),
+            makeLevel(
+                id: 5,
+                difficulty: .easy,
+                rows: [
+                    [0, 1, 2, 0],
+                    [1, 2, 3, 1],
+                    [2, 3, 4, 2],
+                    [3, 4, 0, 3],
+                    [4, 0, 1, 4]
+                ]
+            ),
+            makeLevel(
+                id: 6,
+                difficulty: .easy,
+                rows: [
+                    [0, 1, 0, 2],
+                    [1, 2, 1, 3],
+                    [2, 3, 2, 4],
+                    [3, 4, 3, 0],
+                    [4, 0, 4, 1]
+                ]
+            ),
+            makeLevel(
+                id: 7,
+                difficulty: .easy,
+                rows: [
+                    [0, 2, 1, 3],
+                    [1, 3, 2, 4],
+                    [2, 4, 3, 0],
+                    [3, 0, 4, 1],
+                    [4, 1, 0, 2]
+                ]
+            ),
+            makeLevel(
+                id: 8,
+                difficulty: .medium,
+                rows: [
+                    [0, 1, 2, 3],
+                    [1, 2, 3, 4],
+                    [2, 3, 4, 0],
+                    [3, 4, 0, 1],
+                    [4, 0, 1, 2]
+                ]
+            ),
+            makeLevel(
+                id: 9,
+                difficulty: .medium,
+                rows: [
+                    [0, 2, 4, 1],
+                    [1, 3, 0, 2],
+                    [2, 4, 1, 3],
+                    [3, 0, 2, 4],
+                    [4, 1, 3, 0]
+                ]
+            ),
+            makeLevel(
+                id: 10,
+                difficulty: .medium,
+                rows: [
+                    [0, 3, 1, 4],
+                    [1, 4, 2, 0],
+                    [2, 0, 3, 1],
+                    [3, 1, 4, 2],
+                    [4, 2, 0, 3]
+                ]
+            )
+        ]
+    }
+
+    static func makeLevel(id: Int, difficulty: Difficulty, rows: [[Int]]) -> Level {
+        Level(
+            id: id,
+            difficulty: difficulty,
+            filledFlasks: rows.map { row in
+                Flask(colors: row.map { palette[$0] })
+            },
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: true
+        )
+    }
+
+    static let palette: [Color] = [
+        Color(red: 1.00, green: 0.32, blue: 0.48),
+        Color(red: 0.34, green: 0.88, blue: 0.68),
+        Color(red: 1.00, green: 0.78, blue: 0.27),
+        Color(red: 0.33, green: 0.59, blue: 1.00),
+        Color(red: 0.72, green: 0.43, blue: 1.00)
     ]
 }
 

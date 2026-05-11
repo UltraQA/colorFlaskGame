@@ -15,6 +15,7 @@ struct HintMove: Equatable {
 
 final class HomeViewModel: ObservableObject {
     private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
+    private static let currentLevelIndexKey = "waterSort.progress.currentLevelIndex"
 
     @Published private(set) var gameManager: GameManager
     @Published private(set) var selectedFlaskIndex: Int?
@@ -22,17 +23,27 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var hintMove: HintMove?
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
+    @Published private(set) var currentLevelIndex: Int
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
+    private let levelRepository: any LevelRepository
     private let pourAnimationDuration: TimeInterval = 0.55
 
     init(
         gameManager: GameManager? = nil,
+        levelRepository: any LevelRepository = HandcraftedLevelRepository(),
+        currentLevelIndex: Int = UserDefaults.standard.integer(forKey: currentLevelIndexKey),
         isBonusFlaskPermanentlyUnlocked: Bool = UserDefaults.standard.bool(forKey: bonusFlaskPurchaseKey)
     ) {
+        self.levelRepository = levelRepository
+        self.currentLevelIndex = currentLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
-        self.gameManager = gameManager ?? .makeInitialLevel(isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked)
+        self.gameManager = gameManager ?? .makeInitialLevel(
+            levelIndex: currentLevelIndex,
+            levelRepository: levelRepository,
+            isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked
+        )
         bindGameManager()
     }
 
@@ -49,6 +60,10 @@ final class HomeViewModel: ObservableObject {
 
     var totalFlasks: Int {
         gameManager.playableFlasks.count
+    }
+
+    var currentLevelNumber: Int {
+        (gameManager.level?.id ?? currentLevelIndex + 1)
     }
 
     var canUndo: Bool {
@@ -102,12 +117,26 @@ final class HomeViewModel: ObservableObject {
     }
 
     func startNewGame() {
+        loadLevel(at: currentLevelIndex)
+    }
+
+    func advanceToNextLevel() {
+        loadLevel(at: currentLevelIndex + 1)
+    }
+
+    private func loadLevel(at levelIndex: Int) {
         selectedFlaskIndex = nil
         pourAnimation = nil
         hintMove = nil
         history.removeAll()
         moves = 0
-        gameManager = .makeInitialLevel(isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked)
+        currentLevelIndex = levelIndex
+        UserDefaults.standard.set(levelIndex, forKey: Self.currentLevelIndexKey)
+        gameManager = .makeInitialLevel(
+            levelIndex: levelIndex,
+            levelRepository: levelRepository,
+            isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked
+        )
         bindGameManager()
         objectWillChange.send()
     }
