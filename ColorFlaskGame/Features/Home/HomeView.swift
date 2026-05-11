@@ -25,6 +25,11 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(!flask.isPlayable || !viewModel.canInteractWithBoard)
+                    .modifier(
+                        InvalidMoveShakeEffect(
+                            shakes: viewModel.invalidFlaskIndices.contains(index) ? CGFloat(viewModel.invalidMoveCount) : 0
+                        )
+                    )
                     .position(flaskCenter(for: index, in: proxy.size))
                     .zIndex(GameLayer.board)
                 }
@@ -143,6 +148,10 @@ struct HomeView: View {
             return .selected
         }
 
+        if viewModel.invalidFlaskIndices.contains(index) {
+            return .invalidTarget
+        }
+
         if viewModel.hintMove?.sourceIndex == index {
             return .hintSource
         }
@@ -184,6 +193,22 @@ struct HomeView: View {
 
     private func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets) -> CGFloat {
         size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset - GameMetric.iconButtonSize / 2
+    }
+}
+
+private struct InvalidMoveShakeEffect: GeometryEffect {
+    var shakes: CGFloat
+    private let amplitude: CGFloat = 7
+    private let oscillations: CGFloat = 4
+
+    var animatableData: CGFloat {
+        get { shakes }
+        set { shakes = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let translationX = sin(shakes * .pi * oscillations) * amplitude
+        return ProjectionTransform(CGAffineTransform(translationX: translationX, y: 0))
     }
 }
 

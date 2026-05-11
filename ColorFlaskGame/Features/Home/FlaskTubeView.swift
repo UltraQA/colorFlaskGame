@@ -4,6 +4,7 @@ enum FlaskVisualState: Equatable {
     case normal
     case empty
     case selected
+    case invalidTarget
     case completed
     case lockedBonus
     case hintSource
@@ -120,6 +121,8 @@ struct FlaskTubeView: View {
         switch visualState {
         case .selected:
             return GameColor.selectedStroke
+        case .invalidTarget:
+            return GameColor.invalid
         case .completed:
             return GameColor.controlAccent.opacity(0.9)
         case .hintSource, .hintTarget:
@@ -131,7 +134,7 @@ struct FlaskTubeView: View {
 
     private var strokeWidth: CGFloat {
         switch visualState {
-        case .selected, .hintSource, .hintTarget:
+        case .selected, .invalidTarget, .hintSource, .hintTarget:
             return 4
         default:
             return 3
@@ -142,6 +145,8 @@ struct FlaskTubeView: View {
         switch visualState {
         case .selected:
             return GameColor.selectedGlow.opacity(0.34)
+        case .invalidTarget:
+            return GameColor.invalid.opacity(0.34)
         case .hintSource, .hintTarget:
             return GameColor.controlAccent.opacity(0.32)
         case .completed:
@@ -159,6 +164,8 @@ struct FlaskTubeView: View {
         switch visualState {
         case .selected:
             return "Selected"
+        case .invalidTarget:
+            return "Invalid target"
         case .hintSource:
             return "Hint source"
         case .hintTarget:

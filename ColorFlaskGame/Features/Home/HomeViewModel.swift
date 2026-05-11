@@ -26,6 +26,8 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var selectedFlaskIndex: Int?
     @Published private(set) var pourAnimation: PourAnimation?
     @Published private(set) var hintMove: HintMove?
+    @Published private(set) var invalidFlaskIndices: Set<Int> = []
+    @Published private(set) var invalidMoveCount = 0
     @Published private(set) var roundState: RoundState = .playing
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
@@ -36,6 +38,7 @@ final class HomeViewModel: ObservableObject {
     private let levelRepository: any LevelRepository
     private let pourAnimationDuration: TimeInterval = 0.55
     private let completionDuration: TimeInterval = 1.15
+    private let invalidFeedbackDuration: TimeInterval = 0.32
 
     init(
         gameManager: GameManager? = nil,
@@ -109,6 +112,7 @@ final class HomeViewModel: ObservableObject {
         case let .success(plan):
             animatePour(plan)
         case .failure:
+            showInvalidMoveFeedback(sourceIndex: sourceIndex, targetIndex: index)
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? sourceIndex : index
         }
     }
@@ -118,6 +122,7 @@ final class HomeViewModel: ObservableObject {
 
         selectedFlaskIndex = nil
         hintMove = nil
+        invalidFlaskIndices.removeAll()
         gameManager.restore(flasks: previousFlasks)
         moves = max(0, moves - 1)
         objectWillChange.send()
@@ -127,6 +132,7 @@ final class HomeViewModel: ObservableObject {
         guard pourAnimation == nil, let plan = gameManager.firstValidMove() else { return }
 
         selectedFlaskIndex = nil
+        invalidFlaskIndices.removeAll()
         hintMove = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
     }
 
@@ -142,6 +148,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         pourAnimation = nil
         hintMove = nil
+        invalidFlaskIndices.removeAll()
         roundState = .playing
         history.removeAll()
         moves = 0
@@ -173,6 +180,7 @@ final class HomeViewModel: ObservableObject {
     private func animatePour(_ plan: PourPlan) {
         selectedFlaskIndex = nil
         hintMove = nil
+        invalidFlaskIndices.removeAll()
         history.append(gameManager.flasks)
         pourAnimation = PourAnimation(
             sourceIndex: plan.sourceIndex,
@@ -191,6 +199,17 @@ final class HomeViewModel: ObservableObject {
             }
 
             self.completeRoundIfNeeded()
+        }
+    }
+
+    private func showInvalidMoveFeedback(sourceIndex: Int, targetIndex: Int) {
+        invalidFlaskIndices = [sourceIndex, targetIndex]
+        withAnimation(.linear(duration: invalidFeedbackDuration)) {
+            invalidMoveCount += 1
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + invalidFeedbackDuration) { [weak self] in
+            self?.invalidFlaskIndices.removeAll()
         }
     }
 
