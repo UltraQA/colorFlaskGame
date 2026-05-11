@@ -4,15 +4,28 @@ struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
     private let columns = 3
 
+    private enum Layer {
+        static let background: Double = 0
+        static let placeholder: Double = 1
+        static let gameUI: Double = 10
+        static let animation: Double = 20
+    }
+
     init(viewModel: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
         GeometryReader { proxy in
-            DSColor.background.ignoresSafeArea()
+            DSColor.background
+                .ignoresSafeArea()
+                .zIndex(Layer.background)
 
             ZStack {
+                resetButton
+                    .position(resetButtonCenter(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets))
+                    .zIndex(Layer.placeholder)
+
                 ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
                     Button {
                         viewModel.handleFlaskTap(at: index)
@@ -24,6 +37,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .position(flaskCenter(for: index, in: proxy.size))
+                    .zIndex(Layer.gameUI)
                 }
 
                 if let animation = viewModel.pourAnimation {
@@ -33,10 +47,8 @@ struct HomeView: View {
                         color: animation.color
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(Layer.animation)
                 }
-
-                resetButton
-                    .position(resetButtonCenter(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets))
             }
         }
         .navigationBarBackButtonHidden()
