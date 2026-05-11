@@ -56,25 +56,25 @@ struct HomeView: View {
     }
 
     private var resetButton: some View {
-        VStack(spacing: DSSpacing.xs) {
-            Button {
-                viewModel.startNewGame()
-            } label: {
+        Button {
+            viewModel.startNewGame()
+        } label: {
+            ZStack {
+                Text("reset")
+                    .font(DSTypography.headline)
+                    .foregroundStyle(DSColor.textPrimary)
+                    .zIndex(Layer.placeholder)
+
                 Image("ResetButton")
                     .resizable()
-                    .scaledToFit()
-                    .frame(width: 56, height: 56)
-                    .contentShape(Rectangle())
+                    .scaledToFill()
+                    .zIndex(Layer.gameUI)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Reset")
-
-            Text("reset")
-                .font(DSTypography.caption)
-                .foregroundStyle(DSColor.textSecondary)
-                .zIndex(Layer.background)
-        }
             .frame(width: 104, height: 72)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reset")
     }
 
     private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
