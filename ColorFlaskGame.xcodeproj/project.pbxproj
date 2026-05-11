@@ -15,6 +15,7 @@
 		EC6EBE6960F34CB899E6BAB4 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA4F68DABF84F99B45671D3 /* HomeView.swift */; };
 		F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD005B111BF2456AA02DC68F /* HomeViewModel.swift */; };
 		C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */; };
+		97C0B73202364BA9B3EF3431 /* GameManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00695FA54A604DC186EDAF9F /* GameManager.swift */; };
 		5D77F68C27654AF091C2C6FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A95EC223B46D40169C8DAFF2 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 		7DA4F68DABF84F99B45671D3 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		FD005B111BF2456AA02DC68F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlaskProgressView.swift; sourceTree = "<group>"; };
+		00695FA54A604DC186EDAF9F /* GameManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameManager.swift; sourceTree = "<group>"; };
 		A95EC223B46D40169C8DAFF2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -62,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				6FAA902FCFB44EB6B1AFEB91 /* App */,
+				4CE1AE3E57E9462483C01574 /* Core */,
 				879CDEEAEE3048A1A4DEE765 /* DesignSystem */,
 				8E45C211954B47F2B99DF47D /* Features */,
 				ECFC8063C9A74CCEA073325A /* Resources */,
@@ -76,6 +79,22 @@
 				8ADF4B8501C54BD2824D2EAF /* AppRootView.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		4CE1AE3E57E9462483C01574 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				C089F065ACFE4B35820E895C /* Game */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		C089F065ACFE4B35820E895C /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				00695FA54A604DC186EDAF9F /* GameManager.swift */,
+			);
+			path = Game;
 			sourceTree = "<group>";
 		};
 		879CDEEAEE3048A1A4DEE765 /* DesignSystem */ = {
@@ -188,6 +207,7 @@
 				181B85D6B95B4385A4831F9F /* DesignSystem.swift in Sources */,
 				79E02A0BC5CF48DCA7A0269C /* DSButtonStyle.swift in Sources */,
 				138E74F8AF3C474EB5B0FEA0 /* DSCard.swift in Sources */,
+				97C0B73202364BA9B3EF3431 /* GameManager.swift in Sources */,
 				EC6EBE6960F34CB899E6BAB4 /* HomeView.swift in Sources */,
 				F1C0EE42085C4E5FACBE744F /* HomeViewModel.swift in Sources */,
 				C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */,
