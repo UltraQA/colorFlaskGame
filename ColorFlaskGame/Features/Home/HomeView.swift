@@ -34,10 +34,33 @@ struct HomeView: View {
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 }
+
+                resetButton
+                    .position(resetButtonCenter(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets))
             }
         }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var resetButton: some View {
+        Button {
+            viewModel.startNewGame()
+        } label: {
+            ZStack {
+                Image("ResetButton")
+                    .resizable()
+                    .scaledToFill()
+
+                Text("reset")
+                    .font(DSTypography.headline)
+                    .foregroundStyle(DSColor.textPrimary)
+            }
+            .frame(width: 104, height: 72)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reset")
     }
 
     private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
@@ -62,5 +85,12 @@ struct HomeView: View {
     private func pourEndPoint(for index: Int, in size: CGSize) -> CGPoint {
         let center = flaskCenter(for: index, in: size)
         return CGPoint(x: center.x, y: center.y - 76)
+    }
+
+    private func resetButtonCenter(in size: CGSize, safeAreaInsets: EdgeInsets) -> CGPoint {
+        CGPoint(
+            x: size.width / 2,
+            y: size.height - safeAreaInsets.bottom - 72
+        )
     }
 }
