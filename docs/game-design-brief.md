@@ -632,7 +632,7 @@ The current architecture supports MVP, but these changes reduce coupling before 
 Tasks:
 - Build adaptive board layouts for compact portrait, standard portrait phones, and portrait iPad.
 - For MVP iPad support, scale the existing portrait board and controls instead of designing a separate iPad-specific screen. **Done:** the game screen now uses a shared layout scale for larger portrait screens.
-- Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action.
+- Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action. **Done:** flask controls now expose index, potion contents, top color, empty section count, state, and action hints.
 - Support Reduce Motion by replacing shake, pour, and sparkle animation with simpler state transitions when enabled.
 - Add non-color-only indicators for selected, hint, invalid, and completed states.
 - Replace fixed bonus sheet height with adaptive content sizing.

@@ -22,6 +22,7 @@ struct HomeView: View {
                     } label: {
                         FlaskTubeView(
                             flask: flask,
+                            flaskIndex: index,
                             visualState: flaskVisualState(for: flask, at: index)
                         )
                         .scaleEffect(layoutScale)

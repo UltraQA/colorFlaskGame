@@ -13,6 +13,7 @@ enum FlaskVisualState: Equatable {
 
 struct FlaskTubeView: View {
     let flask: Flask
+    let flaskIndex: Int
     let visualState: FlaskVisualState
 
     private var sectionHeight: CGFloat {
@@ -86,8 +87,10 @@ struct FlaskTubeView: View {
         )
         .animation(.snappy(duration: 0.2), value: visualState)
         .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
-        .accessibilityLabel("Flask")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Flask \(flaskIndex + 1)")
         .accessibilityValue(accessibilityValue)
+        .accessibilityHint(accessibilityHint)
     }
 
     private var liquidStack: some View {
@@ -158,24 +161,95 @@ struct FlaskTubeView: View {
 
     private var accessibilityValue: String {
         if !flask.isPlayable {
-            return "Locked bonus flask"
+            return "Locked bonus flask. Empty."
         }
+
+        var values: [String] = []
 
         switch visualState {
         case .selected:
-            return "Selected"
+            values.append("Selected")
         case .invalidTarget:
-            return "Invalid target"
+            values.append("Invalid target")
         case .hintSource:
-            return "Hint source"
+            values.append("Hint source")
         case .hintTarget:
-            return "Hint target"
+            values.append("Hint target")
         case .completed:
-            return "Completed"
+            values.append("Completed")
         case .empty:
-            return "Empty"
+            values.append("Empty")
         case .normal, .lockedBonus:
-            return "Not selected"
+            values.append("Not selected")
+        }
+
+        values.append(contentsSummary)
+
+        if let topColor = flask.topColor {
+            values.append("Top color: \(accessibilityName(for: topColor))")
+        }
+
+        values.append("\(flask.freeSpace) empty sections")
+
+        return values.joined(separator: ". ")
+    }
+
+    private var accessibilityHint: String {
+        if !flask.isPlayable {
+            return "Double tap to open bonus flask options."
+        }
+
+        if visualState == .selected {
+            return "Double tap another flask to pour this potion."
+        }
+
+        if flask.isEmpty {
+            return "Double tap to use as a target flask."
+        }
+
+        return "Double tap to select this flask as the pour source."
+    }
+
+    private var contentsSummary: String {
+        guard !flask.colors.isEmpty else {
+            return "No potion sections"
+        }
+
+        let colors = flask.colors
+            .map(accessibilityName)
+            .joined(separator: ", ")
+
+        return "Contents from bottom: \(colors)"
+    }
+
+    private func accessibilityName(for color: Color) -> String {
+        switch color {
+        case Color.red:
+            return "red"
+        case Color.green:
+            return "green"
+        case Color.blue:
+            return "blue"
+        case Color.yellow:
+            return "yellow"
+        case Color(red: 1.00, green: 0.32, blue: 0.48):
+            return "ruby"
+        case Color(red: 0.34, green: 0.88, blue: 0.68):
+            return "emerald"
+        case Color(red: 1.00, green: 0.78, blue: 0.27):
+            return "honey"
+        case Color(red: 0.33, green: 0.59, blue: 1.00):
+            return "moon blue"
+        case Color(red: 0.72, green: 0.43, blue: 1.00):
+            return "violet"
+        case Color(red: 1.00, green: 0.52, blue: 0.25):
+            return "orange"
+        case Color(red: 1.00, green: 0.42, blue: 0.77):
+            return "rose"
+        case Color(red: 0.29, green: 0.91, blue: 0.96):
+            return "aqua"
+        default:
+            return "unknown potion color"
         }
     }
 
