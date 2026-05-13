@@ -533,6 +533,92 @@ Images/
 
 ## Milestone Plan
 
+## Review Snapshot - 2026-05-13
+
+The current build is a solid MVP foundation: the core Water Sort loop works, the game has a 5 + 2 + 1 locked bonus structure, undo/hint/reset are implemented, the first 10 handcrafted levels exist, and the main logic is covered by unit tests.
+
+Reviewer verdicts:
+- Hume (UI Designer): flask grid and potion readability are strong, but the current background and mixed button styles weaken the Cozy Potion Shop identity.
+- Gibbs (iOS SwiftUI Developer / Architect): the architecture is workable for MVP, but domain logic still depends on `SwiftUI.Color`, `GameManager` mixes pure rules with observation, and timing callbacks need cancellation.
+- Ohm (Game Designer): the game is fair-minded and playable, but solvability without the bonus flask and trustworthy hint behavior need stronger validation.
+- Confucius (Artist / UI Art Director): the theme direction is clear, but the current background reads as generic outdoor fantasy rather than a cozy potion shop.
+- Anscombe (Apple Guidelines / HIG Reviewer): touch targets and safe-area basics are good, but adaptive layout, richer accessibility, Reduce Motion, and Dynamic Type need attention.
+
+Overall state:
+- MVP gameplay: strong enough to continue iteration.
+- Visual identity: promising, but not yet aligned with Cozy Potion Shop.
+- Architecture: acceptable for prototype, with clear refactor path before scale.
+- Accessibility/adaptivity: basic support exists, but production readiness is not there yet.
+- Monetization fairness: direction is good, but bonus flask introduction and solvability gates must be explicit.
+
+## Consolidated Roadmap From Review
+
+### Priority A: Fair Play And Puzzle Trust
+
+Tasks:
+- Add solvability validation for handcrafted levels without using the locked bonus flask.
+- Define whether levels 1-4 are tutorial exceptions or whether every visible level must always follow the full 5 + 2 + 1 structure.
+- Upgrade hint logic from local move ranking to a solution-aware or dead-end-aware hint path.
+- Add difficulty metrics per level: color count, minimum moves, buffer pressure, solution depth, and dead-end risk.
+- Tune bonus flask introduction so it feels optional and not pay-to-win.
+
+Why this matters:
+The player must trust that every standard level is fair and that Hint helps rather than quietly making the puzzle worse.
+
+### Priority B: Cozy Potion Shop Visual Pass
+
+Tasks:
+- Replace the current background with an interior cozy potion shop board scene.
+- Keep the board center low-noise so empty flasks and glass outlines remain readable.
+- Unify Reset, Undo, and Hint into one visual language.
+- Decide whether flasks stay SwiftUI-procedural or move to sprite overlays based on `Flask.pxo`.
+- Create locked bonus flask art that feels like an optional cozy object, not an aggressive monetization gate.
+- Export production-ready assets at `1x`, `2x`, and `3x`.
+
+Why this matters:
+The gameplay already says “potion sorting,” but the current art direction does not yet fully say “cozy potion shop.”
+
+### Priority C: UI/UX Clarity
+
+Tasks:
+- Rework bottom controls into a coherent control group or clearly balanced corner layout.
+- Improve the bonus unlock sheet with title, benefit copy, clear CTA labels, and a visual locked-to-unlocked preview.
+- Add a stronger win moment: order complete, moves, small reward, and Next CTA or delayed fallback.
+- Add a subtle board vignette or contrast layer behind flasks.
+- Differentiate hint source and target with more than one shared highlight style.
+- Protect reset in later levels with confirmation or press-and-hold.
+
+Why this matters:
+The first screen is playable, but the game needs clearer emotional beats and less accidental-feeling UI placement.
+
+### Priority D: Architecture And Testability
+
+Tasks:
+- Replace `SwiftUI.Color` in the domain model with a domain-safe `LiquidColor` or `LiquidColorToken`.
+- Split `GameManager` into a pure game engine/state model and a SwiftUI-facing observable adapter.
+- Replace `DispatchQueue.main.asyncAfter` callbacks with cancellable task/scheduler or `Clock`-based orchestration.
+- Move progress persistence behind a `ProgressStore` protocol.
+- Add deterministic level generation/shuffling for testable future generated levels.
+- Expand tests around completion flow, level advance, delayed callback cancellation, and permanent bonus unlock across levels.
+- Clean Xcode project warnings and clarify resource policy for `Resources/Media` source assets.
+
+Why this matters:
+The current architecture supports MVP, but these changes reduce coupling before level count, monetization, and UI states grow.
+
+### Priority E: Apple HIG, Accessibility, And Device Coverage
+
+Tasks:
+- Build adaptive board layouts for compact portrait, small phones, regular iPad, and split view.
+- Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action.
+- Support Reduce Motion by replacing shake, pour, and sparkle animation with simpler state transitions when enabled.
+- Add non-color-only indicators for selected, hint, invalid, and completed states.
+- Replace fixed bonus sheet height with adaptive content sizing.
+- Audit contrast for glass, locked, disabled, selected, invalid, and hint states.
+- Add UI/snapshot checks for iPhone SE, standard iPhone, iPad, landscape/split-view where supported, and large Dynamic Type.
+
+Why this matters:
+The current screen is reachable and tappable, but production iOS quality needs stronger device and accessibility coverage.
+
 ### Milestone 1: Playable Cozy Core
 
 Goal:
