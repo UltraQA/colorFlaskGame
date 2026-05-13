@@ -717,6 +717,7 @@ Scope:
 - potion shelf collection;
 - future shop meta with customers who request special nectars, tinctures, potions, and other cozy potion orders;
 - optional shop decorations as long-term progression;
+- future achievement list, where perfect-level completion can exist as an optional mastery achievement;
 - herbs as soft currency;
 - optional rewarded ad;
 - permanent bonus flask unlock as a future IAP placeholder.
@@ -732,7 +733,7 @@ Owner:
 4. **Answered:** victory immediately moves to the next order/level for now; a separate level map is not needed for the current MVP.
 5. **Answered:** soft currency is called herbs, matching the potion shop and future order-crafting fantasy.
 6. **Answered:** permanent bonus flask unlock is a future IAP feature; for now it remains a design/code stub only.
-7. Do we need a perfect-level system without undo/hint, or would that create unnecessary pressure?
+7. **Answered:** no perfect-level pressure in MVP; perfect-level can return later as an optional achievement instead.
 8. **Answered:** late game can grow up to 8 colors; flask capacity should stay at 4 first, then optionally increase to 5 sections only in expert levels.
 9. **Answered:** yes, support iPad by scaling the current portrait layout/board for now; no separate iPad layout is needed in MVP.
 10. **Answered:** yes, as a future layer: customers can visit the shop and request special nectars, tinctures, potions, and other orders; potion shelf and decorations can support long-term progression.
