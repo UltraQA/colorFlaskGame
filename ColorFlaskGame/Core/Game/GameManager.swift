@@ -321,15 +321,18 @@ final class GameManager: ObservableObject {
     }
 
     func firstValidMove() -> PourPlan? {
-        for sourceIndex in flasks.indices {
-            for targetIndex in flasks.indices where sourceIndex != targetIndex {
-                if case let .success(plan) = pourPlan(from: sourceIndex, to: targetIndex) {
+        flasks.indices
+            .flatMap { sourceIndex in
+                flasks.indices.compactMap { targetIndex -> PourPlan? in
+                    guard sourceIndex != targetIndex,
+                          case let .success(plan) = pourPlan(from: sourceIndex, to: targetIndex) else {
+                        return nil
+                    }
+
                     return plan
                 }
             }
-        }
-
-        return nil
+            .max { hintScore(for: $0) < hintScore(for: $1) }
     }
 
     func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {
@@ -389,6 +392,32 @@ final class GameManager: ObservableObject {
         }
 
         return .success(plan.amount)
+    }
+
+    private func hintScore(for plan: PourPlan) -> Int {
+        let source = flasks[plan.sourceIndex]
+        let target = flasks[plan.targetIndex]
+        var score = plan.amount * 10
+
+        if source.isSolved && !source.isEmpty {
+            score -= 100
+        }
+
+        if target.isEmpty {
+            score -= 8
+        } else {
+            score += 35
+        }
+
+        if source.colors.count == plan.amount {
+            score += 12
+        }
+
+        if target.colors.count + plan.amount == Flask.maxCapacity {
+            score += 24
+        }
+
+        return score
     }
 
     private static let levelPalette: [Color] = [

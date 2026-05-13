@@ -49,6 +49,35 @@ final class GameManagerTests: XCTestCase {
         XCTAssertFalse(level.validationIssues.isEmpty)
     }
 
+    func testHintPrefersUsefulMoveOverBreakingSolvedFlask() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red, red, red, red]),
+                Flask(colors: [green, red]),
+                Flask(colors: [red])
+            ]
+        )
+
+        let plan = manager.firstValidMove()
+
+        XCTAssertNotEqual(plan?.sourceIndex, 0)
+    }
+
+    func testHintFallsBackToAnyValidMoveWhenOnlySolvedSourceCanMove() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [yellow, yellow, yellow, yellow]),
+                Flask(colors: [])
+            ]
+        )
+
+        let plan = manager.firstValidMove()
+
+        XCTAssertEqual(plan?.sourceIndex, 0)
+        XCTAssertEqual(plan?.targetIndex, 1)
+        XCTAssertEqual(plan?.amount, 4)
+    }
+
     func testPourIntoMatchingColorMovesOnlyContiguousTopRun() {
         let manager = GameManager(
             flasks: [
