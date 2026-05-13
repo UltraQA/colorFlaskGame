@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: HomeViewModel
     private let columns = 4
 
@@ -35,7 +36,9 @@ struct HomeView: View {
                     .disabled(!isFlaskTappable(flask))
                     .modifier(
                         InvalidMoveShakeEffect(
-                            shakes: viewModel.invalidFlaskIndices.contains(index) ? CGFloat(viewModel.invalidMoveCount) : 0
+                            shakes: !reduceMotion && viewModel.invalidFlaskIndices.contains(index)
+                                ? CGFloat(viewModel.invalidMoveCount)
+                                : 0
                         )
                     )
                     .position(flaskCenter(for: index, in: proxy.size, scale: layoutScale))
@@ -53,15 +56,16 @@ struct HomeView: View {
                         from: pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
                         to: pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
                         color: animation.color,
-                        scale: layoutScale
+                        scale: layoutScale,
+                        reduceMotion: reduceMotion
                     )
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(GameLayer.animation)
                 }
 
                 if viewModel.roundState == .completing {
-                    WinCelebrationView()
-                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    WinCelebrationView(reduceMotion: reduceMotion)
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
                         .zIndex(GameLayer.celebration)
                 }
             }
@@ -439,6 +443,8 @@ private struct GameIconButton: View {
 }
 
 private struct WinCelebrationView: View {
+    let reduceMotion: Bool
+
     private let sparkles: [Sparkle] = [
         Sparkle(x: 0.18, y: 0.26, size: 10, delay: 0.0),
         Sparkle(x: 0.34, y: 0.18, size: 7, delay: 0.18),
@@ -451,39 +457,49 @@ private struct WinCelebrationView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            TimelineView(.animation) { timeline in
-                Canvas { context, size in
-                    let time = timeline.date.timeIntervalSinceReferenceDate
-
-                    for sparkle in sparkles {
-                        let phase = (time + sparkle.delay).truncatingRemainder(dividingBy: 1.1) / 1.1
-                        let opacity = max(0, 1 - phase)
-                        let radius = sparkle.size * (0.8 + phase * 1.8)
-                        let center = CGPoint(
-                            x: size.width * sparkle.x,
-                            y: size.height * sparkle.y - phase * 34
-                        )
-
-                        var path = Path()
-                        path.addEllipse(
-                            in: CGRect(
-                                x: center.x - radius / 2,
-                                y: center.y - radius / 2,
-                                width: radius,
-                                height: radius
-                            )
-                        )
-
-                        context.fill(
-                            path,
-                            with: .color(GameColor.controlAccent.opacity(opacity * 0.9))
-                        )
-                    }
+            if reduceMotion {
+                sparkleCanvas(time: 0, in: proxy.size, isStatic: true)
+            } else {
+                TimelineView(.animation) { timeline in
+                    sparkleCanvas(
+                        time: timeline.date.timeIntervalSinceReferenceDate,
+                        in: proxy.size,
+                        isStatic: false
+                    )
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
         .allowsHitTesting(false)
+    }
+
+    private func sparkleCanvas(time: TimeInterval, in size: CGSize, isStatic: Bool) -> some View {
+        Canvas { context, canvasSize in
+            for sparkle in sparkles {
+                let phase = isStatic ? 0 : (time + sparkle.delay).truncatingRemainder(dividingBy: 1.1) / 1.1
+                let opacity = isStatic ? 0.72 : max(0, 1 - phase)
+                let radius = sparkle.size * (isStatic ? 1.2 : 0.8 + phase * 1.8)
+                let center = CGPoint(
+                    x: canvasSize.width * sparkle.x,
+                    y: canvasSize.height * sparkle.y - (isStatic ? 0 : phase * 34)
+                )
+
+                var path = Path()
+                path.addEllipse(
+                    in: CGRect(
+                        x: center.x - radius / 2,
+                        y: center.y - radius / 2,
+                        width: radius,
+                        height: radius
+                    )
+                )
+
+                context.fill(
+                    path,
+                    with: .color(GameColor.controlAccent.opacity(opacity * 0.9))
+                )
+            }
+        }
+        .frame(width: size.width, height: size.height)
     }
 
     private struct Sparkle {

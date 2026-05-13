@@ -12,6 +12,8 @@ enum FlaskVisualState: Equatable {
 }
 
 struct FlaskTubeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let flask: Flask
     let flaskIndex: Int
     let visualState: FlaskVisualState
@@ -85,7 +87,7 @@ struct FlaskTubeView: View {
             x: 0,
             y: visualState == .selected ? 12 : 10
         )
-        .animation(.snappy(duration: 0.2), value: visualState)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: visualState)
         .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Flask \(flaskIndex + 1)")

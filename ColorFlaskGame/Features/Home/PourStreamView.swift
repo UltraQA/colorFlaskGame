@@ -5,6 +5,7 @@ struct PourStreamView: View {
     let to: CGPoint
     let color: Color
     let scale: CGFloat
+    let reduceMotion: Bool
 
     @State private var progress: CGFloat = 0
 
@@ -27,6 +28,11 @@ struct PourStreamView: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .onAppear {
+            guard !reduceMotion else {
+                progress = 1
+                return
+            }
+
             withAnimation(.easeInOut(duration: 0.48)) {
                 progress = 1
             }
