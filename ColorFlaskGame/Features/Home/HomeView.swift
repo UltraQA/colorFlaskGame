@@ -10,6 +10,8 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            let layoutScale = layoutScale(in: proxy.size)
+
             ZStack {
                 gameBackground(in: proxy.size)
                     .zIndex(GameLayer.background)
@@ -22,6 +24,11 @@ struct HomeView: View {
                             flask: flask,
                             visualState: flaskVisualState(for: flask, at: index)
                         )
+                        .scaleEffect(layoutScale)
+                        .frame(
+                            width: GameMetric.flaskHitWidth * layoutScale,
+                            height: GameMetric.flaskHitHeight * layoutScale
+                        )
                     }
                     .buttonStyle(.plain)
                     .disabled(!isFlaskTappable(flask))
@@ -30,21 +37,22 @@ struct HomeView: View {
                             shakes: viewModel.invalidFlaskIndices.contains(index) ? CGFloat(viewModel.invalidMoveCount) : 0
                         )
                     )
-                    .position(flaskCenter(for: index, in: proxy.size))
+                    .position(flaskCenter(for: index, in: proxy.size, scale: layoutScale))
                     .zIndex(GameLayer.board)
                 }
 
-                topControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
+                topControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
                     .zIndex(GameLayer.controls)
 
-                bottomControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
+                bottomControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
                     .zIndex(GameLayer.controls)
 
                 if let animation = viewModel.pourAnimation {
                     PourStreamView(
-                        from: pourStartPoint(for: animation.sourceIndex, in: proxy.size),
-                        to: pourEndPoint(for: animation.targetIndex, in: proxy.size),
-                        color: animation.color
+                        from: pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
+                        to: pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
+                        color: animation.color,
+                        scale: layoutScale
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     .zIndex(GameLayer.animation)
@@ -75,7 +83,7 @@ struct HomeView: View {
     }
 
     private func gameBackground(in size: CGSize) -> some View {
-        ZStack {
+        return ZStack {
             GameColor.potionBackground
 
             Image("GameBackground")
@@ -88,7 +96,7 @@ struct HomeView: View {
         .ignoresSafeArea()
     }
 
-    private var resetButton: some View {
+    private func resetButton(scale: CGFloat) -> some View {
         Button {
             viewModel.startNewGame()
         } label: {
@@ -105,18 +113,28 @@ struct HomeView: View {
                     .zIndex(GameLayer.controls)
             }
             .frame(width: GameMetric.resetButtonWidth, height: GameMetric.resetButtonHeight)
+            .scaleEffect(scale)
+            .frame(
+                width: GameMetric.resetButtonWidth * scale,
+                height: GameMetric.resetButtonHeight * scale
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Reset")
     }
 
-    private func topControls(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
-        ZStack {
+    private func topControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
+        let scaledIconSize = GameMetric.iconButtonSize * scale
+        let controlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+
+        return ZStack {
             LevelBadge(levelNumber: viewModel.currentLevelNumber)
+                .scaleEffect(scale)
+                .frame(width: 118 * scale, height: 36 * scale)
                 .position(
                     x: size.width / 2,
-                    y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
+                    y: controlCenterY
                 )
 
             GameIconButton(
@@ -127,20 +145,25 @@ struct HomeView: View {
             ) {
                 viewModel.undo()
             }
+                .scaleEffect(scale)
+                .frame(width: scaledIconSize, height: scaledIconSize)
                 .position(
-                    x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
-                    y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
+                    x: size.width - GameMetric.horizontalInset * scale - scaledIconSize / 2,
+                    y: controlCenterY
                 )
                 .accessibilityLabel("Undo")
         }
     }
 
-    private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
-        ZStack {
-            resetButton
+    private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
+        let scaledIconSize = GameMetric.iconButtonSize * scale
+        let controlCenterY = bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+
+        return ZStack {
+            resetButton(scale: scale)
                 .position(
-                    x: GameMetric.horizontalInset + GameMetric.resetButtonWidth / 2,
-                    y: bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets)
+                    x: GameMetric.horizontalInset * scale + GameMetric.resetButtonWidth * scale / 2,
+                    y: controlCenterY
                 )
 
             GameIconButton(
@@ -151,9 +174,11 @@ struct HomeView: View {
             ) {
                 viewModel.showHint()
             }
+                .scaleEffect(scale)
+                .frame(width: scaledIconSize, height: scaledIconSize)
                 .position(
-                    x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
-                    y: bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets)
+                    x: size.width - GameMetric.horizontalInset * scale - scaledIconSize / 2,
+                    y: controlCenterY
                 )
                 .accessibilityLabel("Hint")
         }
@@ -192,32 +217,44 @@ struct HomeView: View {
         return flask.isPlayable || flask.isBonus
     }
 
-    private func flaskCenter(for index: Int, in size: CGSize) -> CGPoint {
+    private func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
         let column = index % columns
         let row = index / columns
-        let horizontalPadding: CGFloat = 18
+        let boardWidth = min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
+        let boardOriginX = (size.width - boardWidth) / 2
         let verticalCenter = size.height * 0.48
-        let cellWidth = (size.width - horizontalPadding * 2) / CGFloat(columns)
-        let rowSpacing: CGFloat = min(230, size.height * 0.26)
+        let cellWidth = boardWidth / CGFloat(columns)
+        let rowSpacing: CGFloat = min(230 * scale, size.height * 0.26)
 
         return CGPoint(
-            x: horizontalPadding + cellWidth * (CGFloat(column) + 0.5),
+            x: boardOriginX + cellWidth * (CGFloat(column) + 0.5),
             y: verticalCenter + (CGFloat(row) - 0.5) * rowSpacing
         )
     }
 
-    private func pourStartPoint(for index: Int, in size: CGSize) -> CGPoint {
-        let center = flaskCenter(for: index, in: size)
-        return CGPoint(x: center.x, y: center.y - 108)
+    private func pourStartPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
+        let center = flaskCenter(for: index, in: size, scale: scale)
+        return CGPoint(x: center.x, y: center.y - 108 * scale)
     }
 
-    private func pourEndPoint(for index: Int, in size: CGSize) -> CGPoint {
-        let center = flaskCenter(for: index, in: size)
-        return CGPoint(x: center.x, y: center.y - 92)
+    private func pourEndPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
+        let center = flaskCenter(for: index, in: size, scale: scale)
+        return CGPoint(x: center.x, y: center.y - 92 * scale)
     }
 
-    private func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets) -> CGFloat {
-        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset - GameMetric.iconButtonSize / 2
+    private func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
+        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.iconButtonSize * scale / 2
+    }
+
+    private func layoutScale(in size: CGSize) -> CGFloat {
+        guard size.width > GameMetric.baseBoardWidth || size.height > GameMetric.baseBoardHeight else {
+            return 1
+        }
+
+        return min(
+            GameMetric.maxLayoutScale,
+            min(size.width / GameMetric.baseBoardWidth, size.height / GameMetric.baseBoardHeight)
+        )
     }
 }
 

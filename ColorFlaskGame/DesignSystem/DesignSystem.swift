@@ -44,6 +44,9 @@ enum GameLayer {
 }
 
 enum GameMetric {
+    static let baseBoardWidth: CGFloat = 430
+    static let baseBoardHeight: CGFloat = 932
+    static let maxLayoutScale: CGFloat = 1.28
     static let flaskWidth: CGFloat = 78
     static let flaskHeight: CGFloat = 172
     static let flaskHitWidth: CGFloat = 104
