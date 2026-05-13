@@ -556,7 +556,7 @@ Overall state:
 ### Priority A: Fair Play And Puzzle Trust
 
 Tasks:
-- Add solvability validation for handcrafted levels without using the locked bonus flask.
+- Add solvability validation for handcrafted levels without using the locked bonus flask. **Done:** `LevelSolvabilityValidator` now produces a solvability report with minimum move count and visited state count.
 - Define whether levels 1-4 are tutorial exceptions or whether every visible level must always follow the full 5 + 2 + 1 structure.
 - Upgrade hint logic from local move ranking to a solution-aware or dead-end-aware hint path.
 - Add difficulty metrics per level: color count, minimum moves, buffer pressure, solution depth, and dead-end risk.

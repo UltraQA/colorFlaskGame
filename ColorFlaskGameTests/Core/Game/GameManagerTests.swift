@@ -33,6 +33,38 @@ final class GameManagerTests: XCTestCase {
         }
     }
 
+    func testHandcraftedLevelsAreSolvableWithoutBonusFlask() {
+        let repository = HandcraftedLevelRepository()
+        let validator = LevelSolvabilityValidator()
+
+        for level in repository.levels {
+            let report = validator.reportWithoutBonusFlask(level)
+
+            XCTAssertTrue(
+                report.isSolvable,
+                "Level \(level.id) must be solvable without the locked bonus flask. Visited \(report.visitedStateCount) states."
+            )
+            XCTAssertNotNil(report.minimumMoveCount)
+        }
+    }
+
+    func testSolvabilityReportRejectsInvalidLevel() {
+        let level = Level(
+            id: 100,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [red, red, red, red])
+            ],
+            availableEmptyFlaskCount: 1,
+            hasLockedBonusFlask: true
+        )
+        let report = LevelSolvabilityValidator().reportWithoutBonusFlask(level)
+
+        XCTAssertFalse(report.isSolvable)
+        XCTAssertNil(report.minimumMoveCount)
+        XCTAssertEqual(report.visitedStateCount, 0)
+    }
+
     func testInvalidLevelReportsValidationIssues() {
         let level = Level(
             id: 99,

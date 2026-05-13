@@ -199,6 +199,159 @@ struct LevelValidationIssue: Equatable {
     let message: String
 }
 
+struct LevelSolvabilityReport: Equatable {
+    let isSolvable: Bool
+    let minimumMoveCount: Int?
+    let visitedStateCount: Int
+}
+
+struct LevelSolvabilityValidator {
+    let maxVisitedStates: Int
+
+    init(maxVisitedStates: Int = 250_000) {
+        self.maxVisitedStates = maxVisitedStates
+    }
+
+    func canSolveWithoutBonusFlask(_ level: Level) -> Bool {
+        reportWithoutBonusFlask(level).isSolvable
+    }
+
+    func reportWithoutBonusFlask(_ level: Level) -> LevelSolvabilityReport {
+        guard level.isValid else {
+            return LevelSolvabilityReport(
+                isSolvable: false,
+                minimumMoveCount: nil,
+                visitedStateCount: 0
+            )
+        }
+
+        let flasks = level.filledFlasks.map(\.colors)
+            + Array(repeating: [], count: level.availableEmptyFlaskCount)
+        return solve(SolverState(flasks: flasks))
+    }
+
+    private func solve(_ initialState: SolverState) -> LevelSolvabilityReport {
+        if initialState.isSolved {
+            return LevelSolvabilityReport(
+                isSolvable: true,
+                minimumMoveCount: 0,
+                visitedStateCount: 1
+            )
+        }
+
+        var visited: Set<SolverState> = [initialState.normalized()]
+        var queue: [(state: SolverState, moveCount: Int)] = [
+            (initialState, 0)
+        ]
+        var nextQueueIndex = 0
+
+        while nextQueueIndex < queue.count && visited.count < maxVisitedStates {
+            let item = queue[nextQueueIndex]
+            nextQueueIndex += 1
+
+            for move in item.state.validMoves {
+                var nextState = item.state
+                nextState.apply(move)
+
+                let normalizedState = nextState.normalized()
+                guard visited.insert(normalizedState).inserted else { continue }
+
+                let nextMoveCount = item.moveCount + 1
+                if normalizedState.isSolved {
+                    return LevelSolvabilityReport(
+                        isSolvable: true,
+                        minimumMoveCount: nextMoveCount,
+                        visitedStateCount: visited.count
+                    )
+                }
+
+                queue.append((nextState, nextMoveCount))
+            }
+        }
+
+        return LevelSolvabilityReport(
+            isSolvable: false,
+            minimumMoveCount: nil,
+            visitedStateCount: visited.count
+        )
+    }
+}
+
+private struct SolverMove {
+    let sourceIndex: Int
+    let targetIndex: Int
+    let color: Color
+    let amount: Int
+}
+
+private struct SolverState: Hashable {
+    var flasks: [[Color]]
+
+    var isSolved: Bool {
+        flasks.allSatisfy { flask in
+            flask.isEmpty || (flask.count == Flask.maxCapacity && Set(flask).count == 1)
+        }
+    }
+
+    var validMoves: [SolverMove] {
+        flasks.indices.flatMap { sourceIndex in
+            flasks.indices.compactMap { targetIndex in
+                move(from: sourceIndex, to: targetIndex)
+            }
+        }
+    }
+
+    func normalized() -> SolverState {
+        let sortedFlasks = flasks.sorted { lhs, rhs in
+            Self.sortKey(for: lhs) < Self.sortKey(for: rhs)
+        }
+
+        return SolverState(flasks: sortedFlasks)
+    }
+
+    mutating func apply(_ move: SolverMove) {
+        flasks[move.sourceIndex].removeLast(move.amount)
+        flasks[move.targetIndex].append(
+            contentsOf: Array(repeating: move.color, count: move.amount)
+        )
+    }
+
+    private func move(from sourceIndex: Int, to targetIndex: Int) -> SolverMove? {
+        guard sourceIndex != targetIndex else { return nil }
+
+        let source = flasks[sourceIndex]
+        let target = flasks[targetIndex]
+
+        guard let sourceTopColor = source.last,
+              target.count < Flask.maxCapacity else {
+            return nil
+        }
+
+        if let targetTopColor = target.last, targetTopColor != sourceTopColor {
+            return nil
+        }
+
+        let sourceRunCount = source
+            .reversed()
+            .prefix { $0 == sourceTopColor }
+            .count
+        let amount = min(sourceRunCount, Flask.maxCapacity - target.count)
+
+        guard amount > 0 else { return nil }
+
+        return SolverMove(
+            sourceIndex: sourceIndex,
+            targetIndex: targetIndex,
+            color: sourceTopColor,
+            amount: amount
+        )
+    }
+
+    private static func sortKey(for flask: [Color]) -> String {
+        flask.map(String.init(describing:)).joined(separator: "|")
+    }
+}
+
 struct HandcraftedLevelRepository: LevelRepository {
     let levels: [Level]
 
