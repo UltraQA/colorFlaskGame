@@ -20,6 +20,35 @@ final class GameManagerTests: XCTestCase {
         XCTAssertFalse(bonusFlasks[0].isPlayable)
     }
 
+    func testHandcraftedLevelsPassValidation() {
+        let repository = HandcraftedLevelRepository()
+
+        XCTAssertFalse(repository.levels.isEmpty)
+
+        for level in repository.levels {
+            XCTAssertTrue(
+                level.isValid,
+                "Level \(level.id) has validation issues: \(level.validationIssues.map(\.message))"
+            )
+        }
+    }
+
+    func testInvalidLevelReportsValidationIssues() {
+        let level = Level(
+            id: 99,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [red, red]),
+                Flask(kind: .bonus, colors: [green, green, green, green])
+            ],
+            availableEmptyFlaskCount: 1,
+            hasLockedBonusFlask: false
+        )
+
+        XCTAssertFalse(level.isValid)
+        XCTAssertFalse(level.validationIssues.isEmpty)
+    }
+
     func testPourIntoMatchingColorMovesOnlyContiguousTopRun() {
         let manager = GameManager(
             flasks: [

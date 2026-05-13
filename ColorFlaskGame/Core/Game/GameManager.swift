@@ -123,6 +123,70 @@ struct Level: Identifiable, Equatable {
     let filledFlasks: [Flask]
     let availableEmptyFlaskCount: Int
     let hasLockedBonusFlask: Bool
+
+    var validationIssues: [LevelValidationIssue] {
+        var issues: [LevelValidationIssue] = []
+
+        if availableEmptyFlaskCount != GameManager.startingEmptyFlaskCount {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Level must start with \(GameManager.startingEmptyFlaskCount) available empty flasks."
+                )
+            )
+        }
+
+        if !hasLockedBonusFlask {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Level must include a locked bonus flask."
+                )
+            )
+        }
+
+        for (index, flask) in filledFlasks.enumerated() {
+            if flask.kind != .regular {
+                issues.append(
+                    LevelValidationIssue(
+                        levelID: id,
+                        message: "Filled flask \(index) must be regular."
+                    )
+                )
+            }
+
+            if !flask.isFull {
+                issues.append(
+                    LevelValidationIssue(
+                        levelID: id,
+                        message: "Filled flask \(index) must contain \(Flask.maxCapacity) sections."
+                    )
+                )
+            }
+        }
+
+        let colorCounts = filledFlasks
+            .flatMap(\.colors)
+            .reduce(into: [Color: Int]()) { counts, color in
+                counts[color, default: 0] += 1
+            }
+
+        for count in colorCounts.values where count != Flask.maxCapacity {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Every color must appear exactly \(Flask.maxCapacity) times."
+                )
+            )
+            break
+        }
+
+        return issues
+    }
+
+    var isValid: Bool {
+        validationIssues.isEmpty
+    }
 }
 
 protocol LevelRepository {
@@ -130,11 +194,20 @@ protocol LevelRepository {
     func level(at index: Int) -> Level
 }
 
+struct LevelValidationIssue: Equatable {
+    let levelID: Int
+    let message: String
+}
+
 struct HandcraftedLevelRepository: LevelRepository {
     let levels: [Level]
 
     init() {
         self.levels = Self.makeLevels()
+        precondition(
+            levels.allSatisfy(\.isValid),
+            "Handcrafted levels contain invalid data."
+        )
     }
 
     func level(at index: Int) -> Level {
