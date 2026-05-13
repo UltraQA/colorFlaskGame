@@ -33,6 +33,18 @@ final class GameManagerTests: XCTestCase {
         }
     }
 
+    func testLockedBonusFlaskIsIntroducedWhenLevelsBecomeHarder() {
+        let repository = HandcraftedLevelRepository()
+
+        for level in repository.levels {
+            XCTAssertEqual(
+                level.hasLockedBonusFlask,
+                level.id >= Level.lockedBonusIntroductionLevelID,
+                "Level \(level.id) has unexpected bonus flask availability."
+            )
+        }
+    }
+
     func testHandcraftedLevelsAreSolvableWithoutBonusFlask() {
         let repository = HandcraftedLevelRepository()
         let validator = LevelSolvabilityValidator()

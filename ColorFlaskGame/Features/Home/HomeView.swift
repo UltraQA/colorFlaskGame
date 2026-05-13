@@ -112,19 +112,27 @@ struct HomeView: View {
     }
 
     private func topControls(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
-        GameIconButton(
-            systemName: "arrow.uturn.backward",
-            title: "Undo",
-            style: .muted,
-            isEnabled: viewModel.canUndo
-        ) {
-            viewModel.undo()
+        ZStack {
+            LevelBadge(levelNumber: viewModel.currentLevelNumber)
+                .position(
+                    x: size.width / 2,
+                    y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
+                )
+
+            GameIconButton(
+                systemName: "arrow.uturn.backward",
+                title: "Undo",
+                style: .muted,
+                isEnabled: viewModel.canUndo
+            ) {
+                viewModel.undo()
+            }
+                .position(
+                    x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
+                    y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
+                )
+                .accessibilityLabel("Undo")
         }
-            .position(
-                x: size.width - GameMetric.horizontalInset - GameMetric.iconButtonSize / 2,
-                y: safeAreaInsets.top + GameMetric.topControlInset + GameMetric.iconButtonSize / 2
-            )
-            .accessibilityLabel("Undo")
     }
 
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
@@ -210,6 +218,29 @@ struct HomeView: View {
 
     private func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets) -> CGFloat {
         size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset - GameMetric.iconButtonSize / 2
+    }
+}
+
+private struct LevelBadge: View {
+    let levelNumber: Int
+
+    var body: some View {
+        Text("Level \(levelNumber)")
+            .font(DSTypography.headline)
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+            .frame(width: 118, height: 36)
+            .background {
+                Capsule()
+                    .fill(GameColor.controlSurface.opacity(0.84))
+                    .overlay(
+                        Capsule()
+                            .stroke(.white.opacity(0.12), lineWidth: 1)
+                    )
+            }
+            .shadow(color: .black.opacity(0.24), radius: 10, x: 0, y: 6)
+            .accessibilityLabel("Level \(levelNumber)")
     }
 }
 

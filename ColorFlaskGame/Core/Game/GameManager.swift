@@ -118,6 +118,8 @@ enum Difficulty: String, Equatable {
 }
 
 struct Level: Identifiable, Equatable {
+    static let lockedBonusIntroductionLevelID = 5
+
     let id: Int
     let difficulty: Difficulty
     let filledFlasks: [Flask]
@@ -136,11 +138,11 @@ struct Level: Identifiable, Equatable {
             )
         }
 
-        if !hasLockedBonusFlask {
+        if id >= Self.lockedBonusIntroductionLevelID && !hasLockedBonusFlask {
             issues.append(
                 LevelValidationIssue(
                     levelID: id,
-                    message: "Level must include a locked bonus flask."
+                    message: "Level \(Self.lockedBonusIntroductionLevelID)+ must include a locked bonus flask."
                 )
             )
         }
@@ -703,7 +705,7 @@ private extension HandcraftedLevelRepository {
                 Flask(colors: row.map { palette[$0] })
             },
             availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
-            hasLockedBonusFlask: true
+            hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID
         )
     }
 

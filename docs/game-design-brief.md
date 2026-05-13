@@ -17,24 +17,24 @@ The game should feel:
 Current round structure:
 - 5 filled flasks at start;
 - 2 empty flasks available immediately;
-- 1 locked bonus empty flask;
+- 1 locked bonus empty flask appears once levels become harder, starting at Level 5;
 - the locked flask can be opened by:
   - rewarded ad for the current round;
-  - permanent purchase, making it always available.
+  - future permanent purchase placeholder, making it always available once IAP is implemented.
 
-Total on screen: 8 flasks.
+Total on screen: 7 flasks before Level 5, then 8 flasks from Level 5 onward.
 
 ## Core Loop
 
 1. The player opens a potion shop order.
-2. The screen shows 5 filled flasks, 2 available empty flasks, and 1 locked bonus flask.
+2. The screen shows filled flasks, 2 available empty flasks, and, from Level 5 onward, 1 locked bonus flask.
 3. The player taps a source flask.
 4. The player taps a target flask.
 5. If the move is valid, liquid pours with a smooth animation.
 6. If the move is invalid, the game gives soft feedback without punishment.
 7. The player sorts liquids until every flask is either empty or full with one color.
 8. On victory, the game shows cozy feedback: bubbles, glow, and order completion.
-9. The player receives a small reward and moves to the next level.
+9. The player receives a small herbs reward and moves to the next level.
 
 The key fantasy: the player is not solving an abstract sorting puzzle, they are preparing clean potions for the shop.
 
@@ -44,7 +44,7 @@ The key fantasy: the player is not solving an abstract sorting puzzle, they are 
 
 - 5 filled flasks;
 - 2 empty flasks available immediately;
-- 1 locked bonus flask;
+- 1 locked bonus flask from Level 5 onward;
 - each flask capacity: 4 sections;
 - standard level color count: 5;
 - each color appears exactly 4 times.
@@ -57,7 +57,7 @@ The first levels should be handcrafted, not fully random. Their job is to teach 
 - 3 colors;
 - 3 filled flasks;
 - 2 empty flasks;
-- locked flask is visible but not needed;
+- locked bonus flask is not visible yet;
 - teaches source tap -> target tap.
 
 **Level 2**
@@ -78,6 +78,10 @@ The first levels should be handcrafted, not fully random. Their job is to teach 
 - 5 filled flasks;
 - 2 empty flasks;
 - full board without high difficulty.
+
+**Bonus Flask Introduction**
+- locked bonus flask is introduced as an optional extra buffer;
+- standard levels must still remain solvable without using it.
 
 **Level 5**
 - 5 colors;
@@ -126,6 +130,7 @@ The first levels should be handcrafted, not fully random. Their job is to teach 
 
 Increase difficulty through:
 - color count;
+- flask capacity / section count in later chapters;
 - shuffle intensity;
 - solution depth;
 - temporary pour count;
@@ -133,6 +138,22 @@ Increase difficulty through:
 - locked flask must not be required to solve normal levels.
 
 Bonus flask should be convenience, not a paywall. Do not design levels that force the player to watch an ad.
+
+Suggested long-term progression:
+
+| Stage | Levels | Colors | Flask capacity | Filled flasks | Available empty flasks | Goal |
+| --- | --- | --- | --- | --- | --- | --- |
+| Tutorial | 1-4 | 3-4 | 4 | 3-5 | 2 | Teach tapping, matching, and buffers |
+| Standard | 5-30 | 5 | 4 | 5 | 2 | Introduce locked bonus flask and normal puzzle rhythm |
+| Expanded | 31-80 | 6 | 4 | 6 | 2 | More planning without changing section size |
+| Advanced | 81-150 | 7 | 4 | 7 | 2-3 | Longer solve paths and higher buffer pressure |
+| Expert | 151+ | 8 | 5 | 8 | 3 | Bigger potion batches with five sections per color |
+
+Rule of thumb:
+- do not increase color count and flask capacity at the same time;
+- first introduce a new color count with familiar 4-section flasks;
+- only move to 5-section flasks once the player already understands 7-8 color puzzles;
+- each color must still appear exactly once per flask section count, for example 4 times in 4-section levels and 5 times in 5-section levels.
 
 ## Mechanics Priorities
 
@@ -191,7 +212,7 @@ Later:
 
 Economy:
 - first hint on each level is free;
-- extra hints can use soft currency;
+- extra hints can use herbs;
 - rewarded ad is acceptable only as an optional way to get a hint.
 
 ### Priority 4: Bonus Locked Flask
@@ -202,11 +223,11 @@ Bonus flask:
 - does not participate in moves until unlocked;
 - can be unlocked by:
   - rewarded ad for current round;
-  - permanent purchase.
+  - future permanent purchase placeholder.
 
 Behavior:
 - ad unlock lasts only until the current round ends;
-- permanent purchase makes bonus flask always available;
+- permanent purchase is a future IAP stub for now and will make the bonus flask always available once implemented;
 - temporary unlock resets when the level ends.
 
 Standard levels must remain solvable without the bonus flask.
@@ -242,6 +263,7 @@ Avoid:
 ### Screen Layout
 
 On the game screen:
+- top-center: current level number;
 - center: board with 8 flasks;
 - bottom-left: Reset;
 - top-right: Undo;
@@ -399,7 +421,7 @@ Add:
 - `unlockBonusFlaskPermanently()`;
 - `isBonusUnlockedPermanently`.
 
-For MVP, permanent state can live in `UserDefaults`.
+For MVP, permanent unlock is only a design/code stub and can live in `UserDefaults`.
 
 Rewarded ad:
 - use a stub for now;
@@ -535,7 +557,7 @@ Images/
 
 ## Review Snapshot - 2026-05-13
 
-The current build is a solid MVP foundation: the core Water Sort loop works, the game has a 5 + 2 + 1 locked bonus structure, undo/hint/reset are implemented, the first 10 handcrafted levels exist, and the main logic is covered by unit tests.
+The current build is a solid MVP foundation: the core Water Sort loop works, the game introduces the locked bonus flask from Level 5, undo/hint/reset are implemented, the first 10 handcrafted levels exist, and the main logic is covered by unit tests.
 
 Reviewer verdicts:
 - Hume (UI Designer): flask grid and potion readability are strong, but the current background and mixed button styles weaken the Cozy Potion Shop identity.
@@ -557,7 +579,7 @@ Overall state:
 
 Tasks:
 - Add solvability validation for handcrafted levels without using the locked bonus flask. **Done:** `LevelSolvabilityValidator` now produces a solvability report with minimum move count and visited state count.
-- Define whether levels 1-4 are tutorial exceptions or whether every visible level must always follow the full 5 + 2 + 1 structure.
+- Define whether levels 1-4 are tutorial exceptions or whether every visible level must always follow the full 5 + 2 + 1 structure. **Done:** levels 1-4 stay cleaner without the locked bonus flask; Level 5 introduces it when puzzles become more complex.
 - Upgrade hint logic from local move ranking to a solution-aware or dead-end-aware hint path.
 - Add difficulty metrics per level: color count, minimum moves, buffer pressure, solution depth, and dead-end risk.
 - Tune bonus flask introduction so it feels optional and not pay-to-win.
@@ -608,13 +630,14 @@ The current architecture supports MVP, but these changes reduce coupling before 
 ### Priority E: Apple HIG, Accessibility, And Device Coverage
 
 Tasks:
-- Build adaptive board layouts for compact portrait, small phones, regular iPad, and split view.
+- Build adaptive board layouts for compact portrait, standard portrait phones, and portrait iPad.
+- For MVP iPad support, scale the existing portrait board and controls instead of designing a separate iPad-specific screen.
 - Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action.
 - Support Reduce Motion by replacing shake, pour, and sparkle animation with simpler state transitions when enabled.
 - Add non-color-only indicators for selected, hint, invalid, and completed states.
 - Replace fixed bonus sheet height with adaptive content sizing.
 - Audit contrast for glass, locked, disabled, selected, invalid, and hint states.
-- Add UI/snapshot checks for iPhone SE, standard iPhone, iPad, landscape/split-view where supported, and large Dynamic Type.
+- Add UI/snapshot checks for iPhone SE, standard iPhone, portrait iPad, and large Dynamic Type.
 
 Why this matters:
 The current screen is reachable and tappable, but production iOS quality needs stronger device and accessibility coverage.
@@ -690,24 +713,26 @@ Goal:
 - add reasons to return without pressure.
 
 Scope:
-- daily gift;
+- daily herbs gift;
 - potion shelf collection;
-- soft currency;
+- future shop meta with customers who request special nectars, tinctures, potions, and other cozy potion orders;
+- optional shop decorations as long-term progression;
+- herbs as soft currency;
 - optional rewarded ad;
-- permanent bonus flask unlock.
+- permanent bonus flask unlock as a future IAP placeholder.
 
 Owner:
 - Ohm + Gibbs.
 
 ## Open Questions
 
-1. Should the locked bonus flask appear from Level 1, or be introduced later, for example on Level 5?
-2. Should the player see level number and order progress on the main screen, or keep the screen textless for now?
-3. Will the game be portrait-only?
-4. Do we need a separate level map, or should victory immediately move to the next order?
-5. What should soft currency be called: herbs, mana drops, stars, coins, or something else?
-6. Is permanent bonus flask unlock a future IAP feature, or only a design stub for now?
+1. **Answered:** the locked bonus flask is introduced later, starting at Level 5, when levels become more complex.
+2. **Answered:** show the current level number at the top of the main screen; it gives the player clear orientation without adding much visual noise.
+3. **Answered:** yes, the game is portrait-only.
+4. **Answered:** victory immediately moves to the next order/level for now; a separate level map is not needed for the current MVP.
+5. **Answered:** soft currency is called herbs, matching the potion shop and future order-crafting fantasy.
+6. **Answered:** permanent bonus flask unlock is a future IAP feature; for now it remains a design/code stub only.
 7. Do we need a perfect-level system without undo/hint, or would that create unnecessary pressure?
-8. What is the maximum number of colors in late game?
-9. Should we support iPad layout with a larger board?
-10. Do we want a shop meta: potion shelf, shop decorations, customers, and orders?
+8. **Answered:** late game can grow up to 8 colors; flask capacity should stay at 4 first, then optionally increase to 5 sections only in expert levels.
+9. **Answered:** yes, support iPad by scaling the current portrait layout/board for now; no separate iPad layout is needed in MVP.
+10. **Answered:** yes, as a future layer: customers can visit the shop and request special nectars, tinctures, potions, and other orders; potion shelf and decorations can support long-term progression.
