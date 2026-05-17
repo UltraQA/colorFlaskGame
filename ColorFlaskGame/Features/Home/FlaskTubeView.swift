@@ -18,30 +18,37 @@ struct FlaskTubeView: View {
     let flaskIndex: Int
     let visualState: FlaskVisualState
 
+    private var bottleImageWidth: CGFloat {
+        GameMetric.flaskHeight * 0.375
+    }
+
+    private var liquidColumnWidth: CGFloat {
+        bottleImageWidth - 12
+    }
+
+    private var liquidColumnHeight: CGFloat {
+        GameMetric.flaskHeight - 34
+    }
+
     private var sectionHeight: CGFloat {
-        (GameMetric.flaskHeight - GameMetric.liquidBottomInset * 2) / CGFloat(Flask.maxCapacity)
+        liquidColumnHeight / CGFloat(Flask.maxCapacity)
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 26)
-                .fill(flask.isPlayable ? GameColor.glassFill : GameColor.glassFill.opacity(0.62))
-                .overlay(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(flask.isPlayable ? 0.18 : 0.08),
-                            Color.white.opacity(0.02)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 26))
-                )
+            bottleGlow
 
             liquidStack
-                .clipShape(RoundedRectangle(cornerRadius: 22))
-                .padding(.horizontal, GameMetric.liquidInset)
-                .padding(.bottom, GameMetric.liquidBottomInset)
+                .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .padding(.bottom, 6)
+
+            Image("FlaskBottle")
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: bottleImageWidth, height: GameMetric.flaskHeight)
+                .opacity(flask.isPlayable ? 1 : 0.48)
 
             RoundedRectangle(cornerRadius: 26)
                 .stroke(
@@ -52,28 +59,6 @@ struct FlaskTubeView: View {
                         dash: flask.isPlayable ? [] : [8, 8]
                     )
                 )
-
-            RoundedRectangle(cornerRadius: 18)
-                .fill(GameColor.glassHighlight)
-                .frame(width: 9)
-                .padding(.leading, 12)
-                .padding(.top, 18)
-                .padding(.bottom, 22)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Capsule()
-                .fill(Color.white.opacity(0.52))
-                .frame(width: 34, height: 7)
-                .padding(.top, 12)
-                .padding(.leading, 26)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-
-            Circle()
-                .fill(Color.white.opacity(0.48))
-                .frame(width: 12, height: 12)
-                .padding(.top, 11)
-                .padding(.leading, 10)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             if !flask.isPlayable {
                 lockedOverlay
@@ -95,6 +80,14 @@ struct FlaskTubeView: View {
         .accessibilityLabel("Flask \(flaskIndex + 1)")
         .accessibilityValue(accessibilityValue)
         .accessibilityHint(accessibilityHint)
+    }
+
+    private var bottleGlow: some View {
+        RoundedRectangle(cornerRadius: 25)
+            .fill(flask.isPlayable ? GameColor.glassFill.opacity(0.72) : GameColor.glassFill.opacity(0.34))
+            .frame(width: bottleImageWidth - 4, height: GameMetric.flaskHeight - 10)
+            .padding(.bottom, 2)
+            .blur(radius: 1.2)
     }
 
     private var liquidStack: some View {

@@ -59,8 +59,6 @@ struct HomeViewModelTiming: Equatable {
 }
 
 final class HomeViewModel: ObservableObject {
-    private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
-    private static let currentLevelIndexKey = "waterSort.progress.currentLevelIndex"
     static let victoryMessages = [
         "Fantastic!",
         "Yaaay!",
@@ -87,7 +85,7 @@ final class HomeViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
     private let levelRepository: any LevelRepository
-    private let userDefaults: UserDefaults
+    private var progressStore: any ProgressStore
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
@@ -95,6 +93,7 @@ final class HomeViewModel: ObservableObject {
     init(
         gameManager: GameManager? = nil,
         levelRepository: any LevelRepository = HandcraftedLevelRepository(),
+        progressStore: (any ProgressStore)? = nil,
         userDefaults: UserDefaults = .standard,
         currentLevelIndex: Int? = nil,
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
@@ -104,11 +103,12 @@ final class HomeViewModel: ObservableObject {
         }
     ) {
         self.levelRepository = levelRepository
-        self.userDefaults = userDefaults
+        let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore(userDefaults: userDefaults)
+        self.progressStore = resolvedProgressStore
         self.timing = timing
         self.victoryMessageProvider = victoryMessageProvider
-        let resolvedLevelIndex = currentLevelIndex ?? userDefaults.integer(forKey: Self.currentLevelIndexKey)
-        let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? userDefaults.bool(forKey: Self.bonusFlaskPurchaseKey)
+        let resolvedLevelIndex = currentLevelIndex ?? resolvedProgressStore.currentLevelIndex
+        let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? resolvedProgressStore.isBonusFlaskPermanentlyUnlocked
         self.currentLevelIndex = resolvedLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = resolvedBonusUnlock
         self.gameManager = gameManager ?? .makeInitialLevel(
@@ -225,7 +225,7 @@ final class HomeViewModel: ObservableObject {
         history.removeAll()
         moves = 0
         currentLevelIndex = levelIndex
-        userDefaults.set(levelIndex, forKey: Self.currentLevelIndexKey)
+        progressStore.currentLevelIndex = levelIndex
         gameManager = .makeInitialLevel(
             levelIndex: levelIndex,
             levelRepository: levelRepository,
@@ -250,7 +250,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         hintMove = nil
         isBonusFlaskPermanentlyUnlocked = true
-        userDefaults.set(true, forKey: Self.bonusFlaskPurchaseKey)
+        progressStore.isBonusFlaskPermanentlyUnlocked = true
         gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
     }

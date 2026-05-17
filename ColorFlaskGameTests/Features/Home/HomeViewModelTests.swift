@@ -61,6 +61,41 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
     }
 
+    func testProgressStoreSeedsInitialLevelAndPermanentBonusUnlock() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 4,
+            isBonusFlaskPermanentlyUnlocked: true
+        )
+
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(viewModel.currentLevelIndex, 4)
+        XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
+    }
+
+    func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.advanceToNextLevel()
+        viewModel.unlockBonusFlaskPermanently()
+
+        XCTAssertEqual(progressStore.currentLevelIndex, 1)
+        XCTAssertTrue(progressStore.isBonusFlaskPermanentlyUnlocked)
+    }
+
     func testValidTapFlowAnimatesPourAndEnablesUndo() async {
         let viewModel = makeViewModel(
             flasks: [
@@ -246,6 +281,16 @@ private struct SingleLevelRepository: LevelRepository {
     ]
 
     func level(at index: Int) -> Level {
-        levels[index]
+        levels[index % levels.count]
+    }
+}
+
+private final class SpyProgressStore: ProgressStore {
+    var currentLevelIndex: Int
+    var isBonusFlaskPermanentlyUnlocked: Bool
+
+    init(currentLevelIndex: Int, isBonusFlaskPermanentlyUnlocked: Bool) {
+        self.currentLevelIndex = currentLevelIndex
+        self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
     }
 }
