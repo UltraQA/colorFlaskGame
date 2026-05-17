@@ -95,6 +95,23 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(progressStore.isBonusFlaskPermanentlyUnlocked)
     }
 
+    func testPermanentBonusUnlockCarriesIntoNextLevel() {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+
+        viewModel.unlockBonusFlaskPermanently()
+        viewModel.advanceToNextLevel()
+
+        XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertTrue(viewModel.gameManager.flasks.last?.isBonus == true)
+        XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
+    }
+
     func testValidTapFlowAnimatesPourAndEnablesUndo() async {
         let viewModel = makeViewModel(
             flasks: [
