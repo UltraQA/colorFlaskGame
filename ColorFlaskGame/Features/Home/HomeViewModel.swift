@@ -47,7 +47,7 @@ struct HomeViewModelTiming: Equatable {
 
     static let live = HomeViewModelTiming(
         pourAnimationDuration: 0.55,
-        completionDuration: 1.55,
+        completionDuration: 3.1,
         invalidFeedbackDuration: 0.32
     )
 
