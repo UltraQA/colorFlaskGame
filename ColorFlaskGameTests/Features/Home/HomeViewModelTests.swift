@@ -237,6 +237,57 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
+    func testStartNewGameCancelsPendingPourAnimation() async {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0.25,
+                completionDuration: 0,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        XCTAssertNotNil(viewModel.pourAnimation)
+
+        viewModel.startNewGame()
+        let resetFlasks = viewModel.gameManager.flasks
+        await waitForScheduledMainQueueWork(nanoseconds: 350_000_000)
+
+        XCTAssertEqual(viewModel.gameManager.flasks, resetFlasks)
+        XCTAssertNil(viewModel.pourAnimation)
+        XCTAssertEqual(viewModel.moves, 0)
+    }
+
+    func testStartNewGameCancelsPendingCompletionAdvance() async {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [red, red, red])
+            ],
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 0.35,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+        XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
+
+        viewModel.startNewGame()
+        await waitForScheduledMainQueueWork(nanoseconds: 450_000_000)
+
+        XCTAssertEqual(viewModel.currentLevelIndex, 0)
+        XCTAssertEqual(viewModel.completionPhase, .playing)
+    }
+
     private func makeViewModel(
         flasks: [Flask],
         userDefaults: UserDefaults? = nil,

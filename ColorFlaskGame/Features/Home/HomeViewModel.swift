@@ -58,8 +58,9 @@ struct HomeViewModelTiming: Equatable {
     )
 }
 
+@MainActor
 final class HomeViewModel: ObservableObject {
-    static let victoryMessages = [
+    nonisolated static let victoryMessages = [
         "Fantastic!",
         "Yaaay!",
         "You did it!",
@@ -89,6 +90,9 @@ final class HomeViewModel: ObservableObject {
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
+    private var pourAnimationTask: Task<Void, Never>?
+    private var invalidFeedbackTask: Task<Void, Never>?
+    private var completionTasks: [Task<Void, Never>] = []
 
     init(
         gameManager: GameManager? = nil,
@@ -214,6 +218,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func loadLevel(at levelIndex: Int) {
+        cancelScheduledWork()
         selectedFlaskIndex = nil
         pourAnimation = nil
         hintMove = nil
@@ -256,6 +261,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func animatePour(_ plan: PourPlan) {
+        pourAnimationTask?.cancel()
         selectedFlaskIndex = nil
         hintMove = nil
         invalidFlaskIndices.removeAll()
@@ -266,8 +272,9 @@ final class HomeViewModel: ObservableObject {
             color: plan.color
         )
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + timing.pourAnimationDuration) { [weak self] in
+        pourAnimationTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            guard await self.sleep(for: self.timing.pourAnimationDuration) else { return }
 
             withAnimation(.snappy(duration: 0.25)) {
                 if case .success = self.gameManager.pour(from: plan.sourceIndex, to: plan.targetIndex) {
@@ -281,13 +288,17 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func showInvalidMoveFeedback(sourceIndex: Int, targetIndex: Int) {
+        invalidFeedbackTask?.cancel()
         invalidFlaskIndices = [sourceIndex, targetIndex]
         withAnimation(.linear(duration: timing.invalidFeedbackDuration)) {
             invalidMoveCount += 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + timing.invalidFeedbackDuration) { [weak self] in
-            self?.invalidFlaskIndices.removeAll()
+        invalidFeedbackTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard await self.sleep(for: self.timing.invalidFeedbackDuration) else { return }
+
+            self.invalidFlaskIndices.removeAll()
         }
     }
 
@@ -301,13 +312,17 @@ final class HomeViewModel: ObservableObject {
             completionPhase = .transitioningToNextLevel
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + nextLevelTransitionDuration) { [weak self] in
+        cancelCompletionTasks()
+        let transitionTask = Task { @MainActor [weak self] in
             guard let self, self.completionSequenceID == sequenceID else { return }
+            guard await self.sleep(for: self.nextLevelTransitionDuration),
+                  self.completionSequenceID == sequenceID else { return }
 
             withAnimation(.easeOut(duration: 0.25)) {
                 self.advanceToNextLevel()
             }
         }
+        completionTasks = [transitionTask]
     }
 
     private func completeRoundIfNeeded() {
@@ -320,29 +335,36 @@ final class HomeViewModel: ObservableObject {
         let sequenceID = completionSequenceID
         completionPhase = .resolvingWin
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + microCelebrationDuration) { [weak self] in
-            guard let self, self.completionSequenceID == sequenceID else { return }
+        cancelCompletionTasks()
+        completionTasks = [
+            Task { @MainActor [weak self] in
+                guard let self, self.completionSequenceID == sequenceID else { return }
+                guard await self.sleep(for: self.microCelebrationDuration),
+                      self.completionSequenceID == sequenceID else { return }
 
-            withAnimation(.easeOut(duration: 0.22)) {
-                self.completionPhase = .celebrating
+                withAnimation(.easeOut(duration: 0.22)) {
+                    self.completionPhase = .celebrating
+                }
+            },
+            Task { @MainActor [weak self] in
+                guard let self, self.completionSequenceID == sequenceID else { return }
+                guard await self.sleep(for: self.microCelebrationDuration + self.messageVisibleDuration),
+                      self.completionSequenceID == sequenceID else { return }
+
+                withAnimation(.easeOut(duration: 0.2)) {
+                    self.completionPhase = .transitioningToNextLevel
+                }
+            },
+            Task { @MainActor [weak self] in
+                guard let self, self.completionSequenceID == sequenceID else { return }
+                guard await self.sleep(for: self.timing.completionDuration),
+                      self.completionSequenceID == sequenceID else { return }
+
+                withAnimation(.easeOut(duration: 0.25)) {
+                    self.advanceToNextLevel()
+                }
             }
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + microCelebrationDuration + messageVisibleDuration) { [weak self] in
-            guard let self, self.completionSequenceID == sequenceID else { return }
-
-            withAnimation(.easeOut(duration: 0.2)) {
-                self.completionPhase = .transitioningToNextLevel
-            }
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + timing.completionDuration) { [weak self] in
-            guard let self, self.completionSequenceID == sequenceID else { return }
-
-            withAnimation(.easeOut(duration: 0.25)) {
-                self.advanceToNextLevel()
-            }
-        }
+        ]
     }
 
     private var microCelebrationDuration: TimeInterval {
@@ -367,5 +389,31 @@ final class HomeViewModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+    }
+
+    private func cancelScheduledWork() {
+        pourAnimationTask?.cancel()
+        pourAnimationTask = nil
+        invalidFeedbackTask?.cancel()
+        invalidFeedbackTask = nil
+        cancelCompletionTasks()
+    }
+
+    private func cancelCompletionTasks() {
+        completionTasks.forEach { $0.cancel() }
+        completionTasks.removeAll()
+    }
+
+    private func sleep(for duration: TimeInterval) async -> Bool {
+        guard duration > 0 else {
+            return !Task.isCancelled
+        }
+
+        do {
+            try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            return !Task.isCancelled
+        } catch {
+            return false
+        }
     }
 }
