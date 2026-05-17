@@ -419,90 +419,13 @@ struct HandcraftedLevelRepository: LevelRepository {
     }
 }
 
-final class GameManager: ObservableObject {
-    static let defaultFilledFlaskCount = 5
-    static let startingEmptyFlaskCount = 2
-    static let bonusEmptyFlaskCount = 1
-    static let defaultFlaskCount = defaultFilledFlaskCount + startingEmptyFlaskCount + bonusEmptyFlaskCount
-
-    @Published private(set) var flasks: [Flask]
+struct GameState: Equatable {
+    private(set) var flasks: [Flask]
     let level: Level?
 
     init(flasks: [Flask], level: Level? = nil) {
         self.flasks = flasks
         self.level = level
-    }
-
-    static func makeInitialLevel(
-        filledFlaskCount: Int? = nil,
-        levelIndex: Int = 0,
-        levelRepository: LevelRepository = HandcraftedLevelRepository(),
-        isBonusFlaskUnlocked: Bool = false,
-        generatedLevelSeed: UInt64? = nil
-    ) -> GameManager {
-        if let filledFlaskCount {
-            return makeGeneratedLevel(
-                filledFlaskCount: filledFlaskCount,
-                isBonusFlaskUnlocked: isBonusFlaskUnlocked,
-                seed: generatedLevelSeed ?? UInt64(levelIndex + 1)
-            )
-        }
-
-        let level = levelRepository.level(at: levelIndex)
-        return GameManager(
-            flasks: makeFlasks(from: level, isBonusFlaskUnlocked: isBonusFlaskUnlocked),
-            level: level
-        )
-    }
-
-    private static func makeGeneratedLevel(
-        filledFlaskCount: Int = defaultFilledFlaskCount,
-        isBonusFlaskUnlocked: Bool = false,
-        seed: UInt64
-    ) -> GameManager {
-        precondition(filledFlaskCount > 0, "Level must contain at least one filled flask")
-
-        let colorCount = filledFlaskCount
-        let colors = Array(levelPalette.prefix(colorCount))
-        precondition(colors.count == colorCount, "Not enough colors in level palette")
-
-        let sections = colors.flatMap { color in
-            Array(repeating: color, count: Flask.maxCapacity)
-        }
-
-        var randomNumberGenerator = SeededRandomNumberGenerator(seed: seed)
-        var flasks = sections
-            .shuffled(using: &randomNumberGenerator)
-            .chunked(into: Flask.maxCapacity)
-            .map { Flask(colors: $0) }
-
-        flasks.append(contentsOf: (0..<startingEmptyFlaskCount).map { _ in Flask() })
-        flasks.append(
-            Flask(
-                kind: .bonus,
-                colors: [],
-                isUnlocked: isBonusFlaskUnlocked
-            )
-        )
-
-        return GameManager(flasks: flasks)
-    }
-
-    private static func makeFlasks(from level: Level, isBonusFlaskUnlocked: Bool) -> [Flask] {
-        var flasks = level.filledFlasks
-        flasks.append(contentsOf: (0..<level.availableEmptyFlaskCount).map { _ in Flask() })
-
-        if level.hasLockedBonusFlask {
-            flasks.append(
-                Flask(
-                    kind: .bonus,
-                    colors: [],
-                    isUnlocked: isBonusFlaskUnlocked
-                )
-            )
-        }
-
-        return flasks
     }
 
     var isRoundCompleted: Bool {
@@ -515,11 +438,11 @@ final class GameManager: ObservableObject {
         flasks.filter(\.isPlayable)
     }
 
-    func restore(flasks: [Flask]) {
+    mutating func restore(flasks: [Flask]) {
         self.flasks = flasks
     }
 
-    func unlockBonusFlaskForCurrentRound() {
+    mutating func unlockBonusFlaskForCurrentRound() {
         guard let bonusIndex = flasks.firstIndex(where: { $0.isBonus }) else { return }
         flasks[bonusIndex].unlock()
     }
@@ -584,7 +507,7 @@ final class GameManager: ObservableObject {
     }
 
     @discardableResult
-    func pour(from sourceIndex: Int, to targetIndex: Int) -> Result<Int, PourError> {
+    mutating func pour(from sourceIndex: Int, to targetIndex: Int) -> Result<Int, PourError> {
         let planResult = pourPlan(from: sourceIndex, to: targetIndex)
         guard case let .success(plan) = planResult else {
             return planResult.map(\.amount)
@@ -623,6 +546,141 @@ final class GameManager: ObservableObject {
 
         return score
     }
+}
+
+final class GameManager: ObservableObject {
+    static let defaultFilledFlaskCount = 5
+    static let startingEmptyFlaskCount = 2
+    static let bonusEmptyFlaskCount = 1
+    static let defaultFlaskCount = defaultFilledFlaskCount + startingEmptyFlaskCount + bonusEmptyFlaskCount
+
+    @Published private var state: GameState
+
+    var flasks: [Flask] {
+        state.flasks
+    }
+
+    var level: Level? {
+        state.level
+    }
+
+    init(state: GameState) {
+        self.state = state
+    }
+
+    convenience init(flasks: [Flask], level: Level? = nil) {
+        self.init(state: GameState(flasks: flasks, level: level))
+    }
+
+    static func makeInitialLevel(
+        filledFlaskCount: Int? = nil,
+        levelIndex: Int = 0,
+        levelRepository: LevelRepository = HandcraftedLevelRepository(),
+        isBonusFlaskUnlocked: Bool = false,
+        generatedLevelSeed: UInt64? = nil
+    ) -> GameManager {
+        if let filledFlaskCount {
+            return makeGeneratedLevel(
+                filledFlaskCount: filledFlaskCount,
+                isBonusFlaskUnlocked: isBonusFlaskUnlocked,
+                seed: generatedLevelSeed ?? UInt64(levelIndex + 1)
+            )
+        }
+
+        let level = levelRepository.level(at: levelIndex)
+        return GameManager(
+            state: GameState(
+                flasks: makeFlasks(from: level, isBonusFlaskUnlocked: isBonusFlaskUnlocked),
+                level: level
+            )
+        )
+    }
+
+    private static func makeGeneratedLevel(
+        filledFlaskCount: Int = defaultFilledFlaskCount,
+        isBonusFlaskUnlocked: Bool = false,
+        seed: UInt64
+    ) -> GameManager {
+        precondition(filledFlaskCount > 0, "Level must contain at least one filled flask")
+
+        let colorCount = filledFlaskCount
+        let colors = Array(levelPalette.prefix(colorCount))
+        precondition(colors.count == colorCount, "Not enough colors in level palette")
+
+        let sections = colors.flatMap { color in
+            Array(repeating: color, count: Flask.maxCapacity)
+        }
+
+        var randomNumberGenerator = SeededRandomNumberGenerator(seed: seed)
+        var flasks = sections
+            .shuffled(using: &randomNumberGenerator)
+            .chunked(into: Flask.maxCapacity)
+            .map { Flask(colors: $0) }
+
+        flasks.append(contentsOf: (0..<startingEmptyFlaskCount).map { _ in Flask() })
+        flasks.append(
+            Flask(
+                kind: .bonus,
+                colors: [],
+                isUnlocked: isBonusFlaskUnlocked
+            )
+        )
+
+        return GameManager(state: GameState(flasks: flasks))
+    }
+
+    private static func makeFlasks(from level: Level, isBonusFlaskUnlocked: Bool) -> [Flask] {
+        var flasks = level.filledFlasks
+        flasks.append(contentsOf: (0..<level.availableEmptyFlaskCount).map { _ in Flask() })
+
+        if level.hasLockedBonusFlask {
+            flasks.append(
+                Flask(
+                    kind: .bonus,
+                    colors: [],
+                    isUnlocked: isBonusFlaskUnlocked
+                )
+            )
+        }
+
+        return flasks
+    }
+
+    var isRoundCompleted: Bool {
+        state.isRoundCompleted
+    }
+
+    var playableFlasks: [Flask] {
+        state.playableFlasks
+    }
+
+    func restore(flasks: [Flask]) {
+        updateState { state in
+            state.restore(flasks: flasks)
+        }
+    }
+
+    func unlockBonusFlaskForCurrentRound() {
+        updateState { state in
+            state.unlockBonusFlaskForCurrentRound()
+        }
+    }
+
+    func firstValidMove() -> PourPlan? {
+        state.firstValidMove()
+    }
+
+    func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {
+        state.pourPlan(from: sourceIndex, to: targetIndex)
+    }
+
+    @discardableResult
+    func pour(from sourceIndex: Int, to targetIndex: Int) -> Result<Int, PourError> {
+        var nextState = state
+        let result = nextState.pour(from: sourceIndex, to: targetIndex)
+        state = nextState
+        return result
+    }
 
     private static let levelPalette: [LiquidColor] = [
         .ruby,
@@ -634,6 +692,12 @@ final class GameManager: ObservableObject {
         .rose,
         .aqua
     ]
+
+    private func updateState(_ transform: (inout GameState) -> Void) {
+        var nextState = state
+        transform(&nextState)
+        state = nextState
+    }
 }
 
 private struct SeededRandomNumberGenerator: RandomNumberGenerator {

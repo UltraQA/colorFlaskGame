@@ -138,6 +138,21 @@ final class GameManagerTests: XCTestCase {
         XCTAssertNotEqual(plan?.sourceIndex, 0)
     }
 
+    func testGameStatePoursWithoutObservableAdapter() {
+        var state = GameState(
+            flasks: [
+                Flask(colors: [red, blue, blue]),
+                Flask(colors: [blue])
+            ]
+        )
+
+        let result = state.pour(from: 0, to: 1)
+
+        XCTAssertEqual(result, .success(2))
+        XCTAssertEqual(state.flasks[0].colors, [red])
+        XCTAssertEqual(state.flasks[1].colors, [blue, blue, blue])
+    }
+
     func testHintFallsBackToAnyValidMoveWhenOnlySolvedSourceCanMove() {
         let manager = GameManager(
             flasks: [
