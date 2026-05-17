@@ -638,7 +638,7 @@ Tasks:
 - Done: flask states now include non-color-only indicators for selected, hint source, hint target, invalid, and completed states.
 - Done: bonus unlock sheet now measures content height and adapts layout for larger text.
 - Done: contrast audit pass increased glass, locked, disabled, selected, invalid, hint, and completed-state readability.
-- Add UI/snapshot checks for iPhone SE, standard iPhone, portrait iPad, and large Dynamic Type.
+- Started: layout regression tests now cover compact portrait phone, standard portrait phone, portrait iPad scaling, and safe-area bottom controls. Full visual snapshot coverage is still a future UI-test target task.
 
 Why this matters:
 The current screen is reachable and tappable, but production iOS quality needs stronger device and accessibility coverage.

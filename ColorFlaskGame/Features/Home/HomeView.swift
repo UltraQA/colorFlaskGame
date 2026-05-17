@@ -4,7 +4,7 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: HomeViewModel
     @State private var bonusSheetHeight: CGFloat = 260
-    private let columns = 4
+    private let layout = HomeLayout()
 
     init(viewModel: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -12,7 +12,7 @@ struct HomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let layoutScale = layoutScale(in: proxy.size)
+            let layoutScale = layout.scale(in: proxy.size)
 
             ZStack {
                 gameBackground(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
@@ -44,7 +44,7 @@ struct HomeView: View {
                     )
                     .blur(radius: gameSurfaceBlurRadius)
                     .opacity(gameSurfaceOpacity)
-                    .position(flaskCenter(for: index, in: proxy.size, scale: layoutScale))
+                    .position(layout.flaskCenter(for: index, in: proxy.size, scale: layoutScale))
                     .zIndex(GameLayer.board)
                 }
 
@@ -62,8 +62,8 @@ struct HomeView: View {
 
                 if let animation = viewModel.pourAnimation {
                     PourStreamView(
-                        from: pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
-                        to: pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
+                        from: layout.pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
+                        to: layout.pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
                         color: animation.color,
                         scale: layoutScale,
                         reduceMotion: reduceMotion
@@ -204,7 +204,7 @@ struct HomeView: View {
 
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let scaledIconSize = GameMetric.iconButtonSize * scale
-        let controlCenterY = bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
 
         return ZStack {
             resetButton(scale: scale, isEnabled: viewModel.canInteractWithBoard)
@@ -264,45 +264,6 @@ struct HomeView: View {
         return flask.isPlayable || flask.isBonus
     }
 
-    private func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
-        let column = index % columns
-        let row = index / columns
-        let boardWidth = min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
-        let boardOriginX = (size.width - boardWidth) / 2
-        let verticalCenter = size.height * 0.48
-        let cellWidth = boardWidth / CGFloat(columns)
-        let rowSpacing: CGFloat = min(230 * scale, size.height * 0.26)
-
-        return CGPoint(
-            x: boardOriginX + cellWidth * (CGFloat(column) + 0.5),
-            y: verticalCenter + (CGFloat(row) - 0.5) * rowSpacing
-        )
-    }
-
-    private func pourStartPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
-        let center = flaskCenter(for: index, in: size, scale: scale)
-        return CGPoint(x: center.x, y: center.y - 108 * scale)
-    }
-
-    private func pourEndPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
-        let center = flaskCenter(for: index, in: size, scale: scale)
-        return CGPoint(x: center.x, y: center.y - 92 * scale)
-    }
-
-    private func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
-        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.iconButtonSize * scale / 2
-    }
-
-    private func layoutScale(in size: CGSize) -> CGFloat {
-        guard size.width > GameMetric.baseBoardWidth || size.height > GameMetric.baseBoardHeight else {
-            return 1
-        }
-
-        return min(
-            GameMetric.maxLayoutScale,
-            min(size.width / GameMetric.baseBoardWidth, size.height / GameMetric.baseBoardHeight)
-        )
-    }
 }
 
 private struct LevelBadge: View {
