@@ -621,7 +621,7 @@ Tasks:
 - Split `GameManager` into a pure game engine/state model and a SwiftUI-facing observable adapter.
 - Replace `DispatchQueue.main.asyncAfter` callbacks with cancellable task/scheduler or `Clock`-based orchestration.
 - Move progress persistence behind a `ProgressStore` protocol. **Done:** `HomeViewModel` now depends on a persistence abstraction while `UserDefaults` stays behind `UserDefaultsProgressStore`.
-- Add deterministic level generation/shuffling for testable future generated levels.
+- Add deterministic level generation/shuffling for testable future generated levels. **Done:** generated levels now accept a stable seed and use deterministic shuffling.
 - Expand tests around completion flow, level advance, delayed callback cancellation, and permanent bonus unlock across levels.
 - Clean Xcode project warnings and clarify resource policy for `Resources/Media` source assets.
 

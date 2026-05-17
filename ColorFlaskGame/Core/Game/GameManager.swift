@@ -392,12 +392,14 @@ final class GameManager: ObservableObject {
         filledFlaskCount: Int? = nil,
         levelIndex: Int = 0,
         levelRepository: LevelRepository = HandcraftedLevelRepository(),
-        isBonusFlaskUnlocked: Bool = false
+        isBonusFlaskUnlocked: Bool = false,
+        generatedLevelSeed: UInt64? = nil
     ) -> GameManager {
         if let filledFlaskCount {
             return makeGeneratedLevel(
                 filledFlaskCount: filledFlaskCount,
-                isBonusFlaskUnlocked: isBonusFlaskUnlocked
+                isBonusFlaskUnlocked: isBonusFlaskUnlocked,
+                seed: generatedLevelSeed ?? UInt64(levelIndex + 1)
             )
         }
 
@@ -410,7 +412,8 @@ final class GameManager: ObservableObject {
 
     private static func makeGeneratedLevel(
         filledFlaskCount: Int = defaultFilledFlaskCount,
-        isBonusFlaskUnlocked: Bool = false
+        isBonusFlaskUnlocked: Bool = false,
+        seed: UInt64
     ) -> GameManager {
         precondition(filledFlaskCount > 0, "Level must contain at least one filled flask")
 
@@ -422,8 +425,9 @@ final class GameManager: ObservableObject {
             Array(repeating: color, count: Flask.maxCapacity)
         }
 
+        var randomNumberGenerator = SeededRandomNumberGenerator(seed: seed)
         var flasks = sections
-            .shuffled()
+            .shuffled(using: &randomNumberGenerator)
             .chunked(into: Flask.maxCapacity)
             .map { Flask(colors: $0) }
 
@@ -585,6 +589,22 @@ final class GameManager: ObservableObject {
         Color(red: 1.00, green: 0.42, blue: 0.77),
         Color(red: 0.29, green: 0.91, blue: 0.96)
     ]
+}
+
+private struct SeededRandomNumberGenerator: RandomNumberGenerator {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        self.state = seed
+    }
+
+    mutating func next() -> UInt64 {
+        state &+= 0x9E3779B97F4A7C15
+        var value = state
+        value = (value ^ (value >> 30)) &* 0xBF58476D1CE4E5B9
+        value = (value ^ (value >> 27)) &* 0x94D049BB133111EB
+        return value ^ (value >> 31)
+    }
 }
 
 private extension HandcraftedLevelRepository {

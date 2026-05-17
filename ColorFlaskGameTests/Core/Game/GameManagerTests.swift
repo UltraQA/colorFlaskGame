@@ -20,6 +20,38 @@ final class GameManagerTests: XCTestCase {
         XCTAssertFalse(bonusFlasks[0].isPlayable)
     }
 
+    func testGeneratedLevelUsesDeterministicSeed() {
+        let firstManager = GameManager.makeInitialLevel(
+            filledFlaskCount: 5,
+            generatedLevelSeed: 42
+        )
+        let secondManager = GameManager.makeInitialLevel(
+            filledFlaskCount: 5,
+            generatedLevelSeed: 42
+        )
+
+        XCTAssertEqual(
+            generatedLevelSnapshot(firstManager),
+            generatedLevelSnapshot(secondManager)
+        )
+    }
+
+    func testGeneratedLevelSeedChangesShuffleOrder() {
+        let firstManager = GameManager.makeInitialLevel(
+            filledFlaskCount: 5,
+            generatedLevelSeed: 42
+        )
+        let secondManager = GameManager.makeInitialLevel(
+            filledFlaskCount: 5,
+            generatedLevelSeed: 43
+        )
+
+        XCTAssertNotEqual(
+            generatedLevelSnapshot(firstManager),
+            generatedLevelSnapshot(secondManager)
+        )
+    }
+
     func testHandcraftedLevelsPassValidation() {
         let repository = HandcraftedLevelRepository()
 
@@ -209,4 +241,20 @@ final class GameManagerTests: XCTestCase {
 
         XCTAssertTrue(manager.isRoundCompleted)
     }
+
+    private func generatedLevelSnapshot(_ manager: GameManager) -> [GeneratedFlaskSnapshot] {
+        manager.flasks.map { flask in
+            GeneratedFlaskSnapshot(
+                kind: flask.kind,
+                isPlayable: flask.isPlayable,
+                colors: flask.colors
+            )
+        }
+    }
+}
+
+private struct GeneratedFlaskSnapshot: Equatable {
+    let kind: FlaskKind
+    let isPlayable: Bool
+    let colors: [Color]
 }
