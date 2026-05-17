@@ -636,7 +636,7 @@ Tasks:
 - Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action. **Done:** flask controls now expose index, potion contents, top color, empty section count, state, and action hints.
 - Done: Reduce Motion now replaces invalid-move shake, pour motion, sparkle animation, and celebration transitions with calmer state changes.
 - Done: flask states now include non-color-only indicators for selected, hint source, hint target, invalid, and completed states.
-- Replace fixed bonus sheet height with adaptive content sizing.
+- Done: bonus unlock sheet now measures content height and adapts layout for larger text.
 - Audit contrast for glass, locked, disabled, selected, invalid, and hint states.
 - Add UI/snapshot checks for iPhone SE, standard iPhone, portrait iPad, and large Dynamic Type.
 

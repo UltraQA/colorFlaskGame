@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: HomeViewModel
+    @State private var bonusSheetHeight: CGFloat = 260
     private let columns = 4
 
     init(viewModel: HomeViewModel) {
@@ -14,7 +15,7 @@ struct HomeView: View {
             let layoutScale = layoutScale(in: proxy.size)
 
             ZStack {
-                gameBackground(in: proxy.size)
+                gameBackground(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
                     .zIndex(GameLayer.background)
 
                 ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
@@ -99,7 +100,10 @@ struct HomeView: View {
                     viewModel.unlockBonusFlaskPermanently()
                 }
             )
-            .presentationDetents([.height(244)])
+            .readHeight { height in
+                bonusSheetHeight = min(max(height, 244), 420)
+            }
+            .presentationDetents([.height(bonusSheetHeight)])
             .presentationDragIndicator(.visible)
         }
     }
@@ -120,16 +124,20 @@ struct HomeView: View {
         }
     }
 
-    private func gameBackground(in size: CGSize) -> some View {
+    private func gameBackground(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
         return ZStack {
             GameColor.potionBackground
+                .ignoresSafeArea()
 
             Image("GameBackground")
                 .resizable()
                 .scaledToFill()
                 .opacity(0.92)
         }
-        .frame(width: size.width, height: size.height)
+        .frame(
+            width: size.width + safeAreaInsets.leading + safeAreaInsets.trailing,
+            height: size.height + safeAreaInsets.top + safeAreaInsets.bottom
+        )
         .clipped()
         .ignoresSafeArea()
     }
@@ -346,27 +354,38 @@ private struct BonusUnlockSheet: View {
                 .fill(GameColor.controlAccent.opacity(0.26))
                 .frame(width: 64, height: 6)
 
-            HStack(spacing: DSSpacing.lg) {
-                unlockAction(
-                    systemName: "play.rectangle.fill",
-                    title: "Ad",
-                    subtitle: "This round",
-                    action: onUnlockForRound
-                )
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: DSSpacing.lg) {
+                    unlockActions
+                }
 
-                unlockAction(
-                    systemName: "sparkles",
-                    title: "Forever",
-                    subtitle: "Always open",
-                    action: onUnlockForever
-                )
+                VStack(spacing: DSSpacing.md) {
+                    unlockActions
+                }
             }
         }
         .padding(.horizontal, DSSpacing.xl)
         .padding(.top, DSSpacing.lg)
         .padding(.bottom, DSSpacing.xl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
         .background(GameColor.potionBackground)
+    }
+
+    @ViewBuilder
+    private var unlockActions: some View {
+        unlockAction(
+            systemName: "play.rectangle.fill",
+            title: "Ad",
+            subtitle: "This round",
+            action: onUnlockForRound
+        )
+
+        unlockAction(
+            systemName: "sparkles",
+            title: "Forever",
+            subtitle: "Always open",
+            action: onUnlockForever
+        )
     }
 
     private func unlockAction(
@@ -410,6 +429,26 @@ private struct BonusUnlockSheet: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityHint(subtitle)
+    }
+}
+
+private struct HeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private extension View {
+    func readHeight(_ onChange: @escaping (CGFloat) -> Void) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(key: HeightPreferenceKey.self, value: proxy.size.height)
+            }
+        )
+        .onPreferenceChange(HeightPreferenceKey.self, perform: onChange)
     }
 }
 
