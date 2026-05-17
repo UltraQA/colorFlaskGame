@@ -47,6 +47,15 @@ struct HomeViewModelTiming: Equatable {
 final class HomeViewModel: ObservableObject {
     private static let bonusFlaskPurchaseKey = "waterSort.bonusFlask.isPermanentlyUnlocked"
     private static let currentLevelIndexKey = "waterSort.progress.currentLevelIndex"
+    static let victoryMessages = [
+        "Fantastic!",
+        "Yaaay!",
+        "You did it!",
+        "Let's go!",
+        "Easy Peasy!",
+        "Potion Perfect!",
+        "Well brewed!"
+    ]
 
     @Published private(set) var gameManager: GameManager
     @Published private(set) var selectedFlaskIndex: Int?
@@ -59,12 +68,14 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
     @Published private(set) var currentLevelIndex: Int
+    @Published private(set) var victoryMessage: String?
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
     private let levelRepository: any LevelRepository
     private let userDefaults: UserDefaults
     private let timing: HomeViewModelTiming
+    private let victoryMessageProvider: () -> String
 
     init(
         gameManager: GameManager? = nil,
@@ -72,11 +83,15 @@ final class HomeViewModel: ObservableObject {
         userDefaults: UserDefaults = .standard,
         currentLevelIndex: Int? = nil,
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
-        timing: HomeViewModelTiming = .live
+        timing: HomeViewModelTiming = .live,
+        victoryMessageProvider: @escaping () -> String = {
+            HomeViewModel.victoryMessages.randomElement() ?? "Fantastic!"
+        }
     ) {
         self.levelRepository = levelRepository
         self.userDefaults = userDefaults
         self.timing = timing
+        self.victoryMessageProvider = victoryMessageProvider
         let resolvedLevelIndex = currentLevelIndex ?? userDefaults.integer(forKey: Self.currentLevelIndexKey)
         let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? userDefaults.bool(forKey: Self.bonusFlaskPurchaseKey)
         self.currentLevelIndex = resolvedLevelIndex
@@ -190,6 +205,7 @@ final class HomeViewModel: ObservableObject {
         bonusUnlockPrompt = nil
         invalidFlaskIndices.removeAll()
         roundState = .playing
+        victoryMessage = nil
         history.removeAll()
         moves = 0
         currentLevelIndex = levelIndex
@@ -264,6 +280,7 @@ final class HomeViewModel: ObservableObject {
 
         selectedFlaskIndex = nil
         hintMove = nil
+        victoryMessage = victoryMessageProvider()
         roundState = .completing
 
         DispatchQueue.main.asyncAfter(deadline: .now() + timing.completionDuration) { [weak self] in

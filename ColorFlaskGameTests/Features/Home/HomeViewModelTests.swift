@@ -81,6 +81,28 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks[1].colors, [red, red, red])
     }
 
+    func testVictoryMessageAppearsWhenRoundCompletes() async {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [red, red, red])
+            ],
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            ),
+            victoryMessageProvider: { "Potion Perfect!" }
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(viewModel.roundState, .completing)
+        XCTAssertEqual(viewModel.victoryMessage, "Potion Perfect!")
+    }
+
     func testUndoRestoresPreviousFlasksAfterValidMove() async {
         let viewModel = makeViewModel(
             flasks: [
@@ -162,14 +184,17 @@ final class HomeViewModelTests: XCTestCase {
 
     private func makeViewModel(
         flasks: [Flask],
-        userDefaults: UserDefaults? = nil
+        userDefaults: UserDefaults? = nil,
+        timing: HomeViewModelTiming = .immediate,
+        victoryMessageProvider: @escaping () -> String = { "Fantastic!" }
     ) -> HomeViewModel {
         HomeViewModel(
             gameManager: GameManager(flasks: flasks),
             userDefaults: userDefaults ?? testUserDefaults,
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
-            timing: .immediate
+            timing: timing,
+            victoryMessageProvider: victoryMessageProvider
         )
     }
 

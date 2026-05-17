@@ -67,6 +67,17 @@ struct HomeView: View {
                     WinCelebrationView(reduceMotion: reduceMotion)
                         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
                         .zIndex(GameLayer.celebration)
+
+                    if let victoryMessage = viewModel.victoryMessage {
+                        VictoryMessageView(message: victoryMessage)
+                            .scaleEffect(layoutScale)
+                            .position(
+                                x: proxy.size.width / 2,
+                                y: max(proxy.safeAreaInsets.top + 104 * layoutScale, proxy.size.height * 0.2)
+                            )
+                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
+                            .zIndex(GameLayer.celebration + 1)
+                    }
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -507,5 +518,29 @@ private struct WinCelebrationView: View {
         let y: CGFloat
         let size: CGFloat
         let delay: TimeInterval
+    }
+}
+
+private struct VictoryMessageView: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 34, weight: .black, design: .rounded))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.76)
+            .padding(.horizontal, DSSpacing.lg)
+            .padding(.vertical, DSSpacing.sm)
+            .background(
+                Capsule()
+                    .fill(GameColor.controlSurface.opacity(0.82))
+                    .overlay(
+                        Capsule()
+                            .stroke(GameColor.controlAccent.opacity(0.72), lineWidth: 2)
+                    )
+            )
+            .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 10)
+            .accessibilityLabel(message)
     }
 }
