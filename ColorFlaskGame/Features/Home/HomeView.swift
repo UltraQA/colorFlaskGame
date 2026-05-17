@@ -483,7 +483,7 @@ private struct GameIconButton: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.36)
+        .opacity(isEnabled ? 1 : 0.52)
         .accessibilityLabel(title)
     }
 
@@ -499,7 +499,7 @@ private struct GameIconButton: View {
     private var iconColor: Color {
         switch style {
         case .accent:
-            return .white
+            return GameColor.controlSurface
         case .muted:
             return GameColor.glassStroke
         }
@@ -510,7 +510,7 @@ private struct GameIconButton: View {
         case .accent:
             return Color.white.opacity(0.38)
         case .muted:
-            return Color.white.opacity(0.08)
+            return Color.white.opacity(0.18)
         }
     }
 }

@@ -25,7 +25,7 @@ struct FlaskTubeView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 26)
-                .fill(flask.isPlayable ? GameColor.glassFill : GameColor.glassFill.opacity(0.42))
+                .fill(flask.isPlayable ? GameColor.glassFill : GameColor.glassFill.opacity(0.62))
                 .overlay(
                     LinearGradient(
                         colors: [
@@ -131,7 +131,7 @@ struct FlaskTubeView: View {
         case .invalidTarget:
             return GameColor.invalid
         case .completed:
-            return GameColor.controlAccent.opacity(0.9)
+            return GameColor.successAccent
         case .hintSource, .hintTarget:
             return GameColor.controlAccent
         case .normal, .empty, .lockedBonus:
@@ -157,7 +157,7 @@ struct FlaskTubeView: View {
         case .hintSource, .hintTarget:
             return GameColor.controlAccent.opacity(0.32)
         case .completed:
-            return GameColor.controlAccent.opacity(0.22)
+            return GameColor.successAccent.opacity(0.3)
         default:
             return .black.opacity(0.28)
         }
@@ -210,7 +210,7 @@ struct FlaskTubeView: View {
             indicatorSymbol(
                 systemName: "checkmark",
                 foreground: GameColor.controlSurface,
-                background: GameColor.controlAccent.opacity(0.92),
+                background: GameColor.successAccent,
                 size: 24
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
@@ -237,7 +237,7 @@ struct FlaskTubeView: View {
             )
             .overlay(
                 Circle()
-                    .stroke(GameColor.glassStroke.opacity(0.86), lineWidth: 2)
+                    .stroke(.white.opacity(0.92), lineWidth: 2)
             )
             .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 4)
     }
