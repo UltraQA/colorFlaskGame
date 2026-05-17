@@ -634,7 +634,7 @@ Tasks:
 - For MVP iPad support, scale the existing portrait board and controls instead of designing a separate iPad-specific screen. **Done:** the game screen now uses a shared layout scale for larger portrait screens.
 - Add rich VoiceOver labels for flasks, including index, contents summary, selected state, locked state, and available action. **Done:** flask controls now expose index, potion contents, top color, empty section count, state, and action hints.
 - Done: Reduce Motion now replaces invalid-move shake, pour motion, sparkle animation, and celebration transitions with calmer state changes.
-- Add non-color-only indicators for selected, hint, invalid, and completed states.
+- Done: flask states now include non-color-only indicators for selected, hint source, hint target, invalid, and completed states.
 - Replace fixed bonus sheet height with adaptive content sizing.
 - Audit contrast for glass, locked, disabled, selected, invalid, and hint states.
 - Add UI/snapshot checks for iPhone SE, standard iPhone, portrait iPad, and large Dynamic Type.
