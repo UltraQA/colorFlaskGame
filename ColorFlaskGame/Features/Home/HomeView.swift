@@ -41,14 +41,22 @@ struct HomeView: View {
                                 : 0
                         )
                     )
+                    .blur(radius: gameSurfaceBlurRadius)
+                    .opacity(gameSurfaceOpacity)
                     .position(flaskCenter(for: index, in: proxy.size, scale: layoutScale))
                     .zIndex(GameLayer.board)
                 }
 
                 topControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
+                    .blur(radius: gameSurfaceBlurRadius)
+                    .opacity(gameSurfaceOpacity)
+                    .allowsHitTesting(viewModel.completionPhase.isPlaying)
                     .zIndex(GameLayer.controls)
 
                 bottomControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
+                    .blur(radius: gameSurfaceBlurRadius)
+                    .opacity(gameSurfaceOpacity)
+                    .allowsHitTesting(viewModel.completionPhase.isPlaying)
                     .zIndex(GameLayer.controls)
 
                 if let animation = viewModel.pourAnimation {
@@ -63,24 +71,22 @@ struct HomeView: View {
                     .zIndex(GameLayer.animation)
                 }
 
-                if viewModel.roundState == .completing {
+                if viewModel.completionPhase.showsSparkles {
                     WinCelebrationView(reduceMotion: reduceMotion)
                         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
                         .zIndex(GameLayer.celebration)
+                }
 
-                    if let victoryMessage = viewModel.victoryMessage {
-                        VictoryMessageView(message: victoryMessage)
-                            .scaleEffect(layoutScale)
-                            .position(
-                                x: proxy.size.width / 2,
-                                y: max(proxy.safeAreaInsets.top + 104 * layoutScale, proxy.size.height * 0.2)
-                            )
-                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
-                            .zIndex(GameLayer.celebration + 1)
+                if viewModel.completionPhase.showsMessageOverlay, let victoryMessage = viewModel.victoryMessage {
+                    WinInterludeOverlay(message: victoryMessage, reduceMotion: reduceMotion) {
+                        viewModel.skipCompletionInterlude()
                     }
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(GameLayer.celebration + 1)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .animation(.easeOut(duration: reduceMotion ? 0.12 : 0.22), value: viewModel.completionPhase)
         }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
@@ -98,6 +104,22 @@ struct HomeView: View {
         }
     }
 
+    private var gameSurfaceBlurRadius: CGFloat {
+        guard !reduceMotion, viewModel.completionPhase.showsMessageOverlay else { return 0 }
+        return 6
+    }
+
+    private var gameSurfaceOpacity: Double {
+        switch viewModel.completionPhase {
+        case .playing, .resolvingWin:
+            return 1
+        case .celebrating:
+            return 0.78
+        case .transitioningToNextLevel:
+            return 0.62
+        }
+    }
+
     private func gameBackground(in size: CGSize) -> some View {
         return ZStack {
             GameColor.potionBackground
@@ -112,7 +134,7 @@ struct HomeView: View {
         .ignoresSafeArea()
     }
 
-    private func resetButton(scale: CGFloat) -> some View {
+    private func resetButton(scale: CGFloat, isEnabled: Bool) -> some View {
         Button {
             viewModel.startNewGame()
         } label: {
@@ -137,6 +159,7 @@ struct HomeView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
         .accessibilityLabel("Reset")
     }
 
@@ -176,7 +199,7 @@ struct HomeView: View {
         let controlCenterY = bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
 
         return ZStack {
-            resetButton(scale: scale)
+            resetButton(scale: scale, isEnabled: viewModel.canInteractWithBoard)
                 .position(
                     x: GameMetric.horizontalInset * scale + GameMetric.resetButtonWidth * scale / 2,
                     y: controlCenterY
@@ -521,26 +544,58 @@ private struct WinCelebrationView: View {
     }
 }
 
-private struct VictoryMessageView: View {
+private struct WinInterludeOverlay: View {
     let message: String
+    let reduceMotion: Bool
+    let onSkip: () -> Void
 
     var body: some View {
-        Text(message)
-            .font(.system(size: 34, weight: .black, design: .rounded))
-            .foregroundStyle(.white)
-            .lineLimit(1)
-            .minimumScaleFactor(0.76)
-            .padding(.horizontal, DSSpacing.lg)
-            .padding(.vertical, DSSpacing.sm)
-            .background(
-                Capsule()
-                    .fill(GameColor.controlSurface.opacity(0.82))
-                    .overlay(
-                        Capsule()
-                            .stroke(GameColor.controlAccent.opacity(0.72), lineWidth: 2)
+        ZStack {
+            GameColor.controlSurface
+                .opacity(0.18)
+                .ignoresSafeArea()
+
+            VStack(spacing: DSSpacing.sm) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlAccent)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(GameColor.controlSurface.opacity(0.8))
+                            .overlay(
+                                Circle()
+                                    .stroke(GameColor.controlAccent.opacity(0.58), lineWidth: 2)
+                            )
                     )
-            )
-            .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 10)
-            .accessibilityLabel(message)
+
+                Text(message)
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, DSSpacing.xl)
+                    .padding(.vertical, DSSpacing.sm)
+                    .background(
+                        Capsule()
+                            .fill(GameColor.controlSurface.opacity(0.84))
+                            .overlay(
+                                Capsule()
+                                    .stroke(GameColor.controlAccent.opacity(0.72), lineWidth: 2)
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 10)
+
+                Text("Next potion brewing...")
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+            }
+            .padding(.horizontal, DSSpacing.lg)
+            .scaleEffect(reduceMotion ? 1 : 1.02)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSkip)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(message). Next potion brewing.")
     }
 }

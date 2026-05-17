@@ -236,8 +236,8 @@ Standard levels must remain solvable without the bonus flask.
 
 After victory:
 - block input;
-- play feedback animation;
-- show one random short encouragement message from the victory phrase set;
+- play a short win interlude: micro celebration, soft board blur/dim, central encouragement message, then transition;
+- support tap-to-skip while the encouragement message is visible;
 - show completion state;
 - save progress;
 - open the next level.

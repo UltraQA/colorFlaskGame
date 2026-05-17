@@ -99,8 +99,28 @@ final class HomeViewModelTests: XCTestCase {
         viewModel.handleFlaskTap(at: 1)
         await waitForScheduledMainQueueWork()
 
-        XCTAssertEqual(viewModel.roundState, .completing)
+        XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
         XCTAssertEqual(viewModel.victoryMessage, "Potion Perfect!")
+    }
+
+    func testCompletionFlowAdvancesFromResolvingToCelebrating() async {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [red, red, red])
+            ],
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 0.5,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork(nanoseconds: 220_000_000)
+
+        XCTAssertEqual(viewModel.completionPhase, .celebrating)
     }
 
     func testUndoRestoresPreviousFlasksAfterValidMove() async {
@@ -198,8 +218,8 @@ final class HomeViewModelTests: XCTestCase {
         )
     }
 
-    private func waitForScheduledMainQueueWork() async {
-        try? await Task.sleep(nanoseconds: 50_000_000)
+    private func waitForScheduledMainQueueWork(nanoseconds: UInt64 = 50_000_000) async {
+        try? await Task.sleep(nanoseconds: nanoseconds)
     }
 
     private var testUserDefaults: UserDefaults {

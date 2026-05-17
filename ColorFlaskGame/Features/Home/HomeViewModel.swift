@@ -21,9 +21,23 @@ struct BonusUnlockPrompt: Identifiable, Equatable {
     }
 }
 
-enum RoundState: Equatable {
+enum LevelCompletionPhase: Equatable {
     case playing
-    case completing
+    case resolvingWin
+    case celebrating
+    case transitioningToNextLevel
+
+    var isPlaying: Bool {
+        self == .playing
+    }
+
+    var showsSparkles: Bool {
+        self != .playing
+    }
+
+    var showsMessageOverlay: Bool {
+        self == .celebrating || self == .transitioningToNextLevel
+    }
 }
 
 struct HomeViewModelTiming: Equatable {
@@ -33,7 +47,7 @@ struct HomeViewModelTiming: Equatable {
 
     static let live = HomeViewModelTiming(
         pourAnimationDuration: 0.55,
-        completionDuration: 1.15,
+        completionDuration: 1.55,
         invalidFeedbackDuration: 0.32
     )
 
@@ -64,7 +78,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var invalidFlaskIndices: Set<Int> = []
     @Published private(set) var invalidMoveCount = 0
     @Published var bonusUnlockPrompt: BonusUnlockPrompt?
-    @Published private(set) var roundState: RoundState = .playing
+    @Published private(set) var completionPhase: LevelCompletionPhase = .playing
     @Published private(set) var moves = 0
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
     @Published private(set) var currentLevelIndex: Int
@@ -76,6 +90,7 @@ final class HomeViewModel: ObservableObject {
     private let userDefaults: UserDefaults
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
+    private var completionSequenceID = 0
 
     init(
         gameManager: GameManager? = nil,
@@ -124,18 +139,18 @@ final class HomeViewModel: ObservableObject {
     }
 
     var canUndo: Bool {
-        roundState == .playing && !history.isEmpty && pourAnimation == nil
+        completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil
     }
 
     var canShowHint: Bool {
-        roundState == .playing
+        completionPhase.isPlaying
             && pourAnimation == nil
             && !gameManager.isRoundCompleted
             && gameManager.firstValidMove() != nil
     }
 
     var canInteractWithBoard: Bool {
-        roundState == .playing && pourAnimation == nil
+        completionPhase.isPlaying && pourAnimation == nil
     }
 
     func handleFlaskTap(at index: Int) {
@@ -204,8 +219,9 @@ final class HomeViewModel: ObservableObject {
         hintMove = nil
         bonusUnlockPrompt = nil
         invalidFlaskIndices.removeAll()
-        roundState = .playing
+        completionPhase = .playing
         victoryMessage = nil
+        completionSequenceID += 1
         history.removeAll()
         moves = 0
         currentLevelIndex = levelIndex
@@ -220,7 +236,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func unlockBonusFlaskForCurrentRound() {
-        guard roundState == .playing else { return }
+        guard completionPhase.isPlaying else { return }
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
@@ -229,7 +245,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func unlockBonusFlaskPermanently() {
-        guard roundState == .playing else { return }
+        guard completionPhase.isPlaying else { return }
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
@@ -275,21 +291,72 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
+    func skipCompletionInterlude() {
+        guard completionPhase == .celebrating else { return }
+
+        completionSequenceID += 1
+        let sequenceID = completionSequenceID
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            completionPhase = .transitioningToNextLevel
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + nextLevelTransitionDuration) { [weak self] in
+            guard let self, self.completionSequenceID == sequenceID else { return }
+
+            withAnimation(.easeOut(duration: 0.25)) {
+                self.advanceToNextLevel()
+            }
+        }
+    }
+
     private func completeRoundIfNeeded() {
-        guard gameManager.isRoundCompleted, roundState == .playing else { return }
+        guard gameManager.isRoundCompleted, completionPhase.isPlaying else { return }
 
         selectedFlaskIndex = nil
         hintMove = nil
         victoryMessage = victoryMessageProvider()
-        roundState = .completing
+        completionSequenceID += 1
+        let sequenceID = completionSequenceID
+        completionPhase = .resolvingWin
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + microCelebrationDuration) { [weak self] in
+            guard let self, self.completionSequenceID == sequenceID else { return }
+
+            withAnimation(.easeOut(duration: 0.22)) {
+                self.completionPhase = .celebrating
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + microCelebrationDuration + messageVisibleDuration) { [weak self] in
+            guard let self, self.completionSequenceID == sequenceID else { return }
+
+            withAnimation(.easeOut(duration: 0.2)) {
+                self.completionPhase = .transitioningToNextLevel
+            }
+        }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + timing.completionDuration) { [weak self] in
-            guard let self, self.roundState == .completing else { return }
+            guard let self, self.completionSequenceID == sequenceID else { return }
 
-            withAnimation(.snappy(duration: 0.35)) {
+            withAnimation(.easeOut(duration: 0.25)) {
                 self.advanceToNextLevel()
             }
         }
+    }
+
+    private var microCelebrationDuration: TimeInterval {
+        guard timing.completionDuration > 0 else { return 0 }
+        return min(0.45, timing.completionDuration * 0.3)
+    }
+
+    private var nextLevelTransitionDuration: TimeInterval {
+        guard timing.completionDuration > 0 else { return 0 }
+        return min(0.25, timing.completionDuration * 0.2)
+    }
+
+    private var messageVisibleDuration: TimeInterval {
+        max(0, timing.completionDuration - microCelebrationDuration - nextLevelTransitionDuration)
     }
 
     private func bindGameManager() {
