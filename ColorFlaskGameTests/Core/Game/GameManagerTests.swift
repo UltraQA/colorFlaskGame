@@ -1,12 +1,11 @@
-import SwiftUI
 import XCTest
 @testable import ColorFlaskGame
 
 final class GameManagerTests: XCTestCase {
-    private let red = Color.red
-    private let green = Color.green
-    private let blue = Color.blue
-    private let yellow = Color.yellow
+    private let red = LiquidColor.red
+    private let green = LiquidColor.green
+    private let blue = LiquidColor.blue
+    private let yellow = LiquidColor.yellow
 
     func testGeneratedLevelStartsWithTwoAvailableEmptyFlasksAndLockedBonusFlask() {
         let manager = GameManager.makeInitialLevel(filledFlaskCount: 5)
@@ -256,5 +255,5 @@ final class GameManagerTests: XCTestCase {
 private struct GeneratedFlaskSnapshot: Equatable {
     let kind: FlaskKind
     let isPlayable: Bool
-    let colors: [Color]
+    let colors: [LiquidColor]
 }

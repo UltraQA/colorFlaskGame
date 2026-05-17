@@ -1,12 +1,11 @@
-import SwiftUI
 import XCTest
 @testable import ColorFlaskGame
 
 @MainActor
 final class HomeViewModelTests: XCTestCase {
-    private let red = Color.red
-    private let green = Color.green
-    private let blue = Color.blue
+    private let red = LiquidColor.red
+    private let green = LiquidColor.green
+    private let blue = LiquidColor.blue
 
     override func tearDown() {
         testUserDefaults.removePersistentDomain(forName: Self.testSuiteName)

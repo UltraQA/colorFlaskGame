@@ -1,4 +1,49 @@
-import SwiftUI
+import Combine
+import Foundation
+
+enum LiquidColor: String, CaseIterable, Codable, Hashable {
+    case red
+    case green
+    case blue
+    case yellow
+    case ruby
+    case emerald
+    case honey
+    case moonBlue
+    case violet
+    case orange
+    case rose
+    case aqua
+
+    var accessibilityName: String {
+        switch self {
+        case .red:
+            return "red"
+        case .green:
+            return "green"
+        case .blue:
+            return "blue"
+        case .yellow:
+            return "yellow"
+        case .ruby:
+            return "ruby"
+        case .emerald:
+            return "emerald"
+        case .honey:
+            return "honey"
+        case .moonBlue:
+            return "moon blue"
+        case .violet:
+            return "violet"
+        case .orange:
+            return "orange"
+        case .rose:
+            return "rose"
+        case .aqua:
+            return "aqua"
+        }
+    }
+}
 
 enum FlaskKind: Equatable {
     case regular
@@ -10,13 +55,13 @@ struct Flask: Identifiable, Equatable {
 
     let id: UUID
     let kind: FlaskKind
-    private(set) var colors: [Color]
+    private(set) var colors: [LiquidColor]
     private(set) var isUnlocked: Bool
 
     init(
         id: UUID = UUID(),
         kind: FlaskKind = .regular,
-        colors: [Color] = [],
+        colors: [LiquidColor] = [],
         isUnlocked: Bool = true
     ) {
         precondition(colors.count <= Self.maxCapacity, "Flask cannot exceed max capacity")
@@ -46,7 +91,7 @@ struct Flask: Identifiable, Equatable {
         Self.maxCapacity - colors.count
     }
 
-    var topColor: Color? {
+    var topColor: LiquidColor? {
         colors.last
     }
 
@@ -63,12 +108,12 @@ struct Flask: Identifiable, Equatable {
         isEmpty || (isFull && Set(colors).count == 1)
     }
 
-    mutating func push(_ color: Color) {
+    mutating func push(_ color: LiquidColor) {
         guard isPlayable, !isFull else { return }
         colors.append(color)
     }
 
-    mutating func pop() -> Color? {
+    mutating func pop() -> LiquidColor? {
         guard isPlayable else { return nil }
         return colors.popLast()
     }
@@ -107,7 +152,7 @@ enum PourError: LocalizedError, Equatable {
 struct PourPlan: Equatable {
     let sourceIndex: Int
     let targetIndex: Int
-    let color: Color
+    let color: LiquidColor
     let amount: Int
 }
 
@@ -169,7 +214,7 @@ struct Level: Identifiable, Equatable {
 
         let colorCounts = filledFlasks
             .flatMap(\.colors)
-            .reduce(into: [Color: Int]()) { counts, color in
+            .reduce(into: [LiquidColor: Int]()) { counts, color in
                 counts[color, default: 0] += 1
             }
 
@@ -282,12 +327,12 @@ struct LevelSolvabilityValidator {
 private struct SolverMove {
     let sourceIndex: Int
     let targetIndex: Int
-    let color: Color
+    let color: LiquidColor
     let amount: Int
 }
 
 private struct SolverState: Hashable {
-    var flasks: [[Color]]
+    var flasks: [[LiquidColor]]
 
     var isSolved: Bool {
         flasks.allSatisfy { flask in
@@ -349,8 +394,8 @@ private struct SolverState: Hashable {
         )
     }
 
-    private static func sortKey(for flask: [Color]) -> String {
-        flask.map(String.init(describing:)).joined(separator: "|")
+    private static func sortKey(for flask: [LiquidColor]) -> String {
+        flask.map(\.rawValue).joined(separator: "|")
     }
 }
 
@@ -579,15 +624,15 @@ final class GameManager: ObservableObject {
         return score
     }
 
-    private static let levelPalette: [Color] = [
-        Color(red: 1.00, green: 0.32, blue: 0.48),
-        Color(red: 0.34, green: 0.88, blue: 0.68),
-        Color(red: 1.00, green: 0.78, blue: 0.27),
-        Color(red: 0.33, green: 0.59, blue: 1.00),
-        Color(red: 0.72, green: 0.43, blue: 1.00),
-        Color(red: 1.00, green: 0.52, blue: 0.25),
-        Color(red: 1.00, green: 0.42, blue: 0.77),
-        Color(red: 0.29, green: 0.91, blue: 0.96)
+    private static let levelPalette: [LiquidColor] = [
+        .ruby,
+        .emerald,
+        .honey,
+        .moonBlue,
+        .violet,
+        .orange,
+        .rose,
+        .aqua
     ]
 }
 
@@ -729,12 +774,12 @@ private extension HandcraftedLevelRepository {
         )
     }
 
-    static let palette: [Color] = [
-        Color(red: 1.00, green: 0.32, blue: 0.48),
-        Color(red: 0.34, green: 0.88, blue: 0.68),
-        Color(red: 1.00, green: 0.78, blue: 0.27),
-        Color(red: 0.33, green: 0.59, blue: 1.00),
-        Color(red: 0.72, green: 0.43, blue: 1.00)
+    static let palette: [LiquidColor] = [
+        .ruby,
+        .emerald,
+        .honey,
+        .moonBlue,
+        .violet
     ]
 }
 

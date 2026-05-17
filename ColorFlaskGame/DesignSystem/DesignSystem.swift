@@ -76,3 +76,34 @@ enum GameColor {
     static let lockedOverlay = Color(red: 0.06, green: 0.04, blue: 0.10).opacity(0.68)
     static let invalid = Color(red: 1.00, green: 0.30, blue: 0.38)
 }
+
+extension LiquidColor {
+    var swiftUIColor: Color {
+        switch self {
+        case .red:
+            return .red
+        case .green:
+            return .green
+        case .blue:
+            return .blue
+        case .yellow:
+            return .yellow
+        case .ruby:
+            return Color(red: 1.00, green: 0.32, blue: 0.48)
+        case .emerald:
+            return Color(red: 0.34, green: 0.88, blue: 0.68)
+        case .honey:
+            return Color(red: 1.00, green: 0.78, blue: 0.27)
+        case .moonBlue:
+            return Color(red: 0.33, green: 0.59, blue: 1.00)
+        case .violet:
+            return Color(red: 0.72, green: 0.43, blue: 1.00)
+        case .orange:
+            return Color(red: 1.00, green: 0.52, blue: 0.25)
+        case .rose:
+            return Color(red: 1.00, green: 0.42, blue: 0.77)
+        case .aqua:
+            return Color(red: 0.29, green: 0.91, blue: 0.96)
+        }
+    }
+}

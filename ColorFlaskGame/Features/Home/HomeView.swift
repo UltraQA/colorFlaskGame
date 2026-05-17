@@ -64,7 +64,7 @@ struct HomeView: View {
                     PourStreamView(
                         from: layout.pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
                         to: layout.pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
-                        color: animation.color,
+                        color: animation.color.swiftUIColor,
                         scale: layoutScale,
                         reduceMotion: reduceMotion
                     )

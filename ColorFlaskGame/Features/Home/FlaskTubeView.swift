@@ -99,9 +99,9 @@ struct FlaskTubeView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                color.opacity(0.82),
-                                color,
-                                color.opacity(0.9)
+                                color.swiftUIColor.opacity(0.82),
+                                color.swiftUIColor,
+                                color.swiftUIColor.opacity(0.9)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -262,7 +262,7 @@ struct FlaskTubeView: View {
         values.append(contentsSummary)
 
         if let topColor = flask.topColor {
-            values.append("Top color: \(accessibilityName(for: topColor))")
+            values.append("Top color: \(topColor.accessibilityName)")
         }
 
         values.append("\(flask.freeSpace) empty sections")
@@ -292,41 +292,10 @@ struct FlaskTubeView: View {
         }
 
         let colors = flask.colors
-            .map(accessibilityName)
+            .map(\.accessibilityName)
             .joined(separator: ", ")
 
         return "Contents from bottom: \(colors)"
-    }
-
-    private func accessibilityName(for color: Color) -> String {
-        switch color {
-        case Color.red:
-            return "red"
-        case Color.green:
-            return "green"
-        case Color.blue:
-            return "blue"
-        case Color.yellow:
-            return "yellow"
-        case Color(red: 1.00, green: 0.32, blue: 0.48):
-            return "ruby"
-        case Color(red: 0.34, green: 0.88, blue: 0.68):
-            return "emerald"
-        case Color(red: 1.00, green: 0.78, blue: 0.27):
-            return "honey"
-        case Color(red: 0.33, green: 0.59, blue: 1.00):
-            return "moon blue"
-        case Color(red: 0.72, green: 0.43, blue: 1.00):
-            return "violet"
-        case Color(red: 1.00, green: 0.52, blue: 0.25):
-            return "orange"
-        case Color(red: 1.00, green: 0.42, blue: 0.77):
-            return "rose"
-        case Color(red: 0.29, green: 0.91, blue: 0.96):
-            return "aqua"
-        default:
-            return "unknown potion color"
-        }
     }
 
     private var lockedOverlay: some View {

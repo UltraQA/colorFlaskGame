@@ -617,7 +617,7 @@ The first screen is playable, but the game needs clearer emotional beats and les
 ### Priority D: Architecture And Testability
 
 Tasks:
-- Replace `SwiftUI.Color` in the domain model with a domain-safe `LiquidColor` or `LiquidColorToken`.
+- Replace `SwiftUI.Color` in the domain model with a domain-safe `LiquidColor` or `LiquidColorToken`. **Done:** core gameplay now uses `LiquidColor`; SwiftUI mapping lives in the design layer.
 - Split `GameManager` into a pure game engine/state model and a SwiftUI-facing observable adapter.
 - Replace `DispatchQueue.main.asyncAfter` callbacks with cancellable task/scheduler or `Clock`-based orchestration. **Done:** `HomeViewModel` now uses cancellable tasks for pour feedback, invalid feedback, and completion transitions.
 - Move progress persistence behind a `ProgressStore` protocol. **Done:** `HomeViewModel` now depends on a persistence abstraction while `UserDefaults` stays behind `UserDefaultsProgressStore`.

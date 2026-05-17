@@ -5,7 +5,7 @@ struct PourAnimation: Identifiable, Equatable {
     let id = UUID()
     let sourceIndex: Int
     let targetIndex: Int
-    let color: Color
+    let color: LiquidColor
 }
 
 struct HintMove: Equatable {
