@@ -91,6 +91,18 @@ final class GameManagerTests: XCTestCase {
         }
     }
 
+    func testRepositoryGeneratesSolvableLevelsAfterHandcraftedPool() {
+        let repository = HandcraftedLevelRepository()
+        let generatedLevel = repository.level(at: repository.levels.count)
+        let report = LevelSolvabilityValidator().reportWithoutBonusFlask(generatedLevel)
+
+        XCTAssertEqual(generatedLevel.id, repository.levels.count + 1)
+        XCTAssertNotEqual(generatedLevel.filledFlasks, repository.levels[0].filledFlasks)
+        XCTAssertTrue(generatedLevel.isValid)
+        XCTAssertTrue(report.isSolvable)
+        XCTAssertNotNil(report.minimumMoveCount)
+    }
+
     func testSolvabilityReportRejectsInvalidLevel() {
         let level = Level(
             id: 100,

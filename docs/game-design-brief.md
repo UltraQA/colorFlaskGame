@@ -175,7 +175,13 @@ struct Level {
 
 For the first version:
 - define the first 10 levels by hand;
-- add a generator later, with solvability validation.
+- add generated levels only through solvability validation;
+- do not loop early handcrafted levels as late-game content.
+
+Current implementation:
+- first 10 levels are handcrafted;
+- levels after the handcrafted pool are generated deterministically;
+- generated levels must pass validation and be solvable without the bonus flask before they are used.
 
 ### Priority 2: Undo
 
@@ -243,6 +249,22 @@ After victory:
 - open the next level.
 
 ## UI And Design Requirements For Hume
+
+### Product Review Notes
+
+Recommended direction from the current UI/UX and game design review:
+- use play-first onboarding instead of a heavy tutorial screen;
+- introduce a short first-launch splash later, then move directly into Level 1;
+- frame levels as shop orders over time, for example `Order 1` or `Level 1`;
+- keep the main game screen clean, with theme carried by background, copy, win feedback, and small banners;
+- defer a full main menu, map, shop economy, NPCs, daily rewards, and real IAP until the core loop is stronger.
+
+High-priority follow-up tasks:
+- add first-run contextual tutorial for Levels 1-3;
+- protect reset after the first move with confirmation or long press;
+- improve hint guidance so source and target have clearly different visual treatment;
+- strengthen win celebration with shop/order language and herbs reward;
+- introduce locked bonus flask as optional help, not as required progression.
 
 ### Theme Direction
 

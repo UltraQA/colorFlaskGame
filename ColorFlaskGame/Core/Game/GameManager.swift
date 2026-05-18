@@ -415,7 +415,11 @@ struct HandcraftedLevelRepository: LevelRepository {
             preconditionFailure("Level repository must contain at least one level")
         }
 
-        return levels[index % levels.count]
+        guard index >= levels.count else {
+            return levels[index]
+        }
+
+        return Self.makeGeneratedLevel(id: index + 1)
     }
 }
 
@@ -836,6 +840,43 @@ private extension HandcraftedLevelRepository {
             availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
             hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID
         )
+    }
+
+    static func makeGeneratedLevel(id: Int) -> Level {
+        let colorCount = GameManager.defaultFilledFlaskCount
+        let colors = Array(palette.prefix(colorCount))
+        let validator = LevelSolvabilityValidator(maxVisitedStates: 75_000)
+
+        for attempt in 0..<200 {
+            var randomNumberGenerator = SeededRandomNumberGenerator(
+                seed: generatedSeed(levelID: id, attempt: attempt)
+            )
+            let rows = colors
+                .flatMap { color in Array(repeating: color, count: Flask.maxCapacity) }
+                .shuffled(using: &randomNumberGenerator)
+                .chunked(into: Flask.maxCapacity)
+
+            guard rows.allSatisfy({ Set($0).count > 1 }) else { continue }
+
+            let level = Level(
+                id: id,
+                difficulty: .medium,
+                filledFlasks: rows.map { Flask(colors: $0) },
+                availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+                hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID
+            )
+
+            let report = validator.reportWithoutBonusFlask(level)
+            if report.isSolvable {
+                return level
+            }
+        }
+
+        preconditionFailure("Unable to generate a solvable level for id \(id)")
+    }
+
+    static func generatedSeed(levelID: Int, attempt: Int) -> UInt64 {
+        UInt64(levelID + 1) &* 0x9E3779B97F4A7C15 &+ UInt64(attempt)
     }
 
     static let palette: [LiquidColor] = [
