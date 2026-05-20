@@ -120,6 +120,48 @@ final class GameManagerTests: XCTestCase {
         XCTAssertEqual(report.visitedStateCount, 0)
     }
 
+    func testLevelDifficultyMetricsSummarizeLevelShape() {
+        let level = Level(
+            id: 11,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [red, red, red, red]),
+                Flask(colors: [green, green, green, green]),
+                Flask(colors: [blue, blue, blue, blue])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: true
+        )
+
+        let metrics = level.difficultyMetrics()
+
+        XCTAssertEqual(metrics.colorCount, 3)
+        XCTAssertEqual(metrics.minimumMoveCount, 0)
+        XCTAssertEqual(metrics.bufferPressure, 1)
+        XCTAssertEqual(metrics.solutionDepth, 0)
+        XCTAssertEqual(metrics.deadEndRisk, .low)
+        XCTAssertEqual(metrics.visitedStateCount, 1)
+    }
+
+    func testLevelDifficultyMetricsMarksInvalidLevelAsHighRisk() {
+        let level = Level(
+            id: 12,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [red, red])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: true
+        )
+
+        let metrics = level.difficultyMetrics()
+
+        XCTAssertEqual(metrics.colorCount, 1)
+        XCTAssertNil(metrics.minimumMoveCount)
+        XCTAssertEqual(metrics.deadEndRisk, .high)
+        XCTAssertEqual(metrics.visitedStateCount, 0)
+    }
+
     func testInvalidLevelReportsValidationIssues() {
         let level = Level(
             id: 99,

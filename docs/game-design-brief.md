@@ -604,7 +604,7 @@ Tasks:
 - Add solvability validation for handcrafted levels without using the locked bonus flask. **Done:** `LevelSolvabilityValidator` now produces a solvability report with minimum move count and visited state count.
 - Define whether levels 1-4 are tutorial exceptions or whether every visible level must always follow the full 5 + 2 + 1 structure. **Done:** levels 1-4 stay cleaner without the locked bonus flask; Level 5 introduces it when puzzles become more complex.
 - Upgrade hint logic from local move ranking to a solution-aware or dead-end-aware hint path. **Done:** Hint now asks a bounded solver for the first move on a solution path before falling back to local move ranking.
-- Add difficulty metrics per level: color count, minimum moves, buffer pressure, solution depth, and dead-end risk.
+- Add difficulty metrics per level: color count, minimum moves, buffer pressure, solution depth, and dead-end risk. **Done:** levels can now produce deterministic `LevelDifficultyMetrics` from validation and solvability data.
 - Tune bonus flask introduction so it feels optional and not pay-to-win.
 
 Why this matters:

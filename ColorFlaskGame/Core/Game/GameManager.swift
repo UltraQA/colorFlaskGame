@@ -175,6 +175,21 @@ struct CustomerOrder: Equatable {
     let shortCopy: String
 }
 
+enum DeadEndRisk: String, Equatable {
+    case low
+    case medium
+    case high
+}
+
+struct LevelDifficultyMetrics: Equatable {
+    let colorCount: Int
+    let minimumMoveCount: Int?
+    let bufferPressure: Int
+    let solutionDepth: Int?
+    let deadEndRisk: DeadEndRisk
+    let visitedStateCount: Int
+}
+
 struct Level: Identifiable, Equatable {
     static let lockedBonusIntroductionLevelID = 5
 
@@ -286,6 +301,36 @@ struct Level: Identifiable, Equatable {
 
     var isValid: Bool {
         validationIssues.isEmpty
+    }
+
+    func difficultyMetrics(
+        validator: LevelSolvabilityValidator = LevelSolvabilityValidator()
+    ) -> LevelDifficultyMetrics {
+        let report = validator.reportWithoutBonusFlask(self)
+        let colors = Set(filledFlasks.flatMap(\.colors))
+        let bufferPressure = max(0, colors.count - availableEmptyFlaskCount)
+
+        return LevelDifficultyMetrics(
+            colorCount: colors.count,
+            minimumMoveCount: report.minimumMoveCount,
+            bufferPressure: bufferPressure,
+            solutionDepth: report.minimumMoveCount,
+            deadEndRisk: Self.deadEndRisk(from: report),
+            visitedStateCount: report.visitedStateCount
+        )
+    }
+
+    private static func deadEndRisk(from report: LevelSolvabilityReport) -> DeadEndRisk {
+        guard report.isSolvable else { return .high }
+
+        switch report.visitedStateCount {
+        case 0..<1_000:
+            return .low
+        case 1_000..<10_000:
+            return .medium
+        default:
+            return .high
+        }
     }
 }
 
