@@ -57,7 +57,7 @@ struct FlaskTubeView: View {
                     style: StrokeStyle(
                         lineWidth: strokeWidth,
                         lineCap: .round,
-                        dash: flask.isPlayable ? [] : [8, 8]
+                        dash: strokeDash
                     )
                 )
 
@@ -66,9 +66,11 @@ struct FlaskTubeView: View {
             }
 
             stateIndicator
+            hintRoleCue
         }
         .frame(width: GameMetric.flaskWidth, height: GameMetric.flaskHeight)
         .scaleEffect(visualState == .hintSource ? 1.04 : 1)
+        .rotationEffect(visualState == .hintSource && !reduceMotion ? .degrees(-2.5) : .zero)
         .offset(y: verticalOffset)
         .shadow(
             color: shadowColor,
@@ -163,6 +165,19 @@ struct FlaskTubeView: View {
         }
     }
 
+    private var strokeDash: [CGFloat] {
+        if !flask.isPlayable {
+            return [8, 8]
+        }
+
+        switch visualState {
+        case .hintSource:
+            return [10, 5]
+        default:
+            return []
+        }
+    }
+
     private var shadowColor: Color {
         switch visualState {
         case .selected:
@@ -211,6 +226,57 @@ struct FlaskTubeView: View {
         default:
             return 10
         }
+    }
+
+    @ViewBuilder
+    private var hintRoleCue: some View {
+        switch visualState {
+        case .hintSource:
+            sourcePourCue
+        case .hintTarget:
+            targetLandingCue
+        default:
+            EmptyView()
+        }
+    }
+
+    private var sourcePourCue: some View {
+        Image(systemName: "arrow.down.right")
+            .font(.system(size: 17, weight: .black, design: .rounded))
+            .foregroundStyle(GameColor.controlAccent)
+            .frame(width: 34, height: 34)
+            .background(
+                Circle()
+                    .fill(GameColor.controlSurface.opacity(0.86))
+            )
+            .overlay(
+                Circle()
+                    .stroke(.white.opacity(0.55), lineWidth: 1.5)
+            )
+            .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 8, x: 0, y: 5)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .offset(x: -12, y: -16)
+            .accessibilityHidden(true)
+    }
+
+    private var targetLandingCue: some View {
+        ZStack {
+            Circle()
+                .stroke(GameColor.hintTarget.opacity(0.88), lineWidth: 4)
+                .frame(width: 42, height: 42)
+
+            Circle()
+                .fill(GameColor.hintTarget.opacity(0.18))
+                .frame(width: 28, height: 28)
+
+            Image(systemName: "plus")
+                .font(.system(size: 15, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.hintTarget)
+        }
+        .shadow(color: GameColor.hintTarget.opacity(0.26), radius: 8, x: 0, y: 5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .offset(y: 16)
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
