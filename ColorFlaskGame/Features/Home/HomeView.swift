@@ -241,6 +241,16 @@ struct HomeView: View {
                     y: controlCenterY
                 )
 
+            if let objectiveSummary = viewModel.orderObjectiveSummary {
+                OrderObjectiveBadge(summary: objectiveSummary)
+                    .scaleEffect(scale)
+                    .frame(width: 226 * scale, height: 44 * scale)
+                    .position(
+                        x: size.width / 2,
+                        y: controlCenterY + 48 * scale
+                    )
+            }
+
             GameIconButton(
                 systemName: "arrow.uturn.backward",
                 title: "Undo",
@@ -262,9 +272,10 @@ struct HomeView: View {
     private func orderBannerCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
         let scaledIconSize = GameMetric.iconButtonSize * scale
         let topControlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+        let objectiveOffset: CGFloat = viewModel.orderObjectiveSummary == nil ? 0 : 46 * scale
         return CGPoint(
             x: size.width / 2,
-            y: topControlCenterY + 58 * scale
+            y: topControlCenterY + 58 * scale + objectiveOffset
         )
     }
 
@@ -430,6 +441,64 @@ private struct BoardVignetteView: View {
         .frame(width: GameMetric.baseBoardWidth * scale, height: 560 * scale)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private struct OrderObjectiveBadge: View {
+    let summary: OrderObjectiveSummary
+
+    var body: some View {
+        HStack(spacing: DSSpacing.sm) {
+            Circle()
+                .fill(summary.targetColor.swiftUIColor)
+                .frame(width: 20, height: 20)
+                .overlay(
+                    Circle()
+                        .stroke(.white.opacity(0.58), lineWidth: 2)
+                )
+                .shadow(color: summary.targetColor.swiftUIColor.opacity(0.34), radius: 8, x: 0, y: 4)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(summary.potionName)
+                    .font(DSTypography.caption)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Text("Target potion")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.7))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: DSSpacing.xs)
+
+            Text(summary.progressText)
+                .font(DSTypography.headline)
+                .foregroundStyle(GameColor.controlSurface)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .padding(.horizontal, DSSpacing.sm)
+                .frame(height: 26)
+                .background(
+                    Capsule()
+                        .fill(GameColor.controlAccent)
+                )
+        }
+        .padding(.leading, DSSpacing.sm)
+        .padding(.trailing, DSSpacing.xs)
+        .frame(width: 226, height: 44)
+        .background(
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.84))
+                .overlay(
+                    Capsule()
+                        .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.22), radius: 10, x: 0, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(summary.potionName). Target \(summary.targetColor.accessibilityName). Progress \(summary.progressText).")
     }
 }
 

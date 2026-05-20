@@ -6,6 +6,7 @@ final class HomeViewModelTests: XCTestCase {
     private let red = LiquidColor.red
     private let green = LiquidColor.green
     private let blue = LiquidColor.blue
+    private let yellow = LiquidColor.yellow
 
     override func tearDown() {
         testUserDefaults.removePersistentDomain(forName: Self.testSuiteName)
@@ -150,6 +151,58 @@ final class HomeViewModelTests: XCTestCase {
         viewModel.handleFlaskTap(at: 0)
 
         XCTAssertFalse(viewModel.isOrderBannerVisible)
+    }
+
+    func testOrderObjectiveSummaryUsesCustomerOrderAndTargetProgress() {
+        let level = Level(
+            id: 42,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [yellow, yellow, red, blue]),
+                Flask(colors: [yellow, green]),
+                Flask(colors: [])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: false,
+            objective: .completeColor(yellow),
+            customerOrder: CustomerOrder(
+                customerName: "Mira",
+                potionName: "Luck Potion",
+                targetColor: yellow,
+                rewardHerbs: 8,
+                shortCopy: "Brew one bright luck potion."
+            )
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(flasks: level.filledFlasks, level: level),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(
+            viewModel.orderObjectiveSummary,
+            OrderObjectiveSummary(
+                potionName: "Luck Potion",
+                targetColor: yellow,
+                progress: 2,
+                requiredSections: Flask.maxCapacity,
+                shortCopy: "Brew one bright luck potion."
+            )
+        )
+        XCTAssertEqual(viewModel.orderSubtitle, "Brew one bright luck potion.")
+    }
+
+    func testOrderObjectiveSummaryIsNilForClassicLevels() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [])
+            ]
+        )
+
+        XCTAssertNil(viewModel.orderObjectiveSummary)
     }
 
     func testTutorialPromptStartsVisibleAndHighlightsSuggestedMove() {

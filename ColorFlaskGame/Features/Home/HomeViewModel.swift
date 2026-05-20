@@ -25,6 +25,18 @@ struct ResetConfirmationPrompt: Identifiable, Equatable {
     let id = UUID()
 }
 
+struct OrderObjectiveSummary: Equatable {
+    let potionName: String
+    let targetColor: LiquidColor
+    let progress: Int
+    let requiredSections: Int
+    let shortCopy: String
+
+    var progressText: String {
+        "\(progress)/\(requiredSections)"
+    }
+}
+
 enum LevelCompletionPhase: Equatable {
     case playing
     case resolvingWin
@@ -162,7 +174,27 @@ final class HomeViewModel: ObservableObject {
     }
 
     var orderSubtitle: String {
-        currentLevelNumber == 1 ? "Brew your first potion" : "Sort today's potions"
+        if let objectiveSummary = orderObjectiveSummary {
+            return objectiveSummary.shortCopy
+        }
+
+        return currentLevelNumber == 1 ? "Brew your first potion" : "Sort today's potions"
+    }
+
+    var orderObjectiveSummary: OrderObjectiveSummary? {
+        guard let level = gameManager.level,
+              case let .completeColor(targetColor) = level.objective else {
+            return nil
+        }
+
+        let order = level.customerOrder
+        return OrderObjectiveSummary(
+            potionName: order?.potionName ?? "\(targetColor.accessibilityName.capitalized) Potion",
+            targetColor: targetColor,
+            progress: targetColorProgress(for: targetColor),
+            requiredSections: Flask.maxCapacity,
+            shortCopy: order?.shortCopy ?? "Complete one \(targetColor.accessibilityName) flask"
+        )
     }
 
     var tutorialTitle: String {
@@ -484,6 +516,14 @@ final class HomeViewModel: ObservableObject {
         lastHerbsReward = reward
         herbsBalance += reward
         progressStore.herbsBalance = herbsBalance
+    }
+
+    private func targetColorProgress(for targetColor: LiquidColor) -> Int {
+        gameManager.playableFlasks
+            .map { flask in
+                flask.colors.filter { $0 == targetColor }.count
+            }
+            .max() ?? 0
     }
 
     private func dismissOrderBanner() {
