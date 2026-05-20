@@ -642,6 +642,7 @@ The gameplay already says “potion sorting,” but the current art direction do
 Tasks:
 - Add entry flow: Intro Screen -> Main Menu -> Game. **Done:** app now opens with a short skippable intro, then shows a main menu before launching the current order.
 - Move testing reset progress out of gameplay and into Main Menu with confirmation. **Done:** reset progress is now a secondary menu action with a destructive confirmation alert.
+- Add a clear way to leave an active round and return to Main Menu. **Done:** the round has a top-left menu button, and the menu CTA changes from `Start Order` to `Continue Order` for the active order.
 - Rework bottom controls into a coherent control group or clearly balanced corner layout.
 - Improve the bonus unlock sheet with title, benefit copy, clear CTA labels, and a visual locked-to-unlocked preview. **Done:** sheet now explains the extra flask, shows a locked-to-open preview, and uses `This order` / `Always available` CTA language.
 - Add a stronger win moment: order complete, moves, small reward, and Next CTA or delayed fallback. **Done:** completion overlay now shows a themed message, completed move count, herbs reward, tap-to-skip, and delayed next-level transition.
@@ -758,7 +759,8 @@ Goal:
 Scope:
 - skippable intro screen;
 - main menu with herbs balance, current level, next order, reward, and completed order count;
-- primary `Start Order` CTA;
+- primary `Start Order` CTA that becomes `Continue Order` when the current order is already active;
+- in-round menu button for returning to Main Menu without resetting the board;
 - reset progress moved from gameplay to menu with confirmation;
 - return to menu after a completed order advances to the next level.
 

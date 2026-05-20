@@ -4,10 +4,12 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var viewModel: HomeViewModel
     @State private var bonusSheetHeight: CGFloat = 260
+    private let onReturnToMenu: () -> Void
     private let layout = HomeLayout()
 
-    init(viewModel: HomeViewModel) {
+    init(viewModel: HomeViewModel, onReturnToMenu: @escaping () -> Void) {
         self.viewModel = viewModel
+        self.onReturnToMenu = onReturnToMenu
     }
 
     var body: some View {
@@ -250,6 +252,22 @@ struct HomeView: View {
                         y: controlCenterY + 48 * scale
                     )
             }
+
+            GameIconButton(
+                systemName: "house.fill",
+                title: "Menu",
+                style: .muted,
+                isEnabled: viewModel.canInteractWithBoard
+            ) {
+                onReturnToMenu()
+            }
+                .scaleEffect(scale)
+                .frame(width: scaledIconSize, height: scaledIconSize)
+                .position(
+                    x: GameMetric.horizontalInset * scale + scaledIconSize / 2,
+                    y: controlCenterY
+                )
+                .accessibilityLabel("Menu")
 
             GameIconButton(
                 systemName: "arrow.uturn.backward",

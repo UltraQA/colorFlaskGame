@@ -3,6 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var flow: AppFlow = .intro
+    @State private var activeOrderLevelIndex: Int?
 
     var body: some View {
         ZStack {
@@ -23,19 +24,26 @@ struct AppRootView: View {
                     objectiveSummary: viewModel.orderObjectiveSummary,
                     completedOrders: viewModel.currentLevelIndex,
                     rewardHerbs: HomeViewModel.herbsRewardPerCompletedOrder,
+                    isCurrentOrderInProgress: activeOrderLevelIndex == viewModel.currentLevelIndex,
                     onStartOrder: {
+                        activeOrderLevelIndex = viewModel.currentLevelIndex
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .game
                         }
                     },
                     onResetProgress: {
+                        activeOrderLevelIndex = nil
                         viewModel.resetProgress()
                     }
                 )
                 .transition(.opacity)
             case .game:
                 NavigationStack {
-                    HomeView(viewModel: viewModel)
+                    HomeView(viewModel: viewModel) {
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            flow = .mainMenu
+                        }
+                    }
                 }
                 .transition(.opacity)
             }
@@ -43,6 +51,7 @@ struct AppRootView: View {
         .tint(DSColor.brand)
         .onChange(of: viewModel.currentLevelIndex) { _, _ in
             guard flow == .game else { return }
+            activeOrderLevelIndex = nil
             withAnimation(.easeOut(duration: 0.28)) {
                 flow = .mainMenu
             }
@@ -89,18 +98,7 @@ private struct IntroView: View {
 
                 Spacer()
 
-                Button("Skip") {
-                    finish()
-                }
-                .font(DSTypography.headline)
-                .foregroundStyle(GameColor.controlSurface)
-                .padding(.horizontal, DSSpacing.xl)
-                .frame(height: 48)
-                .background(
-                    Capsule()
-                        .fill(GameColor.controlAccent)
-                )
-                .padding(.bottom, DSSpacing.xl)
+                Spacer()
             }
             .padding(.horizontal, DSSpacing.xl)
         }
@@ -115,6 +113,7 @@ private struct IntroView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Color Flask. Brew cozy potions. Sort the magic.")
+        .accessibilityHint("Tap anywhere to continue.")
     }
 
     private func finish() {
@@ -132,10 +131,19 @@ private struct MainMenuView: View {
     let objectiveSummary: OrderObjectiveSummary?
     let completedOrders: Int
     let rewardHerbs: Int
+    let isCurrentOrderInProgress: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
 
     @State private var isResetConfirmationPresented = false
+
+    private var startOrderTitle: String {
+        isCurrentOrderInProgress ? "Continue Order" : "Start Order"
+    }
+
+    private var startOrderIconName: String {
+        isCurrentOrderInProgress ? "arrow.right.circle.fill" : "play.fill"
+    }
 
     var body: some View {
         ZStack {
@@ -147,7 +155,7 @@ private struct MainMenuView: View {
                 nextOrderPanel
 
                 Button(action: onStartOrder) {
-                    Label("Start Order", systemImage: "play.fill")
+                    Label(startOrderTitle, systemImage: startOrderIconName)
                         .font(.system(size: 20, weight: .black, design: .rounded))
                         .foregroundStyle(GameColor.controlSurface)
                         .frame(maxWidth: .infinity)
@@ -307,7 +315,7 @@ private struct MainMenuView: View {
     private var statsPanel: some View {
         HStack(spacing: DSSpacing.md) {
             MenuStatView(title: "Completed", value: "\(completedOrders)")
-            MenuStatView(title: "Reward", value: "+\(rewardHerbs)")
+            MenuStatView(title: "Reward", value: "+\(rewardHerbs)", systemImage: "leaf.fill")
         }
     }
 }
@@ -315,13 +323,23 @@ private struct MainMenuView: View {
 private struct MenuStatView: View {
     let title: String
     let value: String
+    var systemImage: String?
 
     var body: some View {
         VStack(spacing: DSSpacing.xs) {
-            Text(value)
-                .font(.system(size: 24, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
+            HStack(spacing: DSSpacing.xs) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundStyle(GameColor.successAccent)
+                        .accessibilityHidden(true)
+                }
+
+                Text(value)
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
 
             Text(title)
                 .font(DSTypography.caption)
