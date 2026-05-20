@@ -64,14 +64,14 @@ struct HomeViewModelTiming: Equatable {
 
 @MainActor
 final class HomeViewModel: ObservableObject {
+    nonisolated static let herbsRewardPerCompletedOrder = 8
     nonisolated static let victoryMessages = [
-        "Fantastic!",
-        "Yaaay!",
-        "You did it!",
-        "Let's go!",
-        "Easy Peasy!",
         "Potion Perfect!",
-        "Well brewed!"
+        "Order Brewed!",
+        "Shelf Restocked!",
+        "Well Bottled!",
+        "Elixir Ready!",
+        "Fresh Batch!"
     ]
 
     @Published private(set) var gameManager: GameManager
@@ -86,6 +86,8 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
     @Published private(set) var currentLevelIndex: Int
     @Published private(set) var victoryMessage: String?
+    @Published private(set) var herbsBalance: Int
+    @Published private(set) var lastHerbsReward: Int?
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
 
     private var cancellables: Set<AnyCancellable> = []
@@ -120,6 +122,7 @@ final class HomeViewModel: ObservableObject {
         let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? resolvedProgressStore.isBonusFlaskPermanentlyUnlocked
         self.currentLevelIndex = resolvedLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = resolvedBonusUnlock
+        self.herbsBalance = resolvedProgressStore.herbsBalance
         self.gameManager = gameManager ?? .makeInitialLevel(
             levelIndex: resolvedLevelIndex,
             levelRepository: levelRepository,
@@ -252,6 +255,7 @@ final class HomeViewModel: ObservableObject {
         invalidFlaskIndices.removeAll()
         completionPhase = .playing
         victoryMessage = nil
+        lastHerbsReward = nil
         completionSequenceID += 1
         history.removeAll()
         moves = 0
@@ -357,6 +361,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         hintMove = nil
         victoryMessage = victoryMessageProvider()
+        awardHerbsForCompletedOrder()
         completionSequenceID += 1
         let sequenceID = completionSequenceID
         completionPhase = .resolvingWin
@@ -405,6 +410,13 @@ final class HomeViewModel: ObservableObject {
 
     private var messageVisibleDuration: TimeInterval {
         max(0, timing.completionDuration - microCelebrationDuration - nextLevelTransitionDuration)
+    }
+
+    private func awardHerbsForCompletedOrder() {
+        let reward = Self.herbsRewardPerCompletedOrder
+        lastHerbsReward = reward
+        herbsBalance += reward
+        progressStore.herbsBalance = herbsBalance
     }
 
     private func bindGameManager() {

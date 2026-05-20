@@ -3,12 +3,14 @@ import Foundation
 protocol ProgressStore {
     var currentLevelIndex: Int { get set }
     var isBonusFlaskPermanentlyUnlocked: Bool { get set }
+    var herbsBalance: Int { get set }
 }
 
 struct UserDefaultsProgressStore: ProgressStore {
     private enum Key {
         static let currentLevelIndex = "waterSort.progress.currentLevelIndex"
         static let bonusFlaskPurchase = "waterSort.bonusFlask.isPermanentlyUnlocked"
+        static let herbsBalance = "waterSort.economy.herbsBalance"
     }
 
     private let userDefaults: UserDefaults
@@ -32,6 +34,15 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.bonusFlaskPurchase)
+        }
+    }
+
+    var herbsBalance: Int {
+        get {
+            userDefaults.integer(forKey: Key.herbsBalance)
+        }
+        set {
+            userDefaults.set(newValue, forKey: Key.herbsBalance)
         }
     }
 }

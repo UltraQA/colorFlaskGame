@@ -263,7 +263,7 @@ High-priority follow-up tasks:
 - add first-run contextual tutorial for Levels 1-3;
 - protect reset after the first move with confirmation or long press. Current implementation uses confirmation after the first move;
 - improve hint guidance so source and target have clearly different visual treatment. Current implementation gives hint source and target distinct color, icon, halo, and motion treatment;
-- strengthen win celebration with shop/order language and herbs reward;
+- strengthen win celebration with shop/order language and herbs reward. Current implementation uses themed win messages and awards/persists a small herbs reward;
 - introduce locked bonus flask as optional help, not as required progression.
 
 ### Theme Direction

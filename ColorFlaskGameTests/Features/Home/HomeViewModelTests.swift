@@ -63,7 +63,8 @@ final class HomeViewModelTests: XCTestCase {
     func testProgressStoreSeedsInitialLevelAndPermanentBonusUnlock() {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 4,
-            isBonusFlaskPermanentlyUnlocked: true
+            isBonusFlaskPermanentlyUnlocked: true,
+            herbsBalance: 24
         )
 
         let viewModel = HomeViewModel(
@@ -74,6 +75,7 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.currentLevelIndex, 4)
         XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertEqual(viewModel.herbsBalance, 24)
         XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
@@ -152,6 +154,37 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
         XCTAssertEqual(viewModel.victoryMessage, "Potion Perfect!")
+    }
+
+    func testVictoryAwardsAndPersistsHerbs() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 12
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [red, red, red])
+                ]
+            ),
+            progressStore: progressStore,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            ),
+            victoryMessageProvider: { "Order Brewed!" }
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(viewModel.lastHerbsReward, HomeViewModel.herbsRewardPerCompletedOrder)
+        XCTAssertEqual(viewModel.herbsBalance, 12 + HomeViewModel.herbsRewardPerCompletedOrder)
+        XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
     }
 
     func testCompletionFlowAdvancesFromResolvingToCelebrating() async {
@@ -403,9 +436,15 @@ private struct SingleLevelRepository: LevelRepository {
 private final class SpyProgressStore: ProgressStore {
     var currentLevelIndex: Int
     var isBonusFlaskPermanentlyUnlocked: Bool
+    var herbsBalance: Int
 
-    init(currentLevelIndex: Int, isBonusFlaskPermanentlyUnlocked: Bool) {
+    init(
+        currentLevelIndex: Int,
+        isBonusFlaskPermanentlyUnlocked: Bool,
+        herbsBalance: Int = 0
+    ) {
         self.currentLevelIndex = currentLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
+        self.herbsBalance = herbsBalance
     }
 }

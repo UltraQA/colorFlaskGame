@@ -79,7 +79,11 @@ struct HomeView: View {
                 }
 
                 if viewModel.completionPhase.showsMessageOverlay, let victoryMessage = viewModel.victoryMessage {
-                    WinInterludeOverlay(message: victoryMessage, reduceMotion: reduceMotion) {
+                    WinInterludeOverlay(
+                        message: victoryMessage,
+                        herbsReward: viewModel.lastHerbsReward,
+                        reduceMotion: reduceMotion
+                    ) {
                         viewModel.skipCompletionInterlude()
                     }
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
@@ -570,6 +574,7 @@ private struct WinCelebrationView: View {
 
 private struct WinInterludeOverlay: View {
     let message: String
+    let herbsReward: Int?
     let reduceMotion: Bool
     let onSkip: () -> Void
 
@@ -613,6 +618,23 @@ private struct WinInterludeOverlay: View {
                 Text("Next potion brewing...")
                     .font(DSTypography.caption)
                     .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+
+                if let herbsReward {
+                    Label("+\(herbsReward) herbs", systemImage: "leaf.fill")
+                        .font(DSTypography.headline)
+                        .foregroundStyle(GameColor.controlSurface)
+                        .padding(.horizontal, DSSpacing.md)
+                        .padding(.vertical, DSSpacing.xs)
+                        .background(
+                            Capsule()
+                                .fill(GameColor.successAccent)
+                                .overlay(
+                                    Capsule()
+                                        .stroke(.white.opacity(0.42), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: GameColor.successAccent.opacity(0.24), radius: 12, x: 0, y: 8)
+                }
             }
             .padding(.horizontal, DSSpacing.lg)
             .scaleEffect(reduceMotion ? 1 : 1.02)
@@ -620,6 +642,14 @@ private struct WinInterludeOverlay: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSkip)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(message). Next potion brewing.")
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        if let herbsReward {
+            return "\(message). Earned \(herbsReward) herbs. Next potion brewing."
+        }
+
+        return "\(message). Next potion brewing."
     }
 }
