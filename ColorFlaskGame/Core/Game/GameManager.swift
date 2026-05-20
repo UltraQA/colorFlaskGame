@@ -252,6 +252,16 @@ struct LevelSolvabilityReport: Equatable {
     let visitedStateCount: Int
 }
 
+struct SolutionHintReport: Equatable {
+    let firstMove: PourPlan?
+    let solutionMoveCount: Int?
+    let visitedStateCount: Int
+
+    var foundSolution: Bool {
+        firstMove != nil
+    }
+}
+
 struct LevelSolvabilityValidator {
     let maxVisitedStates: Int
 
@@ -319,6 +329,72 @@ struct LevelSolvabilityValidator {
         return LevelSolvabilityReport(
             isSolvable: false,
             minimumMoveCount: nil,
+            visitedStateCount: visited.count
+        )
+    }
+}
+
+struct SolutionHintSolver {
+    let maxVisitedStates: Int
+
+    init(maxVisitedStates: Int = 75_000) {
+        self.maxVisitedStates = maxVisitedStates
+    }
+
+    func nextMove(for flasks: [Flask]) -> SolutionHintReport {
+        let playableFlasks = flasks.enumerated()
+            .filter { $0.element.isPlayable }
+
+        let originalIndices = playableFlasks.map(\.offset)
+        let initialState = SolverState(flasks: playableFlasks.map(\.element.colors))
+
+        guard !initialState.isSolved else {
+            return SolutionHintReport(
+                firstMove: nil,
+                solutionMoveCount: 0,
+                visitedStateCount: 1
+            )
+        }
+
+        var visited: Set<SolverState> = [initialState.normalized()]
+        var queue: [(state: SolverState, firstMove: SolverMove?, moveCount: Int)] = [
+            (initialState, nil, 0)
+        ]
+        var nextQueueIndex = 0
+
+        while nextQueueIndex < queue.count && visited.count < maxVisitedStates {
+            let item = queue[nextQueueIndex]
+            nextQueueIndex += 1
+
+            for move in item.state.validMoves {
+                var nextState = item.state
+                nextState.apply(move)
+
+                let normalizedState = nextState.normalized()
+                guard visited.insert(normalizedState).inserted else { continue }
+
+                let firstMove = item.firstMove ?? move
+                let nextMoveCount = item.moveCount + 1
+                if normalizedState.isSolved {
+                    return SolutionHintReport(
+                        firstMove: PourPlan(
+                            sourceIndex: originalIndices[firstMove.sourceIndex],
+                            targetIndex: originalIndices[firstMove.targetIndex],
+                            color: firstMove.color,
+                            amount: firstMove.amount
+                        ),
+                        solutionMoveCount: nextMoveCount,
+                        visitedStateCount: visited.count
+                    )
+                }
+
+                queue.append((nextState, firstMove, nextMoveCount))
+            }
+        }
+
+        return SolutionHintReport(
+            firstMove: nil,
+            solutionMoveCount: nil,
             visitedStateCount: visited.count
         )
     }
@@ -452,6 +528,15 @@ struct GameState: Equatable {
     }
 
     func firstValidMove() -> PourPlan? {
+        solutionHintReport().firstMove ?? bestLocalMove()
+    }
+
+    func solutionHintReport(maxVisitedStates: Int = 75_000) -> SolutionHintReport {
+        SolutionHintSolver(maxVisitedStates: maxVisitedStates)
+            .nextMove(for: flasks)
+    }
+
+    private func bestLocalMove() -> PourPlan? {
         flasks.indices
             .flatMap { sourceIndex in
                 flasks.indices.compactMap { targetIndex -> PourPlan? in
@@ -672,6 +757,10 @@ final class GameManager: ObservableObject {
 
     func firstValidMove() -> PourPlan? {
         state.firstValidMove()
+    }
+
+    func solutionHintReport(maxVisitedStates: Int = 75_000) -> SolutionHintReport {
+        state.solutionHintReport(maxVisitedStates: maxVisitedStates)
     }
 
     func pourPlan(from sourceIndex: Int, to targetIndex: Int) -> Result<PourPlan, PourError> {

@@ -150,6 +150,61 @@ final class GameManagerTests: XCTestCase {
         XCTAssertNotEqual(plan?.sourceIndex, 0)
     }
 
+    func testSolutionAwareHintFindsFirstMoveTowardSolvedState() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red, red, blue, blue]),
+                Flask(colors: [blue, blue, red, red]),
+                Flask(),
+                Flask()
+            ]
+        )
+
+        let report = manager.solutionHintReport()
+        let plan = manager.firstValidMove()
+
+        XCTAssertTrue(report.foundSolution)
+        XCTAssertEqual(report.solutionMoveCount, 3)
+        XCTAssertEqual(plan, report.firstMove)
+        XCTAssertEqual(plan?.sourceIndex, 0)
+        XCTAssertEqual(plan?.targetIndex, 2)
+        XCTAssertEqual(plan?.amount, 2)
+    }
+
+    func testSolutionAwareHintIgnoresLockedBonusFlask() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red, red, blue, blue]),
+                Flask(colors: [blue, blue, red, red]),
+                Flask(kind: .bonus, isUnlocked: false),
+                Flask(),
+                Flask()
+            ]
+        )
+
+        let plan = manager.solutionHintReport().firstMove
+
+        XCTAssertEqual(plan?.sourceIndex, 0)
+        XCTAssertEqual(plan?.targetIndex, 3)
+    }
+
+    func testSolutionHintReportsSearchLimitWithoutMove() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red, red, blue, blue]),
+                Flask(colors: [blue, blue, red, red]),
+                Flask(),
+                Flask()
+            ]
+        )
+
+        let report = manager.solutionHintReport(maxVisitedStates: 1)
+
+        XCTAssertFalse(report.foundSolution)
+        XCTAssertNil(report.solutionMoveCount)
+        XCTAssertEqual(report.visitedStateCount, 1)
+    }
+
     func testGameStatePoursWithoutObservableAdapter() {
         var state = GameState(
             flasks: [
