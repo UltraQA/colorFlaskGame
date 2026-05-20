@@ -4,6 +4,7 @@ protocol ProgressStore {
     var currentLevelIndex: Int { get set }
     var isBonusFlaskPermanentlyUnlocked: Bool { get set }
     var herbsBalance: Int { get set }
+    var hasCompletedOnboarding: Bool { get set }
 }
 
 struct UserDefaultsProgressStore: ProgressStore {
@@ -11,6 +12,7 @@ struct UserDefaultsProgressStore: ProgressStore {
         static let currentLevelIndex = "waterSort.progress.currentLevelIndex"
         static let bonusFlaskPurchase = "waterSort.bonusFlask.isPermanentlyUnlocked"
         static let herbsBalance = "waterSort.economy.herbsBalance"
+        static let hasCompletedOnboarding = "waterSort.onboarding.hasCompleted"
     }
 
     private let userDefaults: UserDefaults
@@ -43,6 +45,15 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.herbsBalance)
+        }
+    }
+
+    var hasCompletedOnboarding: Bool {
+        get {
+            userDefaults.bool(forKey: Key.hasCompletedOnboarding)
+        }
+        set {
+            userDefaults.set(newValue, forKey: Key.hasCompletedOnboarding)
         }
     }
 }

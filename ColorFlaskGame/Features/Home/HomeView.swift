@@ -71,6 +71,17 @@ struct HomeView: View {
                     .zIndex(GameLayer.controls + 1)
                 }
 
+                if viewModel.isTutorialPromptVisible && viewModel.completionPhase.isPlaying {
+                    TutorialPromptView(
+                        title: viewModel.tutorialTitle,
+                        subtitle: viewModel.tutorialSubtitle,
+                        scale: layoutScale
+                    )
+                    .position(tutorialPromptCenter(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale))
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(GameLayer.controls + 1)
+                }
+
                 if let animation = viewModel.pourAnimation {
                     PourStreamView(
                         from: layout.pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
@@ -250,9 +261,19 @@ struct HomeView: View {
         )
     }
 
+    private func tutorialPromptCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
+        let scaledIconSize = GameMetric.iconButtonSize * scale
+        let topControlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+        return CGPoint(
+            x: size.width / 2,
+            y: topControlCenterY + 120 * scale
+        )
+    }
+
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let scaledIconSize = GameMetric.iconButtonSize * scale
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let testingButtonCenterY = layout.testingButtonCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
 
         return ZStack {
             resetButton(scale: scale, isEnabled: viewModel.canInteractWithBoard)
@@ -276,6 +297,14 @@ struct HomeView: View {
                     y: controlCenterY
                 )
                 .accessibilityLabel("Hint")
+
+            TestingResetProgressButton(scale: scale) {
+                viewModel.resetProgressForTesting()
+            }
+            .position(
+                x: size.width / 2,
+                y: testingButtonCenterY
+            )
         }
     }
 
@@ -292,11 +321,11 @@ struct HomeView: View {
             return .invalidTarget
         }
 
-        if viewModel.hintMove?.sourceIndex == index {
+        if activeGuidanceMove?.sourceIndex == index {
             return .hintSource
         }
 
-        if viewModel.hintMove?.targetIndex == index {
+        if activeGuidanceMove?.targetIndex == index {
             return .hintTarget
         }
 
@@ -305,6 +334,10 @@ struct HomeView: View {
         }
 
         return flask.isEmpty ? .empty : .normal
+    }
+
+    private var activeGuidanceMove: HintMove? {
+        viewModel.hintMove ?? viewModel.tutorialMove
     }
 
     private func isFlaskTappable(_ flask: Flask) -> Bool {
@@ -381,6 +414,82 @@ private struct OrderBannerView: View {
         .frame(width: 220 * scale, height: 52 * scale)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle).")
+    }
+}
+
+private struct TestingResetProgressButton: View {
+    let scale: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("Reset progress")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(GameColor.glassStroke.opacity(0.86))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, DSSpacing.sm)
+                .frame(width: 124, height: 30)
+                .background(
+                    Capsule()
+                        .fill(GameColor.controlSurface.opacity(0.66))
+                        .overlay(
+                            Capsule()
+                                .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(scale)
+        .frame(width: 124 * scale, height: 30 * scale)
+        .accessibilityLabel("Reset progress")
+        .accessibilityHint("Clears saved test progress and restarts from the first order.")
+    }
+}
+
+private struct TutorialPromptView: View {
+    let title: String
+    let subtitle: String
+    let scale: CGFloat
+
+    var body: some View {
+        VStack(spacing: DSSpacing.xs) {
+            HStack(spacing: DSSpacing.xs) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlAccent)
+
+                Text(title)
+                    .font(DSTypography.headline)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
+            Text(subtitle)
+                .font(DSTypography.caption)
+                .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.82)
+        }
+        .padding(.horizontal, DSSpacing.md)
+        .padding(.vertical, DSSpacing.sm)
+        .frame(width: 274)
+        .background(
+            RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                .fill(GameColor.controlSurface.opacity(0.86))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                        .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.26), radius: 14, x: 0, y: 9)
+        .scaleEffect(scale)
+        .frame(width: 274 * scale, height: 76 * scale)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(subtitle)")
     }
 }
 

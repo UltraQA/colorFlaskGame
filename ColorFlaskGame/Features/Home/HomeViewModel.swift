@@ -89,6 +89,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var herbsBalance: Int
     @Published private(set) var lastHerbsReward: Int?
     @Published private(set) var isOrderBannerVisible = true
+    @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
 
     private var cancellables: Set<AnyCancellable> = []
@@ -124,6 +125,10 @@ final class HomeViewModel: ObservableObject {
         self.currentLevelIndex = resolvedLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = resolvedBonusUnlock
         self.herbsBalance = resolvedProgressStore.herbsBalance
+        self.isTutorialPromptVisible = Self.shouldShowTutorial(
+            levelNumber: resolvedLevelIndex + 1,
+            hasCompletedOnboarding: resolvedProgressStore.hasCompletedOnboarding
+        )
         self.gameManager = gameManager ?? .makeInitialLevel(
             levelIndex: resolvedLevelIndex,
             levelRepository: levelRepository,
@@ -159,6 +164,37 @@ final class HomeViewModel: ObservableObject {
         currentLevelNumber == 1 ? "Brew your first potion" : "Sort today's potions"
     }
 
+    var tutorialTitle: String {
+        switch currentLevelNumber {
+        case 1:
+            return "Pick a potion"
+        case 2:
+            return "Use empty flasks"
+        case 3:
+            return "Match the top color"
+        default:
+            return "Sort the order"
+        }
+    }
+
+    var tutorialSubtitle: String {
+        switch currentLevelNumber {
+        case 1:
+            return "Tap a flask, then tap where it should pour."
+        case 2:
+            return "Empty flasks give you room to brew."
+        case 3:
+            return "Pour onto matching colors or empty glass."
+        default:
+            return "Clear every potion to finish the order."
+        }
+    }
+
+    var tutorialMove: HintMove? {
+        guard isTutorialPromptVisible, let plan = gameManager.firstValidMove() else { return nil }
+        return HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
+    }
+
     var canUndo: Bool {
         completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil
     }
@@ -178,6 +214,7 @@ final class HomeViewModel: ObservableObject {
         guard gameManager.flasks.indices.contains(index), canInteractWithBoard else { return }
 
         dismissOrderBanner()
+        dismissTutorialPromptIfNeeded()
         let flask = gameManager.flasks[index]
 
         guard flask.isPlayable else {
@@ -223,6 +260,7 @@ final class HomeViewModel: ObservableObject {
         guard pourAnimation == nil, let plan = gameManager.firstValidMove() else { return }
 
         dismissOrderBanner()
+        dismissTutorialPromptIfNeeded()
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
         hintMove = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
@@ -236,6 +274,7 @@ final class HomeViewModel: ObservableObject {
         guard canInteractWithBoard else { return }
 
         dismissOrderBanner()
+        dismissTutorialPromptIfNeeded()
         guard moves > 0 else {
             startNewGame()
             return
@@ -251,6 +290,17 @@ final class HomeViewModel: ObservableObject {
 
     func cancelReset() {
         resetConfirmationPrompt = nil
+    }
+
+    func resetProgressForTesting() {
+        progressStore.currentLevelIndex = 0
+        progressStore.isBonusFlaskPermanentlyUnlocked = false
+        progressStore.herbsBalance = 0
+        progressStore.hasCompletedOnboarding = false
+        isBonusFlaskPermanentlyUnlocked = false
+        herbsBalance = 0
+        resetConfirmationPrompt = nil
+        loadLevel(at: 0)
     }
 
     func advanceToNextLevel() {
@@ -269,6 +319,7 @@ final class HomeViewModel: ObservableObject {
         victoryMessage = nil
         lastHerbsReward = nil
         isOrderBannerVisible = true
+        updateTutorialVisibility(for: levelIndex)
         completionSequenceID += 1
         history.removeAll()
         moves = 0
@@ -435,6 +486,34 @@ final class HomeViewModel: ObservableObject {
     private func dismissOrderBanner() {
         guard isOrderBannerVisible else { return }
         isOrderBannerVisible = false
+    }
+
+    private func dismissTutorialPromptIfNeeded() {
+        guard isTutorialPromptVisible else { return }
+
+        isTutorialPromptVisible = false
+        if currentLevelNumber >= 3 {
+            progressStore.hasCompletedOnboarding = true
+        }
+    }
+
+    private func updateTutorialVisibility(for levelIndex: Int) {
+        let levelNumber = levelIndex + 1
+        if levelNumber > 3 {
+            progressStore.hasCompletedOnboarding = true
+        }
+
+        isTutorialPromptVisible = Self.shouldShowTutorial(
+            levelNumber: levelNumber,
+            hasCompletedOnboarding: progressStore.hasCompletedOnboarding
+        )
+    }
+
+    private nonisolated static func shouldShowTutorial(
+        levelNumber: Int,
+        hasCompletedOnboarding: Bool
+    ) -> Bool {
+        !hasCompletedOnboarding && (1...3).contains(levelNumber)
     }
 
     private func bindGameManager() {

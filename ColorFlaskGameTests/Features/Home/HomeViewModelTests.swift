@@ -64,7 +64,8 @@ final class HomeViewModelTests: XCTestCase {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 4,
             isBonusFlaskPermanentlyUnlocked: true,
-            herbsBalance: 24
+            herbsBalance: 24,
+            hasCompletedOnboarding: true
         )
 
         let viewModel = HomeViewModel(
@@ -76,6 +77,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentLevelIndex, 4)
         XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
         XCTAssertEqual(viewModel.herbsBalance, 24)
+        XCTAssertFalse(viewModel.isTutorialPromptVisible)
         XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
@@ -148,6 +150,72 @@ final class HomeViewModelTests: XCTestCase {
         viewModel.handleFlaskTap(at: 0)
 
         XCTAssertFalse(viewModel.isOrderBannerVisible)
+    }
+
+    func testTutorialPromptStartsVisibleAndHighlightsSuggestedMove() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [])
+            ]
+        )
+
+        XCTAssertTrue(viewModel.isTutorialPromptVisible)
+        XCTAssertEqual(viewModel.tutorialTitle, "Pick a potion")
+        XCTAssertEqual(viewModel.tutorialMove, HintMove(sourceIndex: 0, targetIndex: 1))
+    }
+
+    func testTutorialPromptHidesAfterFirstInteraction() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [])
+            ]
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+
+        XCTAssertFalse(viewModel.isTutorialPromptVisible)
+    }
+
+    func testTutorialCompletionPersistsOnThirdOrderInteraction() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 2,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 2,
+            timing: .immediate
+        )
+
+        XCTAssertTrue(viewModel.isTutorialPromptVisible)
+
+        viewModel.handleFlaskTap(at: 0)
+
+        XCTAssertFalse(viewModel.isTutorialPromptVisible)
+        XCTAssertTrue(progressStore.hasCompletedOnboarding)
+    }
+
+    func testTutorialPromptDoesNotShowWhenOnboardingIsCompleted() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            hasCompletedOnboarding: true
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertFalse(viewModel.isTutorialPromptVisible)
     }
 
     func testOrderBannerResetsWhenAdvancingToNextLevel() {
@@ -368,6 +436,31 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.canUndo)
     }
 
+    func testResetProgressForTestingClearsPersistentProgress() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 5,
+            isBonusFlaskPermanentlyUnlocked: true,
+            herbsBalance: 42,
+            hasCompletedOnboarding: true
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.resetProgressForTesting()
+
+        XCTAssertEqual(viewModel.currentLevelIndex, 0)
+        XCTAssertFalse(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertEqual(viewModel.herbsBalance, 0)
+        XCTAssertTrue(viewModel.isTutorialPromptVisible)
+        XCTAssertEqual(progressStore.currentLevelIndex, 0)
+        XCTAssertFalse(progressStore.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertEqual(progressStore.herbsBalance, 0)
+        XCTAssertFalse(progressStore.hasCompletedOnboarding)
+    }
+
     func testStartNewGameCancelsPendingPourAnimation() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
@@ -471,14 +564,17 @@ private final class SpyProgressStore: ProgressStore {
     var currentLevelIndex: Int
     var isBonusFlaskPermanentlyUnlocked: Bool
     var herbsBalance: Int
+    var hasCompletedOnboarding: Bool
 
     init(
         currentLevelIndex: Int,
         isBonusFlaskPermanentlyUnlocked: Bool,
-        herbsBalance: Int = 0
+        herbsBalance: Int = 0,
+        hasCompletedOnboarding: Bool = false
     ) {
         self.currentLevelIndex = currentLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
+        self.hasCompletedOnboarding = hasCompletedOnboarding
     }
 }

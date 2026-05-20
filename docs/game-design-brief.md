@@ -260,7 +260,7 @@ Recommended direction from the current UI/UX and game design review:
 - defer a full main menu, map, shop economy, NPCs, daily rewards, and real IAP until the core loop is stronger.
 
 High-priority follow-up tasks:
-- add first-run contextual tutorial for Levels 1-3;
+- add first-run contextual tutorial for Levels 1-3. Current implementation shows non-blocking prompts with suggested source/target highlights and persists completion after the early orders;
 - protect reset after the first move with confirmation or long press. Current implementation uses confirmation after the first move;
 - improve hint guidance so source and target have clearly different visual treatment. Current implementation gives hint source and target distinct color, icon, halo, and motion treatment;
 - strengthen win celebration with shop/order language and herbs reward. Current implementation uses themed win messages and awards/persists a small herbs reward;
