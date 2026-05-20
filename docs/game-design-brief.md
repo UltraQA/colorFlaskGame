@@ -610,6 +610,20 @@ Tasks:
 Why this matters:
 The player must trust that every standard level is fair and that Hint helps rather than quietly making the puzzle worse.
 
+### Priority A2: Client Orders And Potion Goals
+
+Tasks:
+- Add a `LevelObjective` model that supports both classic `sortAll` levels and order-driven goals such as `completeColor(LiquidColor)`.
+- Add a lightweight `CustomerOrder` model with potion name, target color, reward herbs, and short order copy.
+- Implement the MVP order objective: complete one full flask of the requested color, for example a Luck Potion that requires a yellow flask.
+- Keep classic all-colors-sorted completion available as a level type and fallback.
+- Add clear in-game objective UI: potion name, target color swatch, and progress such as `2/4`.
+- Update win messaging from generic completion to order language, for example `Order Complete` and `Luck Potion brewed`.
+- Add tests for `sortAll` and `completeColor` win conditions, including cases where the order is complete before every color is sorted.
+
+Why this matters:
+Client Orders give the game a stronger identity than standard Water Sort. The player is not only sorting liquids, they are preparing a specific potion for a customer in the Cozy Potion Shop.
+
 ### Priority B: Cozy Potion Shop Visual Pass
 
 Tasks:
@@ -713,6 +727,26 @@ Scope:
 
 Owner:
 - Ohm + Gibbs.
+
+### Milestone 3.5: Client Order MVP
+
+Goal:
+- make each selected level feel like a potion shop order, not only an abstract sorting puzzle.
+
+Scope:
+- `LevelObjective`;
+- `CustomerOrder`;
+- one-target-color objective;
+- target progress UI;
+- order-specific win copy;
+- unit tests for order completion.
+
+Owner:
+- Ohm + Gibbs.
+
+Support:
+- Hume for objective UI clarity;
+- Confucius for target potion icon/color treatment.
 
 ### Milestone 4: Cozy Potion Visual Pass
 
