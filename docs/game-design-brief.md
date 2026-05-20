@@ -627,7 +627,7 @@ The gameplay already says “potion sorting,” but the current art direction do
 
 Tasks:
 - Rework bottom controls into a coherent control group or clearly balanced corner layout.
-- Improve the bonus unlock sheet with title, benefit copy, clear CTA labels, and a visual locked-to-unlocked preview.
+- Improve the bonus unlock sheet with title, benefit copy, clear CTA labels, and a visual locked-to-unlocked preview. **Done:** sheet now explains the extra flask, shows a locked-to-open preview, and uses `This order` / `Always available` CTA language.
 - Add a stronger win moment: order complete, moves, small reward, and Next CTA or delayed fallback.
 - Add a subtle board vignette or contrast layer behind flasks.
 - Differentiate hint source and target with more than one shared highlight style.

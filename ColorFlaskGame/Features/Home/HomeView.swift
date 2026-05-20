@@ -519,6 +519,22 @@ private struct BonusUnlockSheet: View {
                 .fill(GameColor.controlAccent.opacity(0.26))
                 .frame(width: 64, height: 6)
 
+            VStack(spacing: DSSpacing.xs) {
+                Text("Open extra flask")
+                    .font(DSTypography.title)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                Text("Add one empty flask when this order needs more room.")
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+
+            BonusFlaskPreview()
+
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: DSSpacing.lg) {
                     unlockActions
@@ -539,16 +555,18 @@ private struct BonusUnlockSheet: View {
     @ViewBuilder
     private var unlockActions: some View {
         unlockAction(
-            systemName: "play.rectangle.fill",
-            title: "Ad",
-            subtitle: "This round",
+            systemName: "play.circle.fill",
+            title: "This order",
+            subtitle: "Watch ad later",
+            footnote: "Temporary help",
             action: onUnlockForRound
         )
 
         unlockAction(
             systemName: "sparkles",
-            title: "Forever",
-            subtitle: "Always open",
+            title: "Always available",
+            subtitle: "Future purchase",
+            footnote: "Design stub",
             action: onUnlockForever
         )
     }
@@ -557,6 +575,7 @@ private struct BonusUnlockSheet: View {
         systemName: String,
         title: String,
         subtitle: String,
+        footnote: String,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -574,10 +593,20 @@ private struct BonusUnlockSheet: View {
                     Text(title)
                         .font(DSTypography.headline)
                         .foregroundStyle(GameColor.glassStroke)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
 
                     Text(subtitle)
                         .font(DSTypography.caption)
                         .foregroundStyle(GameColor.glassStroke.opacity(0.68))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+
+                    Text(footnote)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.48))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -594,6 +623,57 @@ private struct BonusUnlockSheet: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityHint(subtitle)
+    }
+}
+
+private struct BonusFlaskPreview: View {
+    var body: some View {
+        HStack(spacing: DSSpacing.md) {
+            previewFlask(isLocked: true)
+
+            Image(systemName: "arrow.right")
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.controlAccent)
+
+            previewFlask(isLocked: false)
+        }
+        .padding(.horizontal, DSSpacing.lg)
+        .padding(.vertical, DSSpacing.sm)
+        .background(
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.46))
+                .overlay(
+                    Capsule()
+                        .stroke(GameColor.glassStroke.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Locked extra flask becomes available.")
+    }
+
+    private func previewFlask(isLocked: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 9)
+                .stroke(
+                    isLocked ? GameColor.lockedStroke : GameColor.successAccent,
+                    style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: isLocked ? [4, 4] : [])
+                )
+                .frame(width: 32, height: 58)
+                .background(
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(GameColor.glassFill.opacity(isLocked ? 0.3 : 0.72))
+                )
+
+            Image(systemName: isLocked ? "lock.fill" : "checkmark")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(isLocked ? GameColor.glassStroke.opacity(0.72) : GameColor.controlSurface)
+                .frame(width: 22, height: 22)
+                .background(
+                    Circle()
+                        .fill(isLocked ? GameColor.controlSurface.opacity(0.72) : GameColor.successAccent)
+                )
+                .offset(y: 8)
+        }
     }
 }
 
