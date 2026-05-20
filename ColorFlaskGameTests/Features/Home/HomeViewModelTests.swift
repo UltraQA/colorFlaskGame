@@ -253,6 +253,54 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
+    func testResetAfterFirstMoveRequiresConfirmation() async {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+        let movedFlasks = viewModel.gameManager.flasks
+
+        viewModel.requestReset()
+
+        XCTAssertNotNil(viewModel.resetConfirmationPrompt)
+        XCTAssertEqual(viewModel.gameManager.flasks, movedFlasks)
+
+        viewModel.cancelReset()
+
+        XCTAssertNil(viewModel.resetConfirmationPrompt)
+        XCTAssertEqual(viewModel.gameManager.flasks, movedFlasks)
+    }
+
+    func testConfirmResetRestartsCurrentLevel() async {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+        let initialFlasks = viewModel.gameManager.flasks
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        viewModel.requestReset()
+        viewModel.confirmReset()
+
+        XCTAssertNil(viewModel.resetConfirmationPrompt)
+        XCTAssertEqual(viewModel.gameManager.flasks.map(\.colors), initialFlasks.map(\.colors))
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertFalse(viewModel.canUndo)
+    }
+
     func testStartNewGameCancelsPendingPourAnimation() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),

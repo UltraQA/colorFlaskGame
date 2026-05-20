@@ -261,8 +261,8 @@ Recommended direction from the current UI/UX and game design review:
 
 High-priority follow-up tasks:
 - add first-run contextual tutorial for Levels 1-3;
-- protect reset after the first move with confirmation or long press;
-- improve hint guidance so source and target have clearly different visual treatment;
+- protect reset after the first move with confirmation or long press. Current implementation uses confirmation after the first move;
+- improve hint guidance so source and target have clearly different visual treatment. Current implementation gives hint source and target distinct color, icon, halo, and motion treatment;
 - strengthen win celebration with shop/order language and herbs reward;
 - introduce locked bonus flask as optional help, not as required progression.
 

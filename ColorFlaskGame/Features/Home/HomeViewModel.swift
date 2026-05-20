@@ -21,6 +21,10 @@ struct BonusUnlockPrompt: Identifiable, Equatable {
     }
 }
 
+struct ResetConfirmationPrompt: Identifiable, Equatable {
+    let id = UUID()
+}
+
 enum LevelCompletionPhase: Equatable {
     case playing
     case resolvingWin
@@ -82,6 +86,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var isBonusFlaskPermanentlyUnlocked: Bool
     @Published private(set) var currentLevelIndex: Int
     @Published private(set) var victoryMessage: String?
+    @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
@@ -213,6 +218,26 @@ final class HomeViewModel: ObservableObject {
         loadLevel(at: currentLevelIndex)
     }
 
+    func requestReset() {
+        guard canInteractWithBoard else { return }
+
+        guard moves > 0 else {
+            startNewGame()
+            return
+        }
+
+        resetConfirmationPrompt = ResetConfirmationPrompt()
+    }
+
+    func confirmReset() {
+        resetConfirmationPrompt = nil
+        startNewGame()
+    }
+
+    func cancelReset() {
+        resetConfirmationPrompt = nil
+    }
+
     func advanceToNextLevel() {
         loadLevel(at: currentLevelIndex + 1)
     }
@@ -223,6 +248,7 @@ final class HomeViewModel: ObservableObject {
         pourAnimation = nil
         hintMove = nil
         bonusUnlockPrompt = nil
+        resetConfirmationPrompt = nil
         invalidFlaskIndices.removeAll()
         completionPhase = .playing
         victoryMessage = nil

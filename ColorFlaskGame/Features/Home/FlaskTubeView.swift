@@ -37,6 +37,7 @@ struct FlaskTubeView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             bottleGlow
+            hintHalo
 
             liquidStack
                 .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
@@ -67,12 +68,13 @@ struct FlaskTubeView: View {
             stateIndicator
         }
         .frame(width: GameMetric.flaskWidth, height: GameMetric.flaskHeight)
-        .offset(y: visualState == .selected ? -14 : 0)
+        .scaleEffect(visualState == .hintSource ? 1.04 : 1)
+        .offset(y: verticalOffset)
         .shadow(
             color: shadowColor,
-            radius: visualState == .selected ? 18 : 12,
+            radius: shadowRadius,
             x: 0,
-            y: visualState == .selected ? 12 : 10
+            y: shadowYOffset
         )
         .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: visualState)
         .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
@@ -88,6 +90,22 @@ struct FlaskTubeView: View {
             .frame(width: bottleImageWidth - 4, height: GameMetric.flaskHeight - 10)
             .padding(.bottom, 2)
             .blur(radius: 1.2)
+    }
+
+    @ViewBuilder
+    private var hintHalo: some View {
+        switch visualState {
+        case .hintSource, .hintTarget:
+            HintHaloView(
+                color: visualState == .hintSource ? GameColor.controlAccent : GameColor.hintTarget,
+                reduceMotion: reduceMotion,
+                isTarget: visualState == .hintTarget
+            )
+            .frame(width: GameMetric.flaskWidth + 18, height: GameMetric.flaskHeight + 18)
+            .padding(.bottom, -2)
+        default:
+            EmptyView()
+        }
     }
 
     private var liquidStack: some View {
@@ -125,8 +143,10 @@ struct FlaskTubeView: View {
             return GameColor.invalid
         case .completed:
             return GameColor.successAccent
-        case .hintSource, .hintTarget:
+        case .hintSource:
             return GameColor.controlAccent
+        case .hintTarget:
+            return GameColor.hintTarget
         case .normal, .empty, .lockedBonus:
             return GameColor.glassStroke.opacity(0.82)
         }
@@ -134,8 +154,10 @@ struct FlaskTubeView: View {
 
     private var strokeWidth: CGFloat {
         switch visualState {
-        case .selected, .invalidTarget, .hintSource, .hintTarget:
+        case .selected, .invalidTarget, .hintSource:
             return 4
+        case .hintTarget:
+            return 5
         default:
             return 3
         }
@@ -147,12 +169,47 @@ struct FlaskTubeView: View {
             return GameColor.selectedGlow.opacity(0.34)
         case .invalidTarget:
             return GameColor.invalid.opacity(0.34)
-        case .hintSource, .hintTarget:
+        case .hintSource:
             return GameColor.controlAccent.opacity(0.32)
+        case .hintTarget:
+            return GameColor.hintTarget.opacity(0.38)
         case .completed:
             return GameColor.successAccent.opacity(0.3)
         default:
             return .black.opacity(0.28)
+        }
+    }
+
+    private var verticalOffset: CGFloat {
+        switch visualState {
+        case .selected:
+            return -14
+        case .hintSource:
+            return -10
+        default:
+            return 0
+        }
+    }
+
+    private var shadowRadius: CGFloat {
+        switch visualState {
+        case .selected:
+            return 18
+        case .hintSource, .hintTarget:
+            return 20
+        default:
+            return 12
+        }
+    }
+
+    private var shadowYOffset: CGFloat {
+        switch visualState {
+        case .selected:
+            return 12
+        case .hintSource:
+            return 14
+        default:
+            return 10
         }
     }
 
@@ -181,7 +238,7 @@ struct FlaskTubeView: View {
 
         case .hintSource:
             indicatorSymbol(
-                systemName: "arrow.up",
+                systemName: "drop.fill",
                 foreground: GameColor.controlSurface,
                 background: GameColor.controlAccent,
                 size: 25
@@ -191,10 +248,10 @@ struct FlaskTubeView: View {
 
         case .hintTarget:
             indicatorSymbol(
-                systemName: "arrow.down",
+                systemName: "scope",
                 foreground: GameColor.controlSurface,
-                background: GameColor.controlAccent,
-                size: 25
+                background: GameColor.hintTarget,
+                size: 28
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             .offset(x: 8, y: -9)
@@ -279,6 +336,14 @@ struct FlaskTubeView: View {
             return "Double tap another flask to pour this potion."
         }
 
+        if visualState == .hintSource {
+            return "Suggested pour source."
+        }
+
+        if visualState == .hintTarget {
+            return "Suggested pour target."
+        }
+
         if flask.isEmpty {
             return "Double tap to use as a target flask."
         }
@@ -313,5 +378,41 @@ struct FlaskTubeView: View {
                 )
         }
         .padding(8)
+    }
+}
+
+private struct HintHaloView: View {
+    let color: Color
+    let reduceMotion: Bool
+    let isTarget: Bool
+
+    var body: some View {
+        if reduceMotion {
+            halo(phase: 0.2)
+        } else {
+            TimelineView(.animation) { timeline in
+                let phase = timeline.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 1.4) / 1.4
+                halo(phase: phase)
+            }
+        }
+    }
+
+    private func halo(phase: TimeInterval) -> some View {
+        let progress = CGFloat(phase)
+        let scale = isTarget ? 1 + progress * 0.08 : 1 + progress * 0.04
+        let opacity = isTarget ? 0.48 - progress * 0.22 : 0.36 - progress * 0.16
+
+        return RoundedRectangle(cornerRadius: 31)
+            .stroke(
+                color.opacity(max(0.16, opacity)),
+                style: StrokeStyle(
+                    lineWidth: isTarget ? 5 : 3,
+                    lineCap: .round,
+                    dash: isTarget ? [7, 6] : []
+                )
+            )
+            .scaleEffect(scale)
+            .blur(radius: isTarget ? 0.4 : 1.2)
     }
 }

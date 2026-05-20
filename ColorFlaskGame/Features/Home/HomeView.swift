@@ -106,6 +106,30 @@ struct HomeView: View {
             .presentationDetents([.height(bonusSheetHeight)])
             .presentationDragIndicator(.visible)
         }
+        .alert("Reset order?", isPresented: isResetConfirmationPresented) {
+            Button("Keep Playing", role: .cancel) {
+                viewModel.cancelReset()
+            }
+
+            Button("Reset", role: .destructive) {
+                viewModel.confirmReset()
+            }
+        } message: {
+            Text("Your current potion progress will be cleared.")
+        }
+    }
+
+    private var isResetConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: {
+                viewModel.resetConfirmationPrompt != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.cancelReset()
+                }
+            }
+        )
     }
 
     private var gameSurfaceBlurRadius: CGFloat {
@@ -144,7 +168,7 @@ struct HomeView: View {
 
     private func resetButton(scale: CGFloat, isEnabled: Bool) -> some View {
         Button {
-            viewModel.startNewGame()
+            viewModel.requestReset()
         } label: {
             ZStack {
                 Text("reset")
