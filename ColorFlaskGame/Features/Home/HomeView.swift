@@ -109,6 +109,7 @@ struct HomeView: View {
                 if viewModel.completionPhase.showsMessageOverlay, let victoryMessage = viewModel.victoryMessage {
                     WinInterludeOverlay(
                         message: victoryMessage,
+                        moveCount: viewModel.lastCompletedMoveCount,
                         herbsReward: viewModel.lastHerbsReward,
                         reduceMotion: reduceMotion
                     ) {
@@ -892,6 +893,7 @@ private struct WinCelebrationView: View {
 
 private struct WinInterludeOverlay: View {
     let message: String
+    let moveCount: Int?
     let herbsReward: Int?
     let reduceMotion: Bool
     let onSkip: () -> Void
@@ -937,21 +939,14 @@ private struct WinInterludeOverlay: View {
                     .font(DSTypography.caption)
                     .foregroundStyle(GameColor.glassStroke.opacity(0.78))
 
-                if let herbsReward {
-                    Label("+\(herbsReward) herbs", systemImage: "leaf.fill")
-                        .font(DSTypography.headline)
-                        .foregroundStyle(GameColor.controlSurface)
-                        .padding(.horizontal, DSSpacing.md)
-                        .padding(.vertical, DSSpacing.xs)
-                        .background(
-                            Capsule()
-                                .fill(GameColor.successAccent)
-                                .overlay(
-                                    Capsule()
-                                        .stroke(.white.opacity(0.42), lineWidth: 1)
-                                )
-                        )
-                        .shadow(color: GameColor.successAccent.opacity(0.24), radius: 12, x: 0, y: 8)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: DSSpacing.sm) {
+                        winStats
+                    }
+
+                    VStack(spacing: DSSpacing.xs) {
+                        winStats
+                    }
                 }
             }
             .padding(.horizontal, DSSpacing.lg)
@@ -964,10 +959,64 @@ private struct WinInterludeOverlay: View {
     }
 
     private var accessibilityLabel: String {
-        if let herbsReward {
-            return "\(message). Earned \(herbsReward) herbs. Next potion brewing."
+        var parts = [message]
+
+        if let moveCount {
+            parts.append("Completed in \(moveCount) moves")
         }
 
-        return "\(message). Next potion brewing."
+        if let herbsReward {
+            parts.append("Earned \(herbsReward) herbs")
+        }
+
+        parts.append("Next potion brewing")
+        return parts.joined(separator: ". ")
+    }
+
+    @ViewBuilder
+    private var winStats: some View {
+        if let moveCount {
+            WinStatPill(
+                systemName: "arrow.triangle.2.circlepath",
+                title: "\(moveCount) moves",
+                surfaceColor: GameColor.controlSurface,
+                foregroundColor: GameColor.glassStroke
+            )
+        }
+
+        if let herbsReward {
+            WinStatPill(
+                systemName: "leaf.fill",
+                title: "+\(herbsReward) herbs",
+                surfaceColor: GameColor.successAccent,
+                foregroundColor: GameColor.controlSurface
+            )
+        }
+    }
+}
+
+private struct WinStatPill: View {
+    let systemName: String
+    let title: String
+    let surfaceColor: Color
+    let foregroundColor: Color
+
+    var body: some View {
+        Label(title, systemImage: systemName)
+            .font(DSTypography.headline)
+            .foregroundStyle(foregroundColor)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+            .padding(.horizontal, DSSpacing.md)
+            .padding(.vertical, DSSpacing.xs)
+            .background(
+                Capsule()
+                    .fill(surfaceColor)
+                    .overlay(
+                        Capsule()
+                            .stroke(.white.opacity(0.36), lineWidth: 1)
+                    )
+            )
+            .shadow(color: surfaceColor.opacity(0.24), radius: 12, x: 0, y: 8)
     }
 }

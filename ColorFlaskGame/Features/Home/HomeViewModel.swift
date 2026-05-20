@@ -88,6 +88,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var victoryMessage: String?
     @Published private(set) var herbsBalance: Int
     @Published private(set) var lastHerbsReward: Int?
+    @Published private(set) var lastCompletedMoveCount: Int?
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
@@ -318,6 +319,7 @@ final class HomeViewModel: ObservableObject {
         completionPhase = .playing
         victoryMessage = nil
         lastHerbsReward = nil
+        lastCompletedMoveCount = nil
         isOrderBannerVisible = true
         updateTutorialVisibility(for: levelIndex)
         completionSequenceID += 1
@@ -425,6 +427,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         hintMove = nil
         victoryMessage = victoryMessageProvider()
+        lastCompletedMoveCount = moves
         awardHerbsForCompletedOrder()
         completionSequenceID += 1
         let sequenceID = completionSequenceID

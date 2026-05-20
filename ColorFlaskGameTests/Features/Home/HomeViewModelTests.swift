@@ -256,6 +256,7 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
         XCTAssertEqual(viewModel.victoryMessage, "Potion Perfect!")
+        XCTAssertEqual(viewModel.lastCompletedMoveCount, 1)
     }
 
     func testVictoryAwardsAndPersistsHerbs() async {
