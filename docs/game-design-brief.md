@@ -618,7 +618,7 @@ Tasks:
 - Implement the MVP order objective: complete one full flask of the requested color, for example a Luck Potion that requires a yellow flask.
 - Keep classic all-colors-sorted completion available as a level type and fallback.
 - Add clear in-game objective UI: potion name, target color swatch, and progress such as `2/4`. **Done:** objective levels expose a compact top badge with potion name, target color, and section progress.
-- Update win messaging from generic completion to order language, for example `Order Complete` and `Luck Potion brewed`.
+- Update win messaging from generic completion to order language, for example `Order Complete` and `Luck Potion brewed`. **Done:** classic levels now say `Order Complete`, while customer-order levels use the completed potion name.
 - Add tests for `sortAll` and `completeColor` win conditions, including cases where the order is complete before every color is sorted.
 
 Why this matters:

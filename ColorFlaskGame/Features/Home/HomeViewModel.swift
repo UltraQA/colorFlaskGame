@@ -462,7 +462,7 @@ final class HomeViewModel: ObservableObject {
 
         selectedFlaskIndex = nil
         hintMove = nil
-        victoryMessage = victoryMessageProvider()
+        victoryMessage = completionMessage()
         lastCompletedMoveCount = moves
         awardHerbsForCompletedOrder()
         completionSequenceID += 1
@@ -499,6 +499,14 @@ final class HomeViewModel: ObservableObject {
                 }
             }
         ]
+    }
+
+    private func completionMessage() -> String {
+        guard let objectiveSummary = orderObjectiveSummary else {
+            return "Order Complete! \(victoryMessageProvider())"
+        }
+
+        return "\(objectiveSummary.potionName) brewed!"
     }
 
     private var microCelebrationDuration: TimeInterval {

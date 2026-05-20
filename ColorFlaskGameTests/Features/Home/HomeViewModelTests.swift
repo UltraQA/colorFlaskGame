@@ -308,7 +308,48 @@ final class HomeViewModelTests: XCTestCase {
         await waitForScheduledMainQueueWork()
 
         XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
-        XCTAssertEqual(viewModel.victoryMessage, "Potion Perfect!")
+        XCTAssertEqual(viewModel.victoryMessage, "Order Complete! Potion Perfect!")
+        XCTAssertEqual(viewModel.lastCompletedMoveCount, 1)
+    }
+
+    func testVictoryMessageUsesCustomerOrderPotionName() async {
+        let level = Level(
+            id: 42,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [yellow]),
+                Flask(colors: [yellow, yellow, yellow]),
+                Flask(colors: [red, red, red, red])
+            ],
+            availableEmptyFlaskCount: 0,
+            hasLockedBonusFlask: false,
+            objective: .completeColor(yellow),
+            customerOrder: CustomerOrder(
+                customerName: "Mira",
+                potionName: "Luck Potion",
+                targetColor: yellow,
+                rewardHerbs: 8,
+                shortCopy: "Brew one bright luck potion."
+            )
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(flasks: level.filledFlasks, level: level),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            ),
+            victoryMessageProvider: { "Fantastic!" }
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(viewModel.victoryMessage, "Luck Potion brewed!")
         XCTAssertEqual(viewModel.lastCompletedMoveCount, 1)
     }
 
