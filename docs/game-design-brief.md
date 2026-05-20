@@ -255,7 +255,7 @@ After victory:
 Recommended direction from the current UI/UX and game design review:
 - use play-first onboarding instead of a heavy tutorial screen;
 - introduce a short first-launch splash later, then move directly into Level 1;
-- frame levels as shop orders over time, for example `Order 1` or `Level 1`;
+- frame levels as shop orders over time, for example `Order 1` or `Level 1`. Current implementation shows a lightweight order banner at level start;
 - keep the main game screen clean, with theme carried by background, copy, win feedback, and small banners;
 - defer a full main menu, map, shop economy, NPCs, daily rewards, and real IAP until the core loop is stronger.
 

@@ -134,6 +134,40 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks[1].colors, [red, red, red])
     }
 
+    func testOrderBannerStartsVisibleAndHidesAfterFirstFlaskTap() {
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [])
+            ]
+        )
+
+        XCTAssertTrue(viewModel.isOrderBannerVisible)
+        XCTAssertEqual(viewModel.orderTitle, "Order 1")
+
+        viewModel.handleFlaskTap(at: 0)
+
+        XCTAssertFalse(viewModel.isOrderBannerVisible)
+    }
+
+    func testOrderBannerResetsWhenAdvancingToNextLevel() {
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        XCTAssertFalse(viewModel.isOrderBannerVisible)
+
+        viewModel.advanceToNextLevel()
+
+        XCTAssertTrue(viewModel.isOrderBannerVisible)
+        XCTAssertEqual(viewModel.orderTitle, "Order 1")
+    }
+
     func testVictoryMessageAppearsWhenRoundCompletes() async {
         let viewModel = makeViewModel(
             flasks: [

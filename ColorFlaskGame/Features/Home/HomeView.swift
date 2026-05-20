@@ -60,6 +60,17 @@ struct HomeView: View {
                     .allowsHitTesting(viewModel.completionPhase.isPlaying)
                     .zIndex(GameLayer.controls)
 
+                if viewModel.isOrderBannerVisible && viewModel.completionPhase.isPlaying {
+                    OrderBannerView(
+                        title: viewModel.orderTitle,
+                        subtitle: viewModel.orderSubtitle,
+                        scale: layoutScale
+                    )
+                    .position(orderBannerCenter(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale))
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+                    .zIndex(GameLayer.controls + 1)
+                }
+
                 if let animation = viewModel.pourAnimation {
                     PourStreamView(
                         from: layout.pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
@@ -230,6 +241,15 @@ struct HomeView: View {
         }
     }
 
+    private func orderBannerCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
+        let scaledIconSize = GameMetric.iconButtonSize * scale
+        let topControlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+        return CGPoint(
+            x: size.width / 2,
+            y: topControlCenterY + 58 * scale
+        )
+    }
+
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let scaledIconSize = GameMetric.iconButtonSize * scale
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
@@ -314,6 +334,53 @@ private struct LevelBadge: View {
             }
             .shadow(color: .black.opacity(0.24), radius: 10, x: 0, y: 6)
             .accessibilityLabel("Level \(levelNumber)")
+    }
+}
+
+private struct OrderBannerView: View {
+    let title: String
+    let subtitle: String
+    let scale: CGFloat
+
+    var body: some View {
+        HStack(spacing: DSSpacing.sm) {
+            Image(systemName: "flask.fill")
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.controlAccent)
+                .frame(width: 30, height: 30)
+                .background(
+                    Circle()
+                        .fill(GameColor.controlSurface.opacity(0.8))
+                )
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(DSTypography.headline)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Text(subtitle)
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, DSSpacing.md)
+        .padding(.vertical, DSSpacing.xs)
+        .frame(width: 220, alignment: .leading)
+        .background(
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.84))
+                .overlay(
+                    Capsule()
+                        .stroke(GameColor.controlAccent.opacity(0.34), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.24), radius: 12, x: 0, y: 8)
+        .scaleEffect(scale)
+        .frame(width: 220 * scale, height: 52 * scale)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(subtitle).")
     }
 }
 

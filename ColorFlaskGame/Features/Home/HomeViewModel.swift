@@ -88,6 +88,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var victoryMessage: String?
     @Published private(set) var herbsBalance: Int
     @Published private(set) var lastHerbsReward: Int?
+    @Published private(set) var isOrderBannerVisible = true
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
 
     private var cancellables: Set<AnyCancellable> = []
@@ -150,6 +151,14 @@ final class HomeViewModel: ObservableObject {
         (gameManager.level?.id ?? currentLevelIndex + 1)
     }
 
+    var orderTitle: String {
+        "Order \(currentLevelNumber)"
+    }
+
+    var orderSubtitle: String {
+        currentLevelNumber == 1 ? "Brew your first potion" : "Sort today's potions"
+    }
+
     var canUndo: Bool {
         completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil
     }
@@ -168,6 +177,7 @@ final class HomeViewModel: ObservableObject {
     func handleFlaskTap(at index: Int) {
         guard gameManager.flasks.indices.contains(index), canInteractWithBoard else { return }
 
+        dismissOrderBanner()
         let flask = gameManager.flasks[index]
 
         guard flask.isPlayable else {
@@ -212,6 +222,7 @@ final class HomeViewModel: ObservableObject {
     func showHint() {
         guard pourAnimation == nil, let plan = gameManager.firstValidMove() else { return }
 
+        dismissOrderBanner()
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
         hintMove = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
@@ -224,6 +235,7 @@ final class HomeViewModel: ObservableObject {
     func requestReset() {
         guard canInteractWithBoard else { return }
 
+        dismissOrderBanner()
         guard moves > 0 else {
             startNewGame()
             return
@@ -256,6 +268,7 @@ final class HomeViewModel: ObservableObject {
         completionPhase = .playing
         victoryMessage = nil
         lastHerbsReward = nil
+        isOrderBannerVisible = true
         completionSequenceID += 1
         history.removeAll()
         moves = 0
@@ -417,6 +430,11 @@ final class HomeViewModel: ObservableObject {
         lastHerbsReward = reward
         herbsBalance += reward
         progressStore.herbsBalance = herbsBalance
+    }
+
+    private func dismissOrderBanner() {
+        guard isOrderBannerVisible else { return }
+        isOrderBannerVisible = false
     }
 
     private func bindGameManager() {
