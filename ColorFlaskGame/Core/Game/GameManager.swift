@@ -162,6 +162,19 @@ enum Difficulty: String, Equatable {
     case medium
 }
 
+enum LevelObjective: Equatable {
+    case sortAll
+    case completeColor(LiquidColor)
+}
+
+struct CustomerOrder: Equatable {
+    let customerName: String
+    let potionName: String
+    let targetColor: LiquidColor
+    let rewardHerbs: Int
+    let shortCopy: String
+}
+
 struct Level: Identifiable, Equatable {
     static let lockedBonusIntroductionLevelID = 5
 
@@ -170,6 +183,26 @@ struct Level: Identifiable, Equatable {
     let filledFlasks: [Flask]
     let availableEmptyFlaskCount: Int
     let hasLockedBonusFlask: Bool
+    let objective: LevelObjective
+    let customerOrder: CustomerOrder?
+
+    init(
+        id: Int,
+        difficulty: Difficulty,
+        filledFlasks: [Flask],
+        availableEmptyFlaskCount: Int,
+        hasLockedBonusFlask: Bool,
+        objective: LevelObjective = .sortAll,
+        customerOrder: CustomerOrder? = nil
+    ) {
+        self.id = id
+        self.difficulty = difficulty
+        self.filledFlasks = filledFlasks
+        self.availableEmptyFlaskCount = availableEmptyFlaskCount
+        self.hasLockedBonusFlask = hasLockedBonusFlask
+        self.objective = objective
+        self.customerOrder = customerOrder
+    }
 
     var validationIssues: [LevelValidationIssue] {
         var issues: [LevelValidationIssue] = []
@@ -226,6 +259,26 @@ struct Level: Identifiable, Equatable {
                 )
             )
             break
+        }
+
+        if case let .completeColor(targetColor) = objective,
+           colorCounts[targetColor, default: 0] < Flask.maxCapacity {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Order objective target color must appear at least \(Flask.maxCapacity) times."
+                )
+            )
+        }
+
+        if let customerOrder, case let .completeColor(targetColor) = objective,
+           customerOrder.targetColor != targetColor {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Customer order target color must match the level objective."
+                )
+            )
         }
 
         return issues
@@ -509,9 +562,18 @@ struct GameState: Equatable {
     }
 
     var isRoundCompleted: Bool {
-        flasks
-            .filter(\.isPlayable)
-            .allSatisfy(\.isSolved)
+        switch level?.objective ?? .sortAll {
+        case .sortAll:
+            return flasks
+                .filter(\.isPlayable)
+                .allSatisfy(\.isSolved)
+        case let .completeColor(targetColor):
+            return flasks
+                .filter(\.isPlayable)
+                .contains { flask in
+                    flask.isFull && flask.colors.allSatisfy { $0 == targetColor }
+                }
+        }
     }
 
     var playableFlasks: [Flask] {

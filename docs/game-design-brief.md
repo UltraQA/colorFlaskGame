@@ -613,8 +613,8 @@ The player must trust that every standard level is fair and that Hint helps rath
 ### Priority A2: Client Orders And Potion Goals
 
 Tasks:
-- Add a `LevelObjective` model that supports both classic `sortAll` levels and order-driven goals such as `completeColor(LiquidColor)`.
-- Add a lightweight `CustomerOrder` model with potion name, target color, reward herbs, and short order copy.
+- Add a `LevelObjective` model that supports both classic `sortAll` levels and order-driven goals such as `completeColor(LiquidColor)`. **Done:** core levels can now use classic sorting or a target-color potion objective.
+- Add a lightweight `CustomerOrder` model with potion name, target color, reward herbs, and short order copy. **Done:** customer order data now lives beside level objective data.
 - Implement the MVP order objective: complete one full flask of the requested color, for example a Luck Potion that requires a yellow flask.
 - Keep classic all-colors-sorted completion available as a level type and fallback.
 - Add clear in-game objective UI: potion name, target color swatch, and progress such as `2/4`.

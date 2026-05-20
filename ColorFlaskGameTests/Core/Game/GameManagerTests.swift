@@ -323,6 +323,103 @@ final class GameManagerTests: XCTestCase {
         XCTAssertTrue(manager.isRoundCompleted)
     }
 
+    func testSortAllObjectiveRequiresEveryPlayableFlaskSolved() {
+        let level = Level(
+            id: 101,
+            difficulty: .easy,
+            filledFlasks: [],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: false,
+            objective: .sortAll
+        )
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red, red, red, red]),
+                Flask(colors: [blue, red])
+            ],
+            level: level
+        )
+
+        XCTAssertFalse(manager.isRoundCompleted)
+    }
+
+    func testCompleteColorObjectiveWinsWhenTargetPotionIsFull() {
+        let order = CustomerOrder(
+            customerName: "Mira",
+            potionName: "Luck Potion",
+            targetColor: yellow,
+            rewardHerbs: 8,
+            shortCopy: "Brew one bright luck potion."
+        )
+        let level = Level(
+            id: 102,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [yellow, yellow, yellow, yellow]),
+                Flask(colors: [red, blue])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: false,
+            objective: .completeColor(yellow),
+            customerOrder: order
+        )
+        let manager = GameManager(
+            flasks: level.filledFlasks,
+            level: level
+        )
+
+        XCTAssertTrue(manager.isRoundCompleted)
+    }
+
+    func testCompleteColorObjectiveIgnoresLockedTargetFlask() {
+        let level = Level(
+            id: 103,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [red, red, red, red])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: false,
+            objective: .completeColor(yellow)
+        )
+        let manager = GameManager(
+            flasks: [
+                Flask(kind: .bonus, colors: [yellow, yellow, yellow, yellow], isUnlocked: false),
+                Flask(colors: [red, red, red, red])
+            ],
+            level: level
+        )
+
+        XCTAssertFalse(manager.isRoundCompleted)
+    }
+
+    func testOrderTargetColorMustMatchObjective() {
+        let level = Level(
+            id: 104,
+            difficulty: .easy,
+            filledFlasks: [
+                Flask(colors: [yellow, yellow, yellow, yellow])
+            ],
+            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            hasLockedBonusFlask: false,
+            objective: .completeColor(yellow),
+            customerOrder: CustomerOrder(
+                customerName: "Mira",
+                potionName: "Calm Potion",
+                targetColor: blue,
+                rewardHerbs: 8,
+                shortCopy: "Brew one calm potion."
+            )
+        )
+
+        XCTAssertFalse(level.isValid)
+        XCTAssertTrue(
+            level.validationIssues.contains {
+                $0.message == "Customer order target color must match the level objective."
+            }
+        )
+    }
+
     private func generatedLevelSnapshot(_ manager: GameManager) -> [GeneratedFlaskSnapshot] {
         manager.flasks.map { flask in
             GeneratedFlaskSnapshot(
