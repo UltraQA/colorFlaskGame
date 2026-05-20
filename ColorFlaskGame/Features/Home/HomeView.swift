@@ -18,6 +18,12 @@ struct HomeView: View {
                 gameBackground(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
                     .zIndex(GameLayer.background)
 
+                BoardVignetteView(scale: layoutScale)
+                    .position(boardVignetteCenter(in: proxy.size))
+                    .blur(radius: gameSurfaceBlurRadius)
+                    .opacity(gameSurfaceOpacity)
+                    .zIndex(GameLayer.background + 1)
+
                 ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
                     Button {
                         viewModel.handleFlaskTap(at: index)
@@ -270,6 +276,10 @@ struct HomeView: View {
         )
     }
 
+    private func boardVignetteCenter(in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width / 2, y: size.height * 0.48)
+    }
+
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let scaledIconSize = GameMetric.iconButtonSize * scale
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
@@ -367,6 +377,58 @@ private struct LevelBadge: View {
             }
             .shadow(color: .black.opacity(0.24), radius: 10, x: 0, y: 6)
             .accessibilityLabel("Level \(levelNumber)")
+    }
+}
+
+private struct BoardVignetteView: View {
+    let scale: CGFloat
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .clear,
+                            GameColor.controlSurface.opacity(0.18),
+                            GameColor.controlSurface.opacity(0.24),
+                            GameColor.controlSurface.opacity(0.18),
+                            .clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .clear,
+                            Color.white.opacity(0.07),
+                            .clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .blendMode(.screen)
+        }
+        .mask(
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .white,
+                    .white,
+                    .clear
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .frame(width: GameMetric.baseBoardWidth * scale, height: 560 * scale)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
