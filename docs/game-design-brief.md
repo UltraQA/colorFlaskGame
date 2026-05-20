@@ -640,6 +640,8 @@ The gameplay already says “potion sorting,” but the current art direction do
 ### Priority C: UI/UX Clarity
 
 Tasks:
+- Add entry flow: Intro Screen -> Main Menu -> Game. **Done:** app now opens with a short skippable intro, then shows a main menu before launching the current order.
+- Move testing reset progress out of gameplay and into Main Menu with confirmation. **Done:** reset progress is now a secondary menu action with a destructive confirmation alert.
 - Rework bottom controls into a coherent control group or clearly balanced corner layout.
 - Improve the bonus unlock sheet with title, benefit copy, clear CTA labels, and a visual locked-to-unlocked preview. **Done:** sheet now explains the extra flask, shows a locked-to-open preview, and uses `This order` / `Always available` CTA language.
 - Add a stronger win moment: order complete, moves, small reward, and Next CTA or delayed fallback. **Done:** completion overlay now shows a themed message, completed move count, herbs reward, tap-to-skip, and delayed next-level transition.
@@ -747,6 +749,24 @@ Owner:
 Support:
 - Hume for objective UI clarity;
 - Confucius for target potion icon/color treatment.
+
+### Milestone 3.6: Intro And Main Menu MVP
+
+Goal:
+- give the game a clear potion shop entry point before the player starts the current order.
+
+Scope:
+- skippable intro screen;
+- main menu with herbs balance, current level, next order, reward, and completed order count;
+- primary `Start Order` CTA;
+- reset progress moved from gameplay to menu with confirmation;
+- return to menu after a completed order advances to the next level.
+
+Owner:
+- Hume + Gibbs.
+
+Support:
+- Ohm for order/menu information hierarchy.
 
 ### Milestone 4: Cozy Potion Visual Pass
 

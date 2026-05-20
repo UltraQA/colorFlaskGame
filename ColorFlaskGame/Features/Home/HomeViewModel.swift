@@ -326,6 +326,10 @@ final class HomeViewModel: ObservableObject {
     }
 
     func resetProgressForTesting() {
+        resetProgress()
+    }
+
+    func resetProgress() {
         progressStore.currentLevelIndex = 0
         progressStore.isBonusFlaskPermanentlyUnlocked = false
         progressStore.herbsBalance = 0

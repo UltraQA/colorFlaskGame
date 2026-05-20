@@ -1,10 +1,371 @@
 import SwiftUI
 
 struct AppRootView: View {
+    @StateObject private var viewModel = HomeViewModel()
+    @State private var flow: AppFlow = .intro
+
     var body: some View {
-        NavigationStack {
-            HomeView(viewModel: HomeViewModel())
+        ZStack {
+            switch flow {
+            case .intro:
+                IntroView {
+                    withAnimation(.easeOut(duration: 0.28)) {
+                        flow = .mainMenu
+                    }
+                }
+                .transition(.opacity)
+            case .mainMenu:
+                MainMenuView(
+                    herbsBalance: viewModel.herbsBalance,
+                    levelNumber: viewModel.currentLevelNumber,
+                    orderTitle: viewModel.orderTitle,
+                    orderSubtitle: viewModel.orderSubtitle,
+                    objectiveSummary: viewModel.orderObjectiveSummary,
+                    completedOrders: viewModel.currentLevelIndex,
+                    rewardHerbs: HomeViewModel.herbsRewardPerCompletedOrder,
+                    onStartOrder: {
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            flow = .game
+                        }
+                    },
+                    onResetProgress: {
+                        viewModel.resetProgress()
+                    }
+                )
+                .transition(.opacity)
+            case .game:
+                NavigationStack {
+                    HomeView(viewModel: viewModel)
+                }
+                .transition(.opacity)
+            }
         }
         .tint(DSColor.brand)
+        .onChange(of: viewModel.currentLevelIndex) { _, _ in
+            guard flow == .game else { return }
+            withAnimation(.easeOut(duration: 0.28)) {
+                flow = .mainMenu
+            }
+        }
+    }
+}
+
+private enum AppFlow {
+    case intro
+    case mainMenu
+    case game
+}
+
+private struct IntroView: View {
+    let onFinish: () -> Void
+    @State private var hasFinished = false
+
+    var body: some View {
+        ZStack {
+            MenuBackgroundView()
+
+            VStack(spacing: DSSpacing.lg) {
+                Spacer()
+
+                Image(systemName: "flask.fill")
+                    .font(.system(size: 78, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlAccent)
+                    .shadow(color: GameColor.controlAccent.opacity(0.28), radius: 14, x: 0, y: 8)
+                    .accessibilityHidden(true)
+
+                VStack(spacing: DSSpacing.xs) {
+                    Text("Color Flask")
+                        .font(.system(size: 42, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+
+                    Text("Brew cozy potions. Sort the magic.")
+                        .font(DSTypography.headline)
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                Button("Skip") {
+                    finish()
+                }
+                .font(DSTypography.headline)
+                .foregroundStyle(GameColor.controlSurface)
+                .padding(.horizontal, DSSpacing.xl)
+                .frame(height: 48)
+                .background(
+                    Capsule()
+                        .fill(GameColor.controlAccent)
+                )
+                .padding(.bottom, DSSpacing.xl)
+            }
+            .padding(.horizontal, DSSpacing.xl)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            finish()
+        }
+        .task {
+            guard !hasFinished else { return }
+            try? await Task.sleep(nanoseconds: 1_800_000_000)
+            finish()
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Color Flask. Brew cozy potions. Sort the magic.")
+    }
+
+    private func finish() {
+        guard !hasFinished else { return }
+        hasFinished = true
+        onFinish()
+    }
+}
+
+private struct MainMenuView: View {
+    let herbsBalance: Int
+    let levelNumber: Int
+    let orderTitle: String
+    let orderSubtitle: String
+    let objectiveSummary: OrderObjectiveSummary?
+    let completedOrders: Int
+    let rewardHerbs: Int
+    let onStartOrder: () -> Void
+    let onResetProgress: () -> Void
+
+    @State private var isResetConfirmationPresented = false
+
+    var body: some View {
+        ZStack {
+            MenuBackgroundView()
+
+            VStack(alignment: .leading, spacing: DSSpacing.lg) {
+                header
+
+                nextOrderPanel
+
+                Button(action: onStartOrder) {
+                    Label("Start Order", systemImage: "play.fill")
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundStyle(GameColor.controlSurface)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
+                        .background(
+                            Capsule()
+                                .fill(GameColor.controlAccent)
+                                .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 16, x: 0, y: 10)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the current potion order.")
+
+                statsPanel
+
+                Spacer(minLength: DSSpacing.md)
+
+                Button("Reset Progress") {
+                    isResetConfirmationPresented = true
+                }
+                .font(DSTypography.headline)
+                .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(
+                    Capsule()
+                        .fill(GameColor.controlSurface.opacity(0.64))
+                        .overlay(
+                            Capsule()
+                                .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, DSSpacing.xl)
+            .padding(.top, DSSpacing.xxl)
+            .padding(.bottom, DSSpacing.xl)
+        }
+        .alert("Reset progress?", isPresented: $isResetConfirmationPresented) {
+            Button("Cancel", role: .cancel) {}
+
+            Button("Reset", role: .destructive) {
+                onResetProgress()
+            }
+        } message: {
+            Text("This will clear levels, herbs, and completed orders.")
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: DSSpacing.md) {
+            VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                Text("Potion Shop")
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Text("Potion orders await")
+                    .font(DSTypography.headline)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: DSSpacing.sm)
+
+            Label("\(herbsBalance)", systemImage: "leaf.fill")
+                .font(DSTypography.headline)
+                .foregroundStyle(GameColor.controlSurface)
+                .padding(.horizontal, DSSpacing.md)
+                .frame(height: 38)
+                .background(
+                    Capsule()
+                        .fill(GameColor.successAccent)
+                )
+                .accessibilityLabel("\(herbsBalance) herbs")
+        }
+    }
+
+    private var nextOrderPanel: some View {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            HStack(spacing: DSSpacing.sm) {
+                Text("Level \(levelNumber)")
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.controlSurface)
+                    .padding(.horizontal, DSSpacing.sm)
+                    .frame(height: 26)
+                    .background(
+                        Capsule()
+                            .fill(GameColor.controlAccent)
+                    )
+
+                Spacer()
+
+                Label("+\(rewardHerbs)", systemImage: "leaf.fill")
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.84))
+                    .lineLimit(1)
+            }
+
+            VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                Text(orderTitle)
+                    .font(DSTypography.title)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Text(orderSubtitle)
+                    .font(DSTypography.body)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .lineLimit(2)
+            }
+
+            if let objectiveSummary {
+                HStack(spacing: DSSpacing.sm) {
+                    Circle()
+                        .fill(objectiveSummary.targetColor.swiftUIColor)
+                        .frame(width: 22, height: 22)
+                        .overlay(
+                            Circle()
+                                .stroke(.white.opacity(0.58), lineWidth: 2)
+                        )
+
+                    Text(objectiveSummary.potionName)
+                        .font(DSTypography.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    Text(objectiveSummary.progressText)
+                        .font(DSTypography.headline)
+                        .foregroundStyle(GameColor.controlSurface)
+                        .padding(.horizontal, DSSpacing.sm)
+                        .frame(height: 28)
+                        .background(
+                            Capsule()
+                                .fill(GameColor.controlAccent)
+                        )
+                }
+            }
+        }
+        .padding(DSSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                .fill(GameColor.controlSurface.opacity(0.78))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                        .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.24), radius: 16, x: 0, y: 10)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var statsPanel: some View {
+        HStack(spacing: DSSpacing.md) {
+            MenuStatView(title: "Completed", value: "\(completedOrders)")
+            MenuStatView(title: "Reward", value: "+\(rewardHerbs)")
+        }
+    }
+}
+
+private struct MenuStatView: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(spacing: DSSpacing.xs) {
+            Text(value)
+                .font(.system(size: 24, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+
+            Text(title)
+                .font(DSTypography.caption)
+                .foregroundStyle(GameColor.glassStroke.opacity(0.76))
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 82)
+        .background(
+            RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                .fill(GameColor.controlSurface.opacity(0.64))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                        .stroke(GameColor.glassStroke.opacity(0.12), lineWidth: 1)
+                )
+        )
+    }
+}
+
+private struct MenuBackgroundView: View {
+    var body: some View {
+        ZStack {
+            GameColor.potionBackground
+                .ignoresSafeArea()
+
+            Image("GameBackground")
+                .resizable()
+                .scaledToFill()
+                .opacity(0.82)
+                .ignoresSafeArea()
+
+            GameColor.controlSurface
+                .opacity(0.28)
+                .ignoresSafeArea()
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    GameColor.controlSurface.opacity(0.36)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
     }
 }

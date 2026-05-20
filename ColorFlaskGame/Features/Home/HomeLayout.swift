@@ -47,8 +47,4 @@ struct HomeLayout {
     func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
         size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.iconButtonSize * scale / 2
     }
-
-    func testingButtonCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
-        size.height - safeAreaInsets.bottom - 18 * scale
-    }
 }

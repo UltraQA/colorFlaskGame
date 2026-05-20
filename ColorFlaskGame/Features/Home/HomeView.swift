@@ -2,12 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var viewModel: HomeViewModel
+    @ObservedObject private var viewModel: HomeViewModel
     @State private var bonusSheetHeight: CGFloat = 260
     private let layout = HomeLayout()
 
     init(viewModel: HomeViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        self.viewModel = viewModel
     }
 
     var body: some View {
@@ -295,7 +295,6 @@ struct HomeView: View {
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let scaledIconSize = GameMetric.iconButtonSize * scale
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
-        let testingButtonCenterY = layout.testingButtonCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
 
         return ZStack {
             resetButton(scale: scale, isEnabled: viewModel.canInteractWithBoard)
@@ -319,14 +318,6 @@ struct HomeView: View {
                     y: controlCenterY
                 )
                 .accessibilityLabel("Hint")
-
-            TestingResetProgressButton(scale: scale) {
-                viewModel.resetProgressForTesting()
-            }
-            .position(
-                x: size.width / 2,
-                y: testingButtonCenterY
-            )
         }
     }
 
@@ -546,36 +537,6 @@ private struct OrderBannerView: View {
         .frame(width: 220 * scale, height: 52 * scale)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle).")
-    }
-}
-
-private struct TestingResetProgressButton: View {
-    let scale: CGFloat
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text("Reset progress")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(GameColor.glassStroke.opacity(0.86))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.horizontal, DSSpacing.sm)
-                .frame(width: 124, height: 30)
-                .background(
-                    Capsule()
-                        .fill(GameColor.controlSurface.opacity(0.66))
-                        .overlay(
-                            Capsule()
-                                .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-        .scaleEffect(scale)
-        .frame(width: 124 * scale, height: 30 * scale)
-        .accessibilityLabel("Reset progress")
-        .accessibilityHint("Clears saved test progress and restarts from the first order.")
     }
 }
 

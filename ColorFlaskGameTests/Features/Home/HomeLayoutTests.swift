@@ -41,18 +41,6 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertLessThanOrEqual(bottomEdge, size.height - safeAreaInsets.bottom)
     }
 
-    func testTestingResetProgressButtonStaysBelowBottomControlsAndInsideSafeArea() {
-        let size = CGSize(width: 393, height: 852)
-        let safeAreaInsets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
-        let scale = layout.scale(in: size)
-        let bottomControlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
-        let testingButtonCenterY = layout.testingButtonCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
-        let testingButtonBottomEdge = testingButtonCenterY + 15 * scale
-
-        XCTAssertGreaterThan(testingButtonCenterY, bottomControlCenterY)
-        XCTAssertLessThanOrEqual(testingButtonBottomEdge, size.height - safeAreaInsets.bottom)
-    }
-
     private func assertBoardFits(size: CGSize, safeAreaInsets: EdgeInsets) {
         let scale = layout.scale(in: size)
         let flaskHalfWidth = GameMetric.flaskHitWidth * scale / 2
