@@ -458,6 +458,99 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.moves, 0)
     }
 
+    func testFirstHintIsFreeAndSecondHintCostsHerbs() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 5
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(viewModel.hintBadgeText, "Free")
+
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 2))
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        XCTAssertEqual(progressStore.herbsBalance, 5)
+        XCTAssertEqual(viewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.herbsBalance, 5 - HomeViewModel.extraHintHerbsCost)
+        XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+    }
+
+    func testRepeatedTapOnSameHintDoesNotSpendHerbsAgain() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 5
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.showHint()
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        XCTAssertEqual(progressStore.herbsBalance, 5)
+    }
+
+    func testHintFallsBackToRewardedAdWhenHerbsRunOut() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 0
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertTrue(viewModel.canShowHint)
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertTrue(viewModel.canShowHint)
+        XCTAssertEqual(viewModel.hintBadgeText, "Ad")
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 1, targetIndex: 0))
+        XCTAssertEqual(viewModel.herbsBalance, 0)
+        XCTAssertEqual(progressStore.herbsBalance, 0)
+    }
+
     func testStartNewGameClearsTemporaryBonusUnlockAndHistory() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),

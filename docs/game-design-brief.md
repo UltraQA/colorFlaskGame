@@ -217,9 +217,9 @@ Later:
 - avoid hints that lead to dead ends.
 
 Economy:
-- first hint on each level is free;
-- extra hints can use herbs;
-- rewarded ad is acceptable only as an optional way to get a hint.
+- first hint on each level is free. **Done:** each fresh level attempt starts with one free hint;
+- extra hints can use herbs. **Done:** additional hints currently cost 2 herbs and only spend currency when a new hint is shown;
+- rewarded ad is acceptable only as an optional way to get a hint. **Done:** when herbs are unavailable, the hint button stays available and switches to an ad/video badge stub.
 
 ### Priority 4: Bonus Locked Flask
 

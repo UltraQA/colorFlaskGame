@@ -235,9 +235,9 @@ struct HomeView: View {
         let controlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
 
         return ZStack {
-            LevelBadge(levelNumber: viewModel.currentLevelNumber)
+            LevelBadge(levelNumber: viewModel.currentLevelNumber, herbsBalance: viewModel.herbsBalance)
                 .scaleEffect(scale)
-                .frame(width: 118 * scale, height: 36 * scale)
+                .frame(width: 128 * scale, height: 36 * scale)
                 .position(
                     x: size.width / 2,
                     y: controlCenterY
@@ -318,7 +318,8 @@ struct HomeView: View {
         return BottomControlDock(
             width: dockWidth,
             resetButton: resetButton(scale: 1, isEnabled: viewModel.canInteractWithBoard),
-            isHintEnabled: viewModel.canShowHint
+            isHintEnabled: viewModel.canShowHint,
+            hintBadgeText: viewModel.hintBadgeText
         ) {
             viewModel.showHint()
         }
@@ -368,24 +369,42 @@ struct HomeView: View {
 
 private struct LevelBadge: View {
     let levelNumber: Int
+    let herbsBalance: Int
 
     var body: some View {
-        Text("Level \(levelNumber)")
-            .font(DSTypography.headline)
-            .foregroundStyle(.white)
-            .lineLimit(1)
-            .minimumScaleFactor(0.78)
-            .frame(width: 118, height: 36)
-            .background {
-                Capsule()
-                    .fill(GameColor.controlSurface.opacity(0.84))
-                    .overlay(
-                        Capsule()
-                            .stroke(.white.opacity(0.12), lineWidth: 1)
-                    )
+        HStack(spacing: DSSpacing.xs) {
+            Text("Level \(levelNumber)")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+
+            Rectangle()
+                .fill(GameColor.glassStroke.opacity(0.28))
+                .frame(width: 1, height: 16)
+
+            HStack(spacing: 3) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.successAccent)
+
+                Text("\(herbsBalance)")
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
             }
-            .shadow(color: .black.opacity(0.24), radius: 10, x: 0, y: 6)
-            .accessibilityLabel("Level \(levelNumber)")
+        }
+        .foregroundStyle(.white)
+        .frame(width: 128, height: 36)
+        .background {
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.84))
+                .overlay(
+                    Capsule()
+                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                )
+        }
+        .shadow(color: .black.opacity(0.24), radius: 10, x: 0, y: 6)
+        .accessibilityLabel("Level \(levelNumber), \(herbsBalance) herbs")
     }
 }
 
@@ -799,6 +818,7 @@ private struct BottomControlDock<ResetButton: View>: View {
     let width: CGFloat
     let resetButton: ResetButton
     let isHintEnabled: Bool
+    let hintBadgeText: String
     let onHint: () -> Void
 
     var body: some View {
@@ -816,6 +836,10 @@ private struct BottomControlDock<ResetButton: View>: View {
                 action: onHint
             )
             .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
+            .overlay(alignment: .topTrailing) {
+                HintCostBadge(text: hintBadgeText, isEnabled: isHintEnabled)
+                    .offset(x: 6, y: -2)
+            }
             .accessibilityLabel("Hint")
         }
         .padding(.horizontal, DSSpacing.md)
@@ -830,6 +854,47 @@ private struct BottomControlDock<ResetButton: View>: View {
                 .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 8)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+private struct HintCostBadge: View {
+    let text: String
+    let isEnabled: Bool
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: systemImage)
+                .font(.system(size: 9, weight: .black, design: .rounded))
+
+            Text(text)
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .foregroundStyle(GameColor.controlSurface)
+        .padding(.horizontal, 6)
+        .frame(height: 20)
+        .background(
+            Capsule()
+                .fill(isEnabled ? GameColor.successAccent : GameColor.controlMuted)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.34), lineWidth: 1)
+                )
+        )
+        .opacity(isEnabled ? 1 : 0.7)
+        .accessibilityHidden(true)
+    }
+
+    private var systemImage: String {
+        switch text {
+        case "Free":
+            return "sparkles"
+        case "Ad":
+            return "play.rectangle.fill"
+        default:
+            return "leaf.fill"
+        }
     }
 }
 

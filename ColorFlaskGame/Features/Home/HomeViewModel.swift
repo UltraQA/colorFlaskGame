@@ -37,6 +37,12 @@ struct OrderObjectiveSummary: Equatable {
     }
 }
 
+private enum HintPaymentMode {
+    case free
+    case herbs
+    case rewardedAd
+}
+
 enum LevelCompletionPhase: Equatable {
     case playing
     case resolvingWin
@@ -77,6 +83,7 @@ struct HomeViewModelTiming: Equatable {
 @MainActor
 final class HomeViewModel: ObservableObject {
     nonisolated static let herbsRewardPerCompletedOrder = 8
+    nonisolated static let extraHintHerbsCost = 2
     nonisolated static let victoryMessages = [
         "Potion Perfect!",
         "Order Brewed!",
@@ -101,6 +108,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var herbsBalance: Int
     @Published private(set) var lastHerbsReward: Int?
     @Published private(set) var lastCompletedMoveCount: Int?
+    @Published private(set) var hintsUsedThisLevel = 0
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
@@ -243,6 +251,17 @@ final class HomeViewModel: ObservableObject {
         completionPhase.isPlaying && pourAnimation == nil
     }
 
+    var hintBadgeText: String {
+        switch nextHintPaymentMode {
+        case .free:
+            return "Free"
+        case .herbs:
+            return "\(Self.extraHintHerbsCost)"
+        case .rewardedAd:
+            return "Ad"
+        }
+    }
+
     func handleFlaskTap(at index: Int) {
         guard gameManager.flasks.indices.contains(index), canInteractWithBoard else { return }
 
@@ -294,9 +313,13 @@ final class HomeViewModel: ObservableObject {
 
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
+        let nextHint = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
+        guard hintMove != nextHint else { return }
+
+        spendHintIfNeeded()
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
-        hintMove = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
+        hintMove = nextHint
     }
 
     func startNewGame() {
@@ -356,6 +379,7 @@ final class HomeViewModel: ObservableObject {
         victoryMessage = nil
         lastHerbsReward = nil
         lastCompletedMoveCount = nil
+        hintsUsedThisLevel = 0
         isOrderBannerVisible = true
         updateTutorialVisibility(for: levelIndex)
         completionSequenceID += 1
@@ -527,6 +551,34 @@ final class HomeViewModel: ObservableObject {
         let reward = Self.herbsRewardPerCompletedOrder
         lastHerbsReward = reward
         herbsBalance += reward
+        progressStore.herbsBalance = herbsBalance
+    }
+
+    private var isNextHintFree: Bool {
+        hintsUsedThisLevel == 0
+    }
+
+    private var nextHintPaymentMode: HintPaymentMode {
+        if isNextHintFree {
+            return .free
+        }
+
+        if herbsBalance >= Self.extraHintHerbsCost {
+            return .herbs
+        }
+
+        return .rewardedAd
+    }
+
+    private func spendHintIfNeeded() {
+        let paymentMode = nextHintPaymentMode
+        defer {
+            hintsUsedThisLevel += 1
+        }
+
+        guard paymentMode == .herbs else { return }
+
+        herbsBalance = max(0, herbsBalance - Self.extraHintHerbsCost)
         progressStore.herbsBalance = herbsBalance
     }
 
