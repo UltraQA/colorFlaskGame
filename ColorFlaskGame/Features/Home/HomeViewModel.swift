@@ -319,7 +319,7 @@ final class HomeViewModel: ObservableObject {
             animatePour(plan)
         case .failure:
             showInvalidMoveFeedback(sourceIndex: sourceIndex, targetIndex: index)
-            selectedFlaskIndex = gameManager.flasks[index].isEmpty ? sourceIndex : index
+            selectedFlaskIndex = sourceIndex
         }
     }
 

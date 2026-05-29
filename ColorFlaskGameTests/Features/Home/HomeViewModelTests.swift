@@ -468,7 +468,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.canUndo)
     }
 
-    func testInvalidMoveDoesNotEnterUndoHistory() {
+    func testInvalidMoveDoesNotEnterUndoHistoryAndKeepsSourceSelected() {
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
@@ -484,7 +484,8 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.moves, 0)
         XCTAssertFalse(viewModel.canUndo)
         XCTAssertEqual(viewModel.invalidMoveCount, 1)
-        XCTAssertEqual(viewModel.selectedFlaskIndex, 1)
+        XCTAssertEqual(viewModel.invalidFlaskIndices, [0, 1])
+        XCTAssertEqual(viewModel.selectedFlaskIndex, 0)
     }
 
     func testHintHighlightsFirstValidMoveWithoutPouring() {
