@@ -797,7 +797,7 @@ Alpha readiness checklist:
 - Verify order/instruction badges do not truncate important text.
 - Verify no flasks are covered by HUD, order, instruction, or bottom controls.
 - Run full unit tests before sharing a build.
-- Prepare a short tester note with goal, controls, known limitations, and feedback questions.
+- Prepare a short tester note with goal, controls, known limitations, and feedback questions. **Done:** see `docs/alpha-test-notes.md`.
 
 ### Milestone 4: Cozy Potion Visual Pass
 
