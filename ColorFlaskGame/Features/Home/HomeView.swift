@@ -289,54 +289,42 @@ struct HomeView: View {
 
     private func orderBannerCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
         let scaledIconSize = GameMetric.iconButtonSize * scale
-        let topControlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+        let topControlCenterY = safeAreaInsets.top + GameMetric.orderBannerTopInset * scale + scaledIconSize / 2
         let objectiveOffset: CGFloat = viewModel.orderObjectiveSummary == nil ? 0 : 46 * scale
         return CGPoint(
             x: size.width / 2,
-            y: topControlCenterY + 58 * scale + objectiveOffset
+            y: topControlCenterY + 52 * scale + objectiveOffset
         )
     }
 
     private func tutorialPromptCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
-        let scaledIconSize = GameMetric.iconButtonSize * scale
-        let topControlCenterY = safeAreaInsets.top + GameMetric.topControlInset * scale + scaledIconSize / 2
+        let bottomControlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let bottomDockTopEdge = bottomControlCenterY - GameMetric.bottomControlDockHeight * scale / 2
+        let promptHeight: CGFloat = 52 * scale
         return CGPoint(
             x: size.width / 2,
-            y: topControlCenterY + 120 * scale
+            y: bottomDockTopEdge - GameMetric.tutorialPromptBottomGap * scale - promptHeight / 2
         )
     }
 
     private func boardVignetteCenter(in size: CGSize) -> CGPoint {
-        CGPoint(x: size.width / 2, y: size.height * 0.48)
+        CGPoint(x: size.width / 2, y: size.height * GameMetric.boardVerticalCenterRatio)
     }
 
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
-        let scaledIconSize = GameMetric.iconButtonSize * scale
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let dockWidth = min(GameMetric.bottomControlDockWidth, (size.width - GameMetric.horizontalInset * 2 * scale) / scale)
 
-        return ZStack {
-            resetButton(scale: scale, isEnabled: viewModel.canInteractWithBoard)
-                .position(
-                    x: GameMetric.horizontalInset * scale + GameMetric.resetButtonWidth * scale / 2,
-                    y: controlCenterY
-                )
-
-            GameIconButton(
-                systemName: "lightbulb.fill",
-                title: "Hint",
-                style: .accent,
-                isEnabled: viewModel.canShowHint
-            ) {
-                viewModel.showHint()
-            }
-                .scaleEffect(scale)
-                .frame(width: scaledIconSize, height: scaledIconSize)
-                .position(
-                    x: size.width - GameMetric.horizontalInset * scale - scaledIconSize / 2,
-                    y: controlCenterY
-                )
-                .accessibilityLabel("Hint")
+        return BottomControlDock(
+            width: dockWidth,
+            resetButton: resetButton(scale: 1, isEnabled: viewModel.canInteractWithBoard),
+            isHintEnabled: viewModel.canShowHint
+        ) {
+            viewModel.showHint()
         }
+        .scaleEffect(scale)
+        .frame(width: dockWidth * scale, height: GameMetric.bottomControlDockHeight * scale)
+        .position(x: size.width / 2, y: controlCenterY)
     }
 
     private func flaskVisualState(for flask: Flask, at index: Int) -> FlaskVisualState {
@@ -540,8 +528,8 @@ private struct OrderBannerView: View {
             }
         }
         .padding(.horizontal, DSSpacing.md)
-        .padding(.vertical, DSSpacing.xs)
-        .frame(width: 220, alignment: .leading)
+        .padding(.vertical, 6)
+        .frame(width: 208, alignment: .leading)
         .background(
             Capsule()
                 .fill(GameColor.controlSurface.opacity(0.84))
@@ -552,7 +540,7 @@ private struct OrderBannerView: View {
         )
         .shadow(color: .black.opacity(0.24), radius: 12, x: 0, y: 8)
         .scaleEffect(scale)
-        .frame(width: 220 * scale, height: 52 * scale)
+        .frame(width: 208 * scale, height: 46 * scale)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle).")
     }
@@ -564,7 +552,7 @@ private struct TutorialPromptView: View {
     let scale: CGFloat
 
     var body: some View {
-        VStack(spacing: DSSpacing.xs) {
+        HStack(spacing: DSSpacing.xs) {
             HStack(spacing: DSSpacing.xs) {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 15, weight: .black, design: .rounded))
@@ -580,24 +568,23 @@ private struct TutorialPromptView: View {
             Text(subtitle)
                 .font(DSTypography.caption)
                 .foregroundStyle(GameColor.glassStroke.opacity(0.82))
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
+                .lineLimit(1)
                 .minimumScaleFactor(0.82)
         }
         .padding(.horizontal, DSSpacing.md)
-        .padding(.vertical, DSSpacing.sm)
-        .frame(width: 274)
+        .padding(.vertical, DSSpacing.xs)
+        .frame(width: 300, alignment: .center)
         .background(
-            RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+            Capsule()
                 .fill(GameColor.controlSurface.opacity(0.86))
                 .overlay(
-                    RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                    Capsule()
                         .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.26), radius: 14, x: 0, y: 9)
         .scaleEffect(scale)
-        .frame(width: 274 * scale, height: 76 * scale)
+        .frame(width: 300 * scale, height: 52 * scale)
         .allowsHitTesting(false)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle)")
@@ -805,6 +792,44 @@ private extension View {
             }
         )
         .onPreferenceChange(HeightPreferenceKey.self, perform: onChange)
+    }
+}
+
+private struct BottomControlDock<ResetButton: View>: View {
+    let width: CGFloat
+    let resetButton: ResetButton
+    let isHintEnabled: Bool
+    let onHint: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center) {
+            resetButton
+                .frame(width: GameMetric.resetButtonWidth, height: GameMetric.resetButtonHeight)
+
+            Spacer(minLength: DSSpacing.md)
+
+            GameIconButton(
+                systemName: "lightbulb.fill",
+                title: "Hint",
+                style: .accent,
+                isEnabled: isHintEnabled,
+                action: onHint
+            )
+            .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
+            .accessibilityLabel("Hint")
+        }
+        .padding(.horizontal, DSSpacing.md)
+        .frame(width: width, height: GameMetric.bottomControlDockHeight)
+        .background {
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.46))
+                .overlay(
+                    Capsule()
+                        .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 8)
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 

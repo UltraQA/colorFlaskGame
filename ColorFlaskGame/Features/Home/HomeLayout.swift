@@ -24,9 +24,9 @@ struct HomeLayout {
         let row = index / columns
         let boardWidth = min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
         let boardOriginX = (size.width - boardWidth) / 2
-        let verticalCenter = size.height * 0.48
+        let verticalCenter = size.height * GameMetric.boardVerticalCenterRatio
         let cellWidth = boardWidth / CGFloat(columns)
-        let rowSpacing: CGFloat = min(230 * scale, size.height * 0.26)
+        let rowSpacing: CGFloat = min(210 * scale, size.height * GameMetric.boardRowSpacingRatio)
 
         return CGPoint(
             x: boardOriginX + cellWidth * (CGFloat(column) + 0.5),
@@ -45,6 +45,6 @@ struct HomeLayout {
     }
 
     func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
-        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.iconButtonSize * scale / 2
+        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.bottomControlDockHeight * scale / 2
     }
 }

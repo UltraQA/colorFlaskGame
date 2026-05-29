@@ -56,9 +56,15 @@ enum GameMetric {
     static let resetButtonWidth: CGFloat = 104
     static let resetButtonHeight: CGFloat = 72
     static let iconButtonSize: CGFloat = 68
+    static let bottomControlDockWidth: CGFloat = 322
+    static let bottomControlDockHeight: CGFloat = 92
+    static let boardVerticalCenterRatio: CGFloat = 0.52
+    static let boardRowSpacingRatio: CGFloat = 0.23
     static let horizontalInset: CGFloat = 28
-    static let topControlInset: CGFloat = 22
-    static let bottomControlInset: CGFloat = 30
+    static let topControlInset: CGFloat = 6
+    static let orderBannerTopInset: CGFloat = 22
+    static let tutorialPromptBottomGap: CGFloat = 12
+    static let bottomControlInset: CGFloat = 0
 }
 
 enum GameColor {

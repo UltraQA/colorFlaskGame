@@ -36,9 +36,21 @@ final class HomeLayoutTests: XCTestCase {
         let safeAreaInsets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
         let scale = layout.scale(in: size)
         let centerY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
-        let bottomEdge = centerY + GameMetric.iconButtonSize * scale / 2
+        let bottomEdge = centerY + GameMetric.bottomControlDockHeight * scale / 2
 
         XCTAssertLessThanOrEqual(bottomEdge, size.height - safeAreaInsets.bottom)
+    }
+
+    func testBoardKeepsClearanceFromBottomControlsOnStandardPhone() {
+        let size = CGSize(width: 393, height: 852)
+        let safeAreaInsets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
+        let scale = layout.scale(in: size)
+        let bottomControlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let dockTopEdge = bottomControlCenterY - GameMetric.bottomControlDockHeight * scale / 2
+        let bottomRowCenter = layout.flaskCenter(for: 4, in: size, scale: scale)
+        let bottomRowEdge = bottomRowCenter.y + GameMetric.flaskHitHeight * scale / 2
+
+        XCTAssertLessThanOrEqual(bottomRowEdge + 24 * scale, dockTopEdge)
     }
 
     private func assertBoardFits(size: CGSize, safeAreaInsets: EdgeInsets) {
