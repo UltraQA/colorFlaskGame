@@ -27,7 +27,7 @@ struct FlaskTubeView: View {
     }
 
     private var liquidColumnHeight: CGFloat {
-        GameMetric.flaskHeight - 42
+        GameMetric.flaskHeight - 56
     }
 
     private var bottleOpacity: Double {
@@ -46,7 +46,7 @@ struct FlaskTubeView: View {
             PotionLiquidColumnView(colors: flask.colors)
                 .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
                 .mask(PotionFlaskLiquidShape())
-                .padding(.bottom, 10)
+                .padding(.bottom, 14)
 
             PotionFlaskGlassView(
                 visualState: visualState,
@@ -414,9 +414,11 @@ private struct PotionLiquidColumnView: View {
                 }
 
                 if let topColor = colors.last {
+                    let surfaceHeight = min(10, sectionHeight * 0.28)
+
                     LiquidSurfaceView(color: topColor)
-                        .frame(width: proxy.size.width * 0.96, height: min(12, sectionHeight * 0.32))
-                        .offset(y: -filledHeight + min(6, sectionHeight * 0.16))
+                        .frame(width: proxy.size.width * 0.92, height: surfaceHeight)
+                        .offset(y: -filledHeight + surfaceHeight / 2 + 1)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
@@ -607,8 +609,8 @@ private struct PotionBottleShape: Shape {
 
 private struct PotionFlaskLiquidShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let left = rect.minX + rect.width * 0.03
-        let right = rect.maxX - rect.width * 0.03
+        let left = rect.minX + rect.width * 0.06
+        let right = rect.maxX - rect.width * 0.06
         let top = rect.minY
         let bottomCurve = rect.maxY - rect.height * 0.20
         let bottom = rect.maxY
