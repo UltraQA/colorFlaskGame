@@ -98,18 +98,6 @@ struct HomeView: View {
                     .zIndex(GameLayer.controls + 1)
                 }
 
-                if let animation = viewModel.pourAnimation {
-                    PourStreamView(
-                        from: pourStreamStartPoint(for: animation, in: proxy.size, scale: layoutScale),
-                        to: layout.pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
-                        color: animation.color.swiftUIColor,
-                        scale: layoutScale,
-                        reduceMotion: reduceMotion
-                    )
-                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
-                    .zIndex(GameLayer.animation + 2)
-                }
-
                 if viewModel.completionPhase.showsSparkles {
                     WinCelebrationView(reduceMotion: reduceMotion)
                         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
@@ -217,26 +205,6 @@ struct HomeView: View {
             rotation: .degrees(direction > 0 ? 62 : -62),
             scale: 1.04,
             zIndex: GameLayer.animation + 1
-        )
-    }
-
-    private func pourStreamStartPoint(for animation: PourAnimation, in size: CGSize, scale: CGFloat) -> CGPoint {
-        guard !reduceMotion else {
-            return layout.pourStartPoint(for: animation.sourceIndex, in: size, scale: scale)
-        }
-
-        let sourceCenter = layout.flaskCenter(for: animation.sourceIndex, in: size, scale: scale)
-        let targetCenter = layout.flaskCenter(for: animation.targetIndex, in: size, scale: scale)
-        let direction: CGFloat = targetCenter.x >= sourceCenter.x ? 1 : -1
-        let mouthPoint = pouringMouthPoint(
-            sourceCenter: sourceCenter,
-            targetCenter: targetCenter,
-            scale: scale
-        )
-
-        return CGPoint(
-            x: mouthPoint.x + direction * 10 * scale,
-            y: mouthPoint.y + 8 * scale
         )
     }
 
