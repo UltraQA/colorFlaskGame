@@ -966,7 +966,14 @@ private extension HandcraftedLevelRepository {
                     [2, 3, 4, 2],
                     [3, 4, 0, 3],
                     [4, 0, 1, 4]
-                ]
+                ],
+                objective: .completeColor(palette[2]),
+                customerOrder: makeOrder(
+                    customerName: "Mira",
+                    potionName: "Luck Potion",
+                    targetColor: palette[2],
+                    shortCopy: "Brew one bright luck potion."
+                )
             ),
             makeLevel(
                 id: 6,
@@ -988,7 +995,14 @@ private extension HandcraftedLevelRepository {
                     [2, 4, 3, 0],
                     [3, 0, 4, 1],
                     [4, 1, 0, 2]
-                ]
+                ],
+                objective: .completeColor(palette[3]),
+                customerOrder: makeOrder(
+                    customerName: "Rowan",
+                    potionName: "Moonwater Draught",
+                    targetColor: palette[3],
+                    shortCopy: "Bottle a cool moonwater draught."
+                )
             ),
             makeLevel(
                 id: 8,
@@ -1021,12 +1035,25 @@ private extension HandcraftedLevelRepository {
                     [2, 0, 3, 1],
                     [3, 1, 4, 2],
                     [4, 2, 0, 3]
-                ]
+                ],
+                objective: .completeColor(palette[4]),
+                customerOrder: makeOrder(
+                    customerName: "Nell",
+                    potionName: "Violet Tonic",
+                    targetColor: palette[4],
+                    shortCopy: "Prepare one violet tonic."
+                )
             )
         ]
     }
 
-    static func makeLevel(id: Int, difficulty: Difficulty, rows: [[Int]]) -> Level {
+    static func makeLevel(
+        id: Int,
+        difficulty: Difficulty,
+        rows: [[Int]],
+        objective: LevelObjective = .sortAll,
+        customerOrder: CustomerOrder? = nil
+    ) -> Level {
         Level(
             id: id,
             difficulty: difficulty,
@@ -1034,7 +1061,24 @@ private extension HandcraftedLevelRepository {
                 Flask(colors: row.map { palette[$0] })
             },
             availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
-            hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID
+            hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID,
+            objective: objective,
+            customerOrder: customerOrder
+        )
+    }
+
+    static func makeOrder(
+        customerName: String,
+        potionName: String,
+        targetColor: LiquidColor,
+        shortCopy: String
+    ) -> CustomerOrder {
+        CustomerOrder(
+            customerName: customerName,
+            potionName: potionName,
+            targetColor: targetColor,
+            rewardHerbs: 8,
+            shortCopy: shortCopy
         )
     }
 

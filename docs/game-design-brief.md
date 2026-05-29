@@ -615,11 +615,11 @@ The player must trust that every standard level is fair and that Hint helps rath
 Tasks:
 - Add a `LevelObjective` model that supports both classic `sortAll` levels and order-driven goals such as `completeColor(LiquidColor)`. **Done:** core levels can now use classic sorting or a target-color potion objective.
 - Add a lightweight `CustomerOrder` model with potion name, target color, reward herbs, and short order copy. **Done:** customer order data now lives beside level objective data.
-- Implement the MVP order objective: complete one full flask of the requested color, for example a Luck Potion that requires a yellow flask.
-- Keep classic all-colors-sorted completion available as a level type and fallback.
+- Implement the MVP order objective: complete one full flask of the requested color, for example a Luck Potion that requires a yellow flask. **Done:** handcrafted progression now introduces customer orders from Level 5 with target-color potion goals.
+- Keep classic all-colors-sorted completion available as a level type and fallback. **Done:** tutorial and classic levels continue to use `sortAll`, while selected handcrafted levels use `completeColor`.
 - Add clear in-game objective UI: potion name, target color swatch, and progress such as `2/4`. **Done:** objective levels expose a compact top badge with potion name, target color, and section progress.
 - Update win messaging from generic completion to order language, for example `Order Complete` and `Luck Potion brewed`. **Done:** classic levels now say `Order Complete`, while customer-order levels use the completed potion name.
-- Add tests for `sortAll` and `completeColor` win conditions, including cases where the order is complete before every color is sorted.
+- Add tests for `sortAll` and `completeColor` win conditions, including cases where the order is complete before every color is sorted. **Done:** tests cover classic sorting, target-color completion, locked target handling, order validation, and handcrafted order placement.
 
 Why this matters:
 Client Orders give the game a stronger identity than standard Water Sort. The player is not only sorting liquids, they are preparing a specific potion for a customer in the Cozy Potion Shop.

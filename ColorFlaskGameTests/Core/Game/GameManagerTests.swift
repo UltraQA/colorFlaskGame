@@ -76,6 +76,18 @@ final class GameManagerTests: XCTestCase {
         }
     }
 
+    func testHandcraftedOrdersStartWhenLevelsBecomeHarder() {
+        let repository = HandcraftedLevelRepository()
+
+        XCTAssertNil(repository.levels[0].customerOrder)
+        XCTAssertEqual(repository.levels[4].customerOrder?.potionName, "Luck Potion")
+        XCTAssertEqual(repository.levels[4].objective, .completeColor(.honey))
+        XCTAssertEqual(repository.levels[6].customerOrder?.potionName, "Moonwater Draught")
+        XCTAssertEqual(repository.levels[6].objective, .completeColor(.moonBlue))
+        XCTAssertEqual(repository.levels[9].customerOrder?.potionName, "Violet Tonic")
+        XCTAssertEqual(repository.levels[9].objective, .completeColor(.violet))
+    }
+
     func testHandcraftedLevelsAreSolvableWithoutBonusFlask() {
         let repository = HandcraftedLevelRepository()
         let validator = LevelSolvabilityValidator()
