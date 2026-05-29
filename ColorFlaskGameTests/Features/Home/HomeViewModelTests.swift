@@ -65,6 +65,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.bonusUnlockPrompt)
         XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
+        XCTAssertEqual(rewardedAdProvider.placements, [.bonusFlask])
     }
 
     func testRewardedBonusUnlockKeepsFlaskLockedWhenRewardFails() async {
@@ -85,6 +86,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 1))
         XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
+        XCTAssertEqual(rewardedAdProvider.placements, [.bonusFlask])
     }
 
     func testUnlockBonusFlaskPermanentlyPersistsChoice() {
@@ -598,6 +600,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertEqual(progressStore.herbsBalance, 0)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
+        XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
     }
 
     func testRewardedAdHintDoesNotRevealHintWhenRewardFails() async {
@@ -630,6 +633,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isRewardedHintInProgress)
         XCTAssertEqual(viewModel.hintsUsedThisLevel, 1)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
+        XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
     }
 
     func testStartNewGameClearsTemporaryBonusUnlockAndHistory() async {
@@ -869,13 +873,15 @@ private final class SpyProgressStore: ProgressStore {
 private final class SpyRewardedAdProvider: RewardedAdProviding {
     let result: Bool
     private(set) var showCount = 0
+    private(set) var placements: [RewardedAdPlacement] = []
 
     init(result: Bool) {
         self.result = result
     }
 
-    func showRewardedAd() async -> Bool {
+    func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool {
         showCount += 1
+        placements.append(placement)
         return result
     }
 }

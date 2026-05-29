@@ -13,12 +13,17 @@ struct HintMove: Equatable {
     let targetIndex: Int
 }
 
+enum RewardedAdPlacement: Equatable {
+    case extraHint
+    case bonusFlask
+}
+
 protocol RewardedAdProviding {
-    func showRewardedAd() async -> Bool
+    func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool
 }
 
 struct StubRewardedAdProvider: RewardedAdProviding {
-    func showRewardedAd() async -> Bool {
+    func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool {
         true
     }
 }
@@ -440,7 +445,7 @@ final class HomeViewModel: ObservableObject {
 
         rewardedBonusUnlockTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let didEarnReward = await self.rewardedAdProvider.showRewardedAd()
+            let didEarnReward = await self.rewardedAdProvider.showRewardedAd(for: .bonusFlask)
             guard !Task.isCancelled else { return }
 
             self.rewardedBonusUnlockTask = nil
@@ -628,7 +633,7 @@ final class HomeViewModel: ObservableObject {
 
         rewardedHintTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let didEarnReward = await self.rewardedAdProvider.showRewardedAd()
+            let didEarnReward = await self.rewardedAdProvider.showRewardedAd(for: .extraHint)
             guard !Task.isCancelled else { return }
 
             self.rewardedHintTask = nil

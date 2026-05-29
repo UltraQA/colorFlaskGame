@@ -448,11 +448,16 @@ For MVP, permanent unlock is only a design/code stub and can live in `UserDefaul
 
 Rewarded ad:
 - use a stub for now. **Done:** rewarded hints and current-round bonus flask unlocks use a local stub instead of a real ad SDK;
-- keep API behind a protocol so an SDK can be added later. **Done:** `RewardedAdProviding` isolates ad presentation from `HomeViewModel`.
+- keep API behind a protocol so an SDK can be added later. **Done:** `RewardedAdProviding` isolates ad presentation from `HomeViewModel` and receives a placement for analytics/SDK routing.
 
 ```swift
+enum RewardedAdPlacement {
+    case extraHint
+    case bonusFlask
+}
+
 protocol RewardedAdProviding {
-    func showRewardedAd() async -> Bool
+    func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool
 }
 ```
 
