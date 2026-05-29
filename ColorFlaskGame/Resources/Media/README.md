@@ -9,8 +9,11 @@ Runtime images, colors, and app icons must live in `Assets.xcassets`.
 
 Current runtime exports:
 - `GameBackground.imageset/Background.png` comes from `Images/Background.png`.
-- `ResetButton.imageset/preview.png` comes from `Images/Button reset.pxo`.
-- `FlaskBottle.imageset/FlaskBottle.png` comes from `Images/Flask.pxo`.
+
+Current SwiftUI-generated components:
+- Reset, Hint, Undo, and Menu controls are rendered in SwiftUI for a shared
+  visual language.
+- Gameplay flasks are rendered in SwiftUI from procedural bottle shapes.
 
 ## Source Assets
 

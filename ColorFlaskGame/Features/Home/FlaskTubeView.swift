@@ -19,15 +19,15 @@ struct FlaskTubeView: View {
     let visualState: FlaskVisualState
 
     private var bottleImageWidth: CGFloat {
-        GameMetric.flaskHeight * 0.375
+        GameMetric.flaskWidth * 0.92
     }
 
     private var liquidColumnWidth: CGFloat {
-        bottleImageWidth - 12
+        bottleImageWidth - 18
     }
 
     private var liquidColumnHeight: CGFloat {
-        GameMetric.flaskHeight - 34
+        GameMetric.flaskHeight - 42
     }
 
     private var sectionHeight: CGFloat {
@@ -49,25 +49,15 @@ struct FlaskTubeView: View {
 
             liquidStack
                 .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .padding(.bottom, 6)
+                .clipShape(PotionFlaskLiquidShape())
+                .padding(.bottom, 10)
 
-            Image("FlaskBottle")
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
+            PotionFlaskGlassView(
+                visualState: visualState,
+                isPlayable: flask.isPlayable,
+                bottleOpacity: bottleOpacity
+            )
                 .frame(width: bottleImageWidth, height: GameMetric.flaskHeight)
-                .opacity(bottleOpacity)
-
-            RoundedRectangle(cornerRadius: 26)
-                .stroke(
-                    strokeColor,
-                    style: StrokeStyle(
-                        lineWidth: strokeWidth,
-                        lineCap: .round,
-                        dash: strokeDash
-                    )
-                )
 
             if !flask.isPlayable {
                 lockedOverlay
@@ -95,7 +85,7 @@ struct FlaskTubeView: View {
     }
 
     private var bottleGlow: some View {
-        RoundedRectangle(cornerRadius: 25)
+        PotionBottleShape()
             .fill(bottleGlowColor)
             .frame(width: bottleImageWidth - 4, height: GameMetric.flaskHeight - 10)
             .padding(.bottom, 2)
@@ -151,57 +141,6 @@ struct FlaskTubeView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .bottom)
-    }
-
-    private var strokeColor: Color {
-        if !flask.isPlayable {
-            return visualState == .lockedBonus
-                ? GameColor.bonusFlaskGlow.opacity(0.72)
-                : GameColor.lockedStroke
-        }
-
-        switch visualState {
-        case .selected:
-            return GameColor.selectedStroke
-        case .invalidTarget:
-            return GameColor.invalid
-        case .completed:
-            return GameColor.successAccent
-        case .hintSource:
-            return GameColor.controlAccent
-        case .hintTarget:
-            return GameColor.hintTarget
-        case .normal, .empty, .lockedBonus:
-            return GameColor.glassStroke.opacity(0.82)
-        }
-    }
-
-    private var strokeWidth: CGFloat {
-        if visualState == .lockedBonus {
-            return 3.5
-        }
-
-        switch visualState {
-        case .selected, .invalidTarget, .hintSource:
-            return 4
-        case .hintTarget:
-            return 5
-        default:
-            return 3
-        }
-    }
-
-    private var strokeDash: [CGFloat] {
-        if !flask.isPlayable {
-            return visualState == .lockedBonus ? [6, 7] : [8, 8]
-        }
-
-        switch visualState {
-        case .hintSource:
-            return [10, 5]
-        default:
-            return []
-        }
     }
 
     private var shadowColor: Color {
@@ -461,10 +400,11 @@ struct FlaskTubeView: View {
     private var lockedOverlay: some View {
         if visualState == .lockedBonus {
             BonusLockedFlaskOverlay(reduceMotion: reduceMotion)
-                .padding(7)
+                .frame(width: bottleImageWidth - 8, height: GameMetric.flaskHeight - 18)
+                .padding(.bottom, 7)
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 24)
+                PotionBottleShape()
                     .fill(GameColor.lockedOverlay)
 
                 Image(systemName: "lock.fill")
@@ -476,8 +416,161 @@ struct FlaskTubeView: View {
                             .fill(GameColor.controlSurface.opacity(0.72))
                     )
             }
-            .padding(8)
+            .frame(width: bottleImageWidth - 8, height: GameMetric.flaskHeight - 18)
+            .padding(.bottom, 7)
         }
+    }
+}
+
+private struct PotionFlaskGlassView: View {
+    let visualState: FlaskVisualState
+    let isPlayable: Bool
+    let bottleOpacity: Double
+
+    var body: some View {
+        ZStack {
+            PotionBottleShape()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            GameColor.glassFill.opacity(isPlayable ? 0.22 : 0.10),
+                            GameColor.glassFill.opacity(isPlayable ? 0.08 : 0.04)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            PotionBottleShape()
+                .stroke(glassStrokeColor, lineWidth: glassStrokeWidth)
+
+            PotionBottleShape()
+                .stroke(Color.white.opacity(isPlayable ? 0.22 : 0.12), lineWidth: 1)
+                .offset(x: -2, y: -1)
+                .blur(radius: 0.4)
+
+            Capsule()
+                .fill(Color.white.opacity(isPlayable ? 0.36 : 0.18))
+                .frame(width: 24, height: 6)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .offset(x: 21, y: 15)
+
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(isPlayable ? 0.16 : 0.08))
+                .frame(width: 9)
+                .padding(.top, 30)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .offset(x: 15)
+        }
+        .opacity(bottleOpacity)
+    }
+
+    private var glassStrokeColor: Color {
+        guard isPlayable else {
+            return GameColor.glassStroke.opacity(0.38)
+        }
+
+        switch visualState {
+        case .selected:
+            return GameColor.selectedStroke.opacity(0.92)
+        case .invalidTarget:
+            return GameColor.invalid.opacity(0.92)
+        case .completed:
+            return GameColor.successAccent.opacity(0.82)
+        case .hintSource:
+            return GameColor.controlAccent.opacity(0.9)
+        case .hintTarget:
+            return GameColor.hintTarget.opacity(0.95)
+        case .normal, .empty, .lockedBonus:
+            return GameColor.glassStroke.opacity(0.78)
+        }
+    }
+
+    private var glassStrokeWidth: CGFloat {
+        switch visualState {
+        case .selected, .invalidTarget, .hintSource:
+            return 4
+        case .hintTarget:
+            return 4.5
+        default:
+            return 3
+        }
+    }
+}
+
+private struct PotionBottleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let leftLip = rect.minX + rect.width * 0.22
+        let rightLip = rect.maxX - rect.width * 0.22
+        let leftNeck = rect.minX + rect.width * 0.30
+        let rightNeck = rect.maxX - rect.width * 0.30
+        let leftBody = rect.minX + rect.width * 0.08
+        let rightBody = rect.maxX - rect.width * 0.08
+        let top = rect.minY + rect.height * 0.04
+        let lipBottom = rect.minY + rect.height * 0.11
+        let shoulder = rect.minY + rect.height * 0.22
+        let bottomCurve = rect.maxY - rect.height * 0.23
+        let bottom = rect.maxY - rect.height * 0.05
+
+        var path = Path()
+        path.move(to: CGPoint(x: leftLip, y: top))
+        path.addLine(to: CGPoint(x: rightLip, y: top))
+        path.addQuadCurve(
+            to: CGPoint(x: rightLip + rect.width * 0.08, y: lipBottom),
+            control: CGPoint(x: rightLip + rect.width * 0.12, y: top)
+        )
+        path.addLine(to: CGPoint(x: rightNeck, y: shoulder))
+        path.addQuadCurve(
+            to: CGPoint(x: rightBody, y: shoulder + rect.height * 0.10),
+            control: CGPoint(x: rightBody, y: shoulder)
+        )
+        path.addLine(to: CGPoint(x: rightBody, y: bottomCurve))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.midX, y: bottom),
+            control: CGPoint(x: rightBody, y: bottom + rect.height * 0.05)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: leftBody, y: bottomCurve),
+            control: CGPoint(x: leftBody, y: bottom + rect.height * 0.05)
+        )
+        path.addLine(to: CGPoint(x: leftBody, y: shoulder + rect.height * 0.10))
+        path.addQuadCurve(
+            to: CGPoint(x: leftNeck, y: shoulder),
+            control: CGPoint(x: leftBody, y: shoulder)
+        )
+        path.addLine(to: CGPoint(x: leftLip - rect.width * 0.08, y: lipBottom))
+        path.addQuadCurve(
+            to: CGPoint(x: leftLip, y: top),
+            control: CGPoint(x: leftLip - rect.width * 0.12, y: top)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct PotionFlaskLiquidShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let left = rect.minX + rect.width * 0.03
+        let right = rect.maxX - rect.width * 0.03
+        let top = rect.minY
+        let bottomCurve = rect.maxY - rect.height * 0.20
+        let bottom = rect.maxY
+
+        var path = Path()
+        path.move(to: CGPoint(x: left, y: top))
+        path.addLine(to: CGPoint(x: right, y: top))
+        path.addLine(to: CGPoint(x: right, y: bottomCurve))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.midX, y: bottom),
+            control: CGPoint(x: right, y: bottom + rect.height * 0.04)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: left, y: bottomCurve),
+            control: CGPoint(x: left, y: bottom + rect.height * 0.04)
+        )
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -486,7 +579,7 @@ private struct BonusLockedFlaskOverlay: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24)
+            PotionBottleShape()
                 .fill(
                     LinearGradient(
                         colors: [

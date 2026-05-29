@@ -203,32 +203,21 @@ struct HomeView: View {
     }
 
     private func resetButton(scale: CGFloat, isEnabled: Bool) -> some View {
-        Button {
+        GameIconButton(
+            systemName: "arrow.clockwise",
+            title: "Reset",
+            style: .muted,
+            isEnabled: isEnabled
+        ) {
             viewModel.requestReset()
-        } label: {
-            ZStack {
-                Text("reset")
-                    .font(DSTypography.headline)
-                    .foregroundStyle(DSColor.textPrimary)
-                    .opacity(0)
-                    .zIndex(GameLayer.background)
-
-                Image("ResetButton")
-                    .resizable()
-                    .scaledToFill()
-                    .zIndex(GameLayer.controls)
-            }
-            .frame(width: GameMetric.resetButtonWidth, height: GameMetric.resetButtonHeight)
-            .scaleEffect(scale)
-            .frame(
-                width: GameMetric.resetButtonWidth * scale,
-                height: GameMetric.resetButtonHeight * scale
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .accessibilityLabel("Reset")
+        .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
+        .frame(width: GameMetric.resetButtonWidth, height: GameMetric.resetButtonHeight)
+        .scaleEffect(scale)
+        .frame(
+            width: GameMetric.resetButtonWidth * scale,
+            height: GameMetric.resetButtonHeight * scale
+        )
     }
 
     private func topControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
