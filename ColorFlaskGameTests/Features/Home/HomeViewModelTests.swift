@@ -508,6 +508,22 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks, movedFlasks)
     }
 
+    func testResetOnLaterLevelRequiresConfirmationBeforeFirstMove() {
+        let viewModel = HomeViewModel(
+            levelRepository: HandcraftedLevelRepository(),
+            userDefaults: testUserDefaults,
+            currentLevelIndex: Level.lockedBonusIntroductionLevelID - 1,
+            isBonusFlaskPermanentlyUnlocked: false,
+            timing: .immediate
+        )
+        let initialFlasks = viewModel.gameManager.flasks
+
+        viewModel.requestReset()
+
+        XCTAssertNotNil(viewModel.resetConfirmationPrompt)
+        XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
+    }
+
     func testConfirmResetRestartsCurrentLevel() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),

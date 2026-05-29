@@ -648,7 +648,7 @@ Tasks:
 - Add a stronger win moment: order complete, moves, small reward, and Next CTA or delayed fallback. **Done:** completion overlay now shows a themed message, completed move count, herbs reward, tap-to-skip, and delayed next-level transition.
 - Add a subtle board vignette or contrast layer behind flasks. **Done:** the board now has a low-noise contrast wash behind flasks without becoming a separate card.
 - Differentiate hint source and target with more than one shared highlight style. **Done:** hint source now lifts/tilts with a dashed pour cue, while hint target uses a receiving ring and solid target treatment.
-- Protect reset in later levels with confirmation or press-and-hold.
+- Protect reset in later levels with confirmation or press-and-hold. **Done:** from Level 5 onward, reset requires confirmation even before the first move.
 
 Why this matters:
 The first screen is playable, but the game needs clearer emotional beats and less accidental-feeling UI placement.

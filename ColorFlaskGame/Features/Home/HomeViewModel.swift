@@ -308,7 +308,7 @@ final class HomeViewModel: ObservableObject {
 
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
-        guard moves > 0 else {
+        guard moves > 0 || currentLevelNumber >= Level.lockedBonusIntroductionLevelID else {
             startNewGame()
             return
         }
