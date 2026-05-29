@@ -30,6 +30,7 @@ The main question is whether the game feels clear, calm, and worth continuing af
 
 ## What To Test
 
+- For a clean first-run check, launch with `scripts/run.sh --fresh`.
 - Start a fresh game and play from Level 1.
 - Complete at least Levels 1-5.
 - Try one valid pour and one invalid pour.

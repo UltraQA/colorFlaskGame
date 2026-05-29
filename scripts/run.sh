@@ -8,6 +8,26 @@ SIMULATOR_NAME="iPhone 15"
 SIMULATOR_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-15"
 DERIVED_DATA_PATH="build/DerivedData"
 BUNDLE_ID="com.fantasma.ColorFlaskGame"
+FRESH_INSTALL=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --fresh)
+      FRESH_INSTALL=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: scripts/run.sh [--fresh]"
+      echo "  --fresh  Uninstall the existing app before installing this build."
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: scripts/run.sh [--fresh]"
+      exit 1
+      ;;
+  esac
+done
 
 cd "$(dirname "$0")/.."
 
@@ -54,7 +74,15 @@ xcodebuild \
 
 APP_PATH="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION-iphonesimulator/$SCHEME.app"
 
+if [[ "$FRESH_INSTALL" == true ]]; then
+  xcrun simctl uninstall "$DEVICE_ID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+fi
+
 xcrun simctl install "$DEVICE_ID" "$APP_PATH"
 xcrun simctl launch "$DEVICE_ID" "$BUNDLE_ID"
 
-echo "Launched $SCHEME on $SIMULATOR_NAME."
+if [[ "$FRESH_INSTALL" == true ]]; then
+  echo "Launched fresh $SCHEME install on $SIMULATOR_NAME."
+else
+  echo "Launched $SCHEME on $SIMULATOR_NAME."
+fi
