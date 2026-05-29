@@ -46,7 +46,8 @@ struct HomeView: View {
                         .scaleEffect(pourPose.scale)
                     }
                     .buttonStyle(.plain)
-                    .disabled(!isFlaskTappable(flask))
+                    .disabled(!isFlaskEnabled(flask))
+                    .allowsHitTesting(isFlaskTappable(flask))
                     .modifier(
                         InvalidMoveShakeEffect(
                             shakes: !reduceMotion && viewModel.invalidFlaskIndices.contains(index)
@@ -55,7 +56,7 @@ struct HomeView: View {
                         )
                     )
                     .blur(radius: gameSurfaceBlurRadius)
-                    .opacity(gameSurfaceOpacity)
+                    .opacity(gameSurfaceOpacity * flaskFocusOpacity(for: index))
                     .position(pourPose.center)
                     .animation(
                         reduceMotion ? nil : .easeInOut(duration: 0.28),
@@ -178,6 +179,14 @@ struct HomeView: View {
         case .transitioningToNextLevel:
             return 0.62
         }
+    }
+
+    private func flaskFocusOpacity(for index: Int) -> Double {
+        guard let animation = viewModel.pourAnimation else {
+            return 1
+        }
+
+        return index == animation.sourceIndex || index == animation.targetIndex ? 1 : 0.44
     }
 
     private func flaskPourPose(for index: Int, in size: CGSize, scale: CGFloat) -> FlaskPourPose {
@@ -389,7 +398,11 @@ struct HomeView: View {
 
     private func isFlaskTappable(_ flask: Flask) -> Bool {
         guard viewModel.canInteractWithBoard else { return false }
-        return flask.isPlayable || flask.isBonus
+        return isFlaskEnabled(flask)
+    }
+
+    private func isFlaskEnabled(_ flask: Flask) -> Bool {
+        flask.isPlayable || flask.isBonus
     }
 
 }
