@@ -30,6 +30,7 @@ The main question is whether the game feels clear, calm, and worth continuing af
 
 ## What To Test
 
+- Before sharing a build, run `scripts/alpha_check.sh`.
 - For a clean first-run check, launch with `scripts/run.sh --fresh`.
 - Start a fresh game and play from Level 1.
 - Complete at least Levels 1-5.

@@ -796,7 +796,7 @@ Alpha readiness checklist:
 - Verify reset progress works from Main Menu and does not appear as normal gameplay UI.
 - Verify order/instruction badges do not truncate important text.
 - Verify no flasks are covered by HUD, order, instruction, or bottom controls.
-- Run full unit tests before sharing a build.
+- Run full unit tests before sharing a build. **Done:** `scripts/alpha_check.sh` runs the alpha readiness test suite.
 - Prepare a short tester note with goal, controls, known limitations, and feedback questions. **Done:** see `docs/alpha-test-notes.md`.
 
 ### Milestone 4: Cozy Potion Visual Pass
