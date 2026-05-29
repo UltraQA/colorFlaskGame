@@ -301,7 +301,7 @@ struct HomeView: View {
     private func tutorialPromptCenter(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGPoint {
         let bottomControlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
         let bottomDockTopEdge = bottomControlCenterY - GameMetric.bottomControlDockHeight * scale / 2
-        let promptHeight: CGFloat = 52 * scale
+        let promptHeight: CGFloat = GameMetric.tutorialPromptHeight * scale
         return CGPoint(
             x: size.width / 2,
             y: bottomDockTopEdge - GameMetric.tutorialPromptBottomGap * scale - promptHeight / 2
@@ -549,7 +549,7 @@ private struct OrderBannerView: View {
         }
         .padding(.horizontal, DSSpacing.md)
         .padding(.vertical, 6)
-        .frame(width: 208, alignment: .leading)
+        .frame(width: GameMetric.orderBannerWidth, alignment: .leading)
         .background(
             Capsule()
                 .fill(GameColor.controlSurface.opacity(0.84))
@@ -560,7 +560,7 @@ private struct OrderBannerView: View {
         )
         .shadow(color: .black.opacity(0.24), radius: 12, x: 0, y: 8)
         .scaleEffect(scale)
-        .frame(width: 208 * scale, height: 46 * scale)
+        .frame(width: GameMetric.orderBannerWidth * scale, height: 46 * scale)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle).")
     }
@@ -572,7 +572,7 @@ private struct TutorialPromptView: View {
     let scale: CGFloat
 
     var body: some View {
-        HStack(spacing: DSSpacing.xs) {
+        VStack(spacing: 3) {
             HStack(spacing: DSSpacing.xs) {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 15, weight: .black, design: .rounded))
@@ -588,12 +588,13 @@ private struct TutorialPromptView: View {
             Text(subtitle)
                 .font(DSTypography.caption)
                 .foregroundStyle(GameColor.glassStroke.opacity(0.82))
-                .lineLimit(1)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.82)
         }
-        .padding(.horizontal, DSSpacing.md)
+        .padding(.horizontal, DSSpacing.sm)
         .padding(.vertical, DSSpacing.xs)
-        .frame(width: 300, alignment: .center)
+        .frame(width: GameMetric.tutorialPromptWidth, height: GameMetric.tutorialPromptHeight, alignment: .center)
         .background(
             Capsule()
                 .fill(GameColor.controlSurface.opacity(0.86))
@@ -604,7 +605,7 @@ private struct TutorialPromptView: View {
         )
         .shadow(color: .black.opacity(0.26), radius: 14, x: 0, y: 9)
         .scaleEffect(scale)
-        .frame(width: 300 * scale, height: 52 * scale)
+        .frame(width: GameMetric.tutorialPromptWidth * scale, height: GameMetric.tutorialPromptHeight * scale)
         .allowsHitTesting(false)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle)")

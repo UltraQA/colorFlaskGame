@@ -60,6 +60,9 @@ enum GameMetric {
     static let bottomControlDockHeight: CGFloat = 92
     static let boardVerticalCenterRatio: CGFloat = 0.52
     static let boardRowSpacingRatio: CGFloat = 0.23
+    static let orderBannerWidth: CGFloat = 292
+    static let tutorialPromptWidth: CGFloat = 300
+    static let tutorialPromptHeight: CGFloat = 64
     static let horizontalInset: CGFloat = 28
     static let topControlInset: CGFloat = 6
     static let orderBannerTopInset: CGFloat = 22
