@@ -19,7 +19,7 @@ Current round structure:
 - 2 empty flasks available immediately;
 - 1 locked bonus empty flask appears once levels become harder, starting at Level 5;
 - the locked flask can be opened by:
-  - rewarded ad for the current round;
+  - rewarded ad for the current round. **Done:** current-round bonus unlock uses the shared rewarded ad provider stub;
   - future permanent purchase placeholder, making it always available once IAP is implemented.
 
 Total on screen: 7 flasks before Level 5, then 8 flasks from Level 5 onward.
@@ -228,7 +228,7 @@ Bonus flask:
 - is visually locked;
 - does not participate in moves until unlocked;
 - can be unlocked by:
-  - rewarded ad for current round;
+  - rewarded ad for current round. **Done:** the flask opens only after a successful reward result;
   - future permanent purchase placeholder.
 
 Behavior:
@@ -447,7 +447,7 @@ Add:
 For MVP, permanent unlock is only a design/code stub and can live in `UserDefaults`.
 
 Rewarded ad:
-- use a stub for now. **Done:** rewarded hint currently uses a local stub instead of a real ad SDK;
+- use a stub for now. **Done:** rewarded hints and current-round bonus flask unlocks use a local stub instead of a real ad SDK;
 - keep API behind a protocol so an SDK can be added later. **Done:** `RewardedAdProviding` isolates ad presentation from `HomeViewModel`.
 
 ```swift

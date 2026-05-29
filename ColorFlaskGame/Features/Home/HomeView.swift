@@ -128,8 +128,9 @@ struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $viewModel.bonusUnlockPrompt) { _ in
             BonusUnlockSheet(
+                isUnlockingForRound: viewModel.isRewardedBonusUnlockInProgress,
                 onUnlockForRound: {
-                    viewModel.unlockBonusFlaskForCurrentRound()
+                    viewModel.requestBonusFlaskUnlockForCurrentRound()
                 },
                 onUnlockForever: {
                     viewModel.unlockBonusFlaskPermanently()
@@ -627,6 +628,7 @@ private struct InvalidMoveShakeEffect: GeometryEffect {
 }
 
 private struct BonusUnlockSheet: View {
+    let isUnlockingForRound: Bool
     let onUnlockForRound: () -> Void
     let onUnlockForever: () -> Void
 
@@ -673,9 +675,10 @@ private struct BonusUnlockSheet: View {
     private var unlockActions: some View {
         unlockAction(
             systemName: "play.circle.fill",
-            title: "This order",
-            subtitle: "Watch ad later",
+            title: isUnlockingForRound ? "Opening..." : "This order",
+            subtitle: "Watch ad",
             footnote: "Temporary help",
+            isEnabled: !isUnlockingForRound,
             action: onUnlockForRound
         )
 
@@ -684,6 +687,7 @@ private struct BonusUnlockSheet: View {
             title: "Always available",
             subtitle: "Future purchase",
             footnote: "Design stub",
+            isEnabled: !isUnlockingForRound,
             action: onUnlockForever
         )
     }
@@ -693,6 +697,7 @@ private struct BonusUnlockSheet: View {
         title: String,
         subtitle: String,
         footnote: String,
+        isEnabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -738,6 +743,8 @@ private struct BonusUnlockSheet: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.62)
         .accessibilityLabel(title)
         .accessibilityHint(subtitle)
     }

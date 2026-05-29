@@ -120,6 +120,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var lastCompletedMoveCount: Int?
     @Published private(set) var hintsUsedThisLevel = 0
     @Published private(set) var isRewardedHintInProgress = false
+    @Published private(set) var isRewardedBonusUnlockInProgress = false
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
@@ -135,6 +136,7 @@ final class HomeViewModel: ObservableObject {
     private var pourAnimationTask: Task<Void, Never>?
     private var invalidFeedbackTask: Task<Void, Never>?
     private var rewardedHintTask: Task<Void, Never>?
+    private var rewardedBonusUnlockTask: Task<Void, Never>?
     private var completionTasks: [Task<Void, Never>] = []
 
     init(
@@ -252,19 +254,22 @@ final class HomeViewModel: ObservableObject {
     }
 
     var canUndo: Bool {
-        completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil && !isRewardedHintInProgress
+        completionPhase.isPlaying
+            && !history.isEmpty
+            && pourAnimation == nil
+            && !isRewardedAdInProgress
     }
 
     var canShowHint: Bool {
         completionPhase.isPlaying
             && pourAnimation == nil
-            && !isRewardedHintInProgress
+            && !isRewardedAdInProgress
             && !gameManager.isRoundCompleted
             && gameManager.firstValidMove() != nil
     }
 
     var canInteractWithBoard: Bool {
-        completionPhase.isPlaying && pourAnimation == nil && !isRewardedHintInProgress
+        completionPhase.isPlaying && pourAnimation == nil && !isRewardedAdInProgress
     }
 
     var hintBadgeText: String {
@@ -325,7 +330,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func showHint() {
-        guard pourAnimation == nil, !isRewardedHintInProgress, let plan = gameManager.firstValidMove() else { return }
+        guard pourAnimation == nil, !isRewardedAdInProgress, let plan = gameManager.firstValidMove() else { return }
 
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
@@ -422,6 +427,28 @@ final class HomeViewModel: ObservableObject {
         hintMove = nil
         gameManager.unlockBonusFlaskForCurrentRound()
         objectWillChange.send()
+    }
+
+    func requestBonusFlaskUnlockForCurrentRound() {
+        guard completionPhase.isPlaying, !isRewardedAdInProgress else { return }
+
+        rewardedBonusUnlockTask?.cancel()
+        selectedFlaskIndex = nil
+        hintMove = nil
+        invalidFlaskIndices.removeAll()
+        isRewardedBonusUnlockInProgress = true
+
+        rewardedBonusUnlockTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let didEarnReward = await self.rewardedAdProvider.showRewardedAd()
+            guard !Task.isCancelled else { return }
+
+            self.rewardedBonusUnlockTask = nil
+            self.isRewardedBonusUnlockInProgress = false
+            guard didEarnReward else { return }
+
+            self.unlockBonusFlaskForCurrentRound()
+        }
     }
 
     func unlockBonusFlaskPermanently() {
@@ -577,6 +604,10 @@ final class HomeViewModel: ObservableObject {
         hintsUsedThisLevel == 0
     }
 
+    private var isRewardedAdInProgress: Bool {
+        isRewardedHintInProgress || isRewardedBonusUnlockInProgress
+    }
+
     private var nextHintPaymentMode: HintPaymentMode {
         if isNextHintFree {
             return .free
@@ -685,6 +716,9 @@ final class HomeViewModel: ObservableObject {
         rewardedHintTask?.cancel()
         rewardedHintTask = nil
         isRewardedHintInProgress = false
+        rewardedBonusUnlockTask?.cancel()
+        rewardedBonusUnlockTask = nil
+        isRewardedBonusUnlockInProgress = false
         cancelCompletionTasks()
     }
 

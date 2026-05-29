@@ -44,6 +44,49 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isBonusFlaskPermanentlyUnlocked)
     }
 
+    func testRewardedBonusUnlockOpensFlaskWhenRewardSucceeds() async {
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            rewardedAdProvider: rewardedAdProvider
+        )
+
+        viewModel.handleFlaskTap(at: 1)
+        viewModel.requestBonusFlaskUnlockForCurrentRound()
+
+        XCTAssertTrue(viewModel.isRewardedBonusUnlockInProgress)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertFalse(viewModel.isRewardedBonusUnlockInProgress)
+        XCTAssertNil(viewModel.bonusUnlockPrompt)
+        XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
+    }
+
+    func testRewardedBonusUnlockKeepsFlaskLockedWhenRewardFails() async {
+        let rewardedAdProvider = SpyRewardedAdProvider(result: false)
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            rewardedAdProvider: rewardedAdProvider
+        )
+
+        viewModel.handleFlaskTap(at: 1)
+        viewModel.requestBonusFlaskUnlockForCurrentRound()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertFalse(viewModel.isRewardedBonusUnlockInProgress)
+        XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 1))
+        XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
+    }
+
     func testUnlockBonusFlaskPermanentlyPersistsChoice() {
         let defaults = testUserDefaults
         let viewModel = makeViewModel(
@@ -757,6 +800,7 @@ final class HomeViewModelTests: XCTestCase {
     private func makeViewModel(
         flasks: [Flask],
         userDefaults: UserDefaults? = nil,
+        rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
         timing: HomeViewModelTiming = .immediate,
         victoryMessageProvider: @escaping () -> String = { "Fantastic!" }
     ) -> HomeViewModel {
@@ -765,6 +809,7 @@ final class HomeViewModelTests: XCTestCase {
             userDefaults: userDefaults ?? testUserDefaults,
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
+            rewardedAdProvider: rewardedAdProvider,
             timing: timing,
             victoryMessageProvider: victoryMessageProvider
         )
