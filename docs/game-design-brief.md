@@ -775,6 +775,30 @@ Owner:
 Support:
 - Ohm for order/menu information hierarchy.
 
+### Alpha MVP Readiness
+
+MVP means **Minimum Viable Product**: the smallest complete version that proves the core idea with real users. It is not a rough prototype and not the final game. It should be stable enough that an alpha tester can understand the loop, play several rounds, give feedback, and hit only known/acceptable limitations.
+
+For this game, MVP means:
+- a tester can open the app, pass intro/menu, start or continue an order, and return to menu;
+- the first levels teach the core Water Sort loop without external explanation;
+- pouring, undo, reset, hint, win flow, level advance, herbs reward, and persistence work reliably;
+- locked bonus flask and rewarded-ad stubs are understandable as optional help, not required progression;
+- UI text fits inside badges and does not cover flasks on iPhone 15;
+- the game has enough Cozy Potion Shop identity to communicate the direction, even if final art is not ready;
+- known unfinished systems are explicit: real ads, IAP, shop meta, achievements, final asset polish, and broad device QA.
+
+Alpha readiness checklist:
+- Run a fresh-install playthrough from Intro -> Main Menu -> Level 1.
+- Complete at least Levels 1-5 without using rewarded stubs.
+- Verify Level 5 introduces the locked bonus flask without making it required.
+- Verify herbs balance, free hint, paid hint, and ad fallback are understandable.
+- Verify reset progress works from Main Menu and does not appear as normal gameplay UI.
+- Verify order/instruction badges do not truncate important text.
+- Verify no flasks are covered by HUD, order, instruction, or bottom controls.
+- Run full unit tests before sharing a build.
+- Prepare a short tester note with goal, controls, known limitations, and feedback questions.
+
 ### Milestone 4: Cozy Potion Visual Pass
 
 Goal:
