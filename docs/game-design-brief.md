@@ -636,7 +636,7 @@ Tasks:
 - Keep the board center low-noise so empty flasks and glass outlines remain readable.
 - Unify Reset, Undo, and Hint into one visual language.
 - Decide whether flasks stay SwiftUI-procedural or move to sprite overlays based on `Flask.pxo`.
-- Create locked bonus flask art that feels like an optional cozy object, not an aggressive monetization gate.
+- Create locked bonus flask art that feels like an optional cozy object, not an aggressive monetization gate. **Done:** locked bonus flask now uses a softer gold wash, lighter ghosted bottle treatment, small lock affordance, and rewarded-video hint icon instead of a heavy blocking overlay.
 - Export production-ready assets at `1x`, `2x`, and `3x`.
 
 Why this matters:

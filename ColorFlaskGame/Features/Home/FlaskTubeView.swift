@@ -34,6 +34,14 @@ struct FlaskTubeView: View {
         liquidColumnHeight / CGFloat(Flask.maxCapacity)
     }
 
+    private var bottleOpacity: Double {
+        guard !flask.isPlayable else {
+            return 1
+        }
+
+        return visualState == .lockedBonus ? 0.66 : 0.48
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             bottleGlow
@@ -49,7 +57,7 @@ struct FlaskTubeView: View {
                 .interpolation(.none)
                 .scaledToFit()
                 .frame(width: bottleImageWidth, height: GameMetric.flaskHeight)
-                .opacity(flask.isPlayable ? 1 : 0.48)
+                .opacity(bottleOpacity)
 
             RoundedRectangle(cornerRadius: 26)
                 .stroke(
@@ -88,10 +96,22 @@ struct FlaskTubeView: View {
 
     private var bottleGlow: some View {
         RoundedRectangle(cornerRadius: 25)
-            .fill(flask.isPlayable ? GameColor.glassFill.opacity(0.72) : GameColor.glassFill.opacity(0.34))
+            .fill(bottleGlowColor)
             .frame(width: bottleImageWidth - 4, height: GameMetric.flaskHeight - 10)
             .padding(.bottom, 2)
             .blur(radius: 1.2)
+    }
+
+    private var bottleGlowColor: Color {
+        if flask.isPlayable {
+            return GameColor.glassFill.opacity(0.72)
+        }
+
+        if visualState == .lockedBonus {
+            return GameColor.bonusFlaskGlow.opacity(0.20)
+        }
+
+        return GameColor.glassFill.opacity(0.34)
     }
 
     @ViewBuilder
@@ -135,7 +155,9 @@ struct FlaskTubeView: View {
 
     private var strokeColor: Color {
         if !flask.isPlayable {
-            return GameColor.lockedStroke
+            return visualState == .lockedBonus
+                ? GameColor.bonusFlaskGlow.opacity(0.72)
+                : GameColor.lockedStroke
         }
 
         switch visualState {
@@ -155,6 +177,10 @@ struct FlaskTubeView: View {
     }
 
     private var strokeWidth: CGFloat {
+        if visualState == .lockedBonus {
+            return 3.5
+        }
+
         switch visualState {
         case .selected, .invalidTarget, .hintSource:
             return 4
@@ -167,7 +193,7 @@ struct FlaskTubeView: View {
 
     private var strokeDash: [CGFloat] {
         if !flask.isPlayable {
-            return [8, 8]
+            return visualState == .lockedBonus ? [6, 7] : [8, 8]
         }
 
         switch visualState {
@@ -190,6 +216,8 @@ struct FlaskTubeView: View {
             return GameColor.hintTarget.opacity(0.38)
         case .completed:
             return GameColor.successAccent.opacity(0.3)
+        case .lockedBonus:
+            return GameColor.bonusFlaskGlow.opacity(0.34)
         default:
             return .black.opacity(0.28)
         }
@@ -429,21 +457,109 @@ struct FlaskTubeView: View {
         return "Contents from bottom: \(colors)"
     }
 
+    @ViewBuilder
     private var lockedOverlay: some View {
+        if visualState == .lockedBonus {
+            BonusLockedFlaskOverlay(reduceMotion: reduceMotion)
+                .padding(7)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(GameColor.lockedOverlay)
+
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                    .padding(18)
+                    .background(
+                        Circle()
+                            .fill(GameColor.controlSurface.opacity(0.72))
+                    )
+            }
+            .padding(8)
+        }
+    }
+}
+
+private struct BonusLockedFlaskOverlay: View {
+    let reduceMotion: Bool
+
+    var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 24)
-                .fill(GameColor.lockedOverlay)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            GameColor.controlSurface.opacity(0.10),
+                            GameColor.bonusFlaskWash.opacity(0.24),
+                            GameColor.controlSurface.opacity(0.26)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            softUnlockHint
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.bonusFlaskGlow.opacity(0.82))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .offset(x: 13, y: 18)
 
             Image(systemName: "lock.fill")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(GameColor.glassStroke.opacity(0.82))
-                .padding(18)
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.controlAccent)
+                .frame(width: 38, height: 38)
                 .background(
                     Circle()
                         .fill(GameColor.controlSurface.opacity(0.72))
                 )
+                .overlay(
+                    Circle()
+                        .stroke(GameColor.bonusFlaskGlow.opacity(0.58), lineWidth: 1.5)
+                )
+                .shadow(color: GameColor.bonusFlaskGlow.opacity(0.16), radius: 8, x: 0, y: 4)
+
+            Image(systemName: "play.rectangle.fill")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(GameColor.controlSurface)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle()
+                        .fill(GameColor.bonusFlaskGlow)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(.white.opacity(0.78), lineWidth: 1.5)
+                )
+                .shadow(color: .black.opacity(0.20), radius: 5, x: 0, y: 3)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .offset(x: 1, y: -13)
         }
-        .padding(8)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var softUnlockHint: some View {
+        if reduceMotion {
+            unlockRing(phase: 0.32)
+        } else {
+            TimelineView(.animation) { timeline in
+                let phase = timeline.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 2.2) / 2.2
+                unlockRing(phase: phase)
+            }
+        }
+    }
+
+    private func unlockRing(phase: TimeInterval) -> some View {
+        let progress = CGFloat(phase)
+
+        return Circle()
+            .stroke(GameColor.bonusFlaskGlow.opacity(0.30 - progress * 0.12), lineWidth: 2)
+            .frame(width: 46 + progress * 10, height: 46 + progress * 10)
+            .blur(radius: 0.3)
     }
 }
 

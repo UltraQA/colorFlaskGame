@@ -84,6 +84,8 @@ enum GameColor {
     static let hintTarget = Color(red: 0.29, green: 0.91, blue: 0.96)
     static let lockedStroke = Color.white.opacity(0.44)
     static let lockedOverlay = Color(red: 0.06, green: 0.04, blue: 0.10).opacity(0.68)
+    static let bonusFlaskGlow = Color(red: 1.00, green: 0.78, blue: 0.33)
+    static let bonusFlaskWash = Color(red: 0.37, green: 0.22, blue: 0.08)
     static let invalid = Color(red: 1.00, green: 0.30, blue: 0.38)
 }
 
