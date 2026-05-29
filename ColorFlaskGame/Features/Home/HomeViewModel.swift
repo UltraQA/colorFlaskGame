@@ -13,6 +13,16 @@ struct HintMove: Equatable {
     let targetIndex: Int
 }
 
+protocol RewardedAdProviding {
+    func showRewardedAd() async -> Bool
+}
+
+struct StubRewardedAdProvider: RewardedAdProviding {
+    func showRewardedAd() async -> Bool {
+        true
+    }
+}
+
 struct BonusUnlockPrompt: Identifiable, Equatable {
     let flaskIndex: Int
 
@@ -109,6 +119,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var lastHerbsReward: Int?
     @Published private(set) var lastCompletedMoveCount: Int?
     @Published private(set) var hintsUsedThisLevel = 0
+    @Published private(set) var isRewardedHintInProgress = false
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
@@ -117,11 +128,13 @@ final class HomeViewModel: ObservableObject {
     private var history: [[Flask]] = []
     private let levelRepository: any LevelRepository
     private var progressStore: any ProgressStore
+    private let rewardedAdProvider: any RewardedAdProviding
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
     private var pourAnimationTask: Task<Void, Never>?
     private var invalidFeedbackTask: Task<Void, Never>?
+    private var rewardedHintTask: Task<Void, Never>?
     private var completionTasks: [Task<Void, Never>] = []
 
     init(
@@ -131,6 +144,7 @@ final class HomeViewModel: ObservableObject {
         userDefaults: UserDefaults = .standard,
         currentLevelIndex: Int? = nil,
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
+        rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
         timing: HomeViewModelTiming = .live,
         victoryMessageProvider: @escaping () -> String = {
             HomeViewModel.victoryMessages.randomElement() ?? "Fantastic!"
@@ -139,6 +153,7 @@ final class HomeViewModel: ObservableObject {
         self.levelRepository = levelRepository
         let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore(userDefaults: userDefaults)
         self.progressStore = resolvedProgressStore
+        self.rewardedAdProvider = rewardedAdProvider
         self.timing = timing
         self.victoryMessageProvider = victoryMessageProvider
         let resolvedLevelIndex = currentLevelIndex ?? resolvedProgressStore.currentLevelIndex
@@ -237,18 +252,19 @@ final class HomeViewModel: ObservableObject {
     }
 
     var canUndo: Bool {
-        completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil
+        completionPhase.isPlaying && !history.isEmpty && pourAnimation == nil && !isRewardedHintInProgress
     }
 
     var canShowHint: Bool {
         completionPhase.isPlaying
             && pourAnimation == nil
+            && !isRewardedHintInProgress
             && !gameManager.isRoundCompleted
             && gameManager.firstValidMove() != nil
     }
 
     var canInteractWithBoard: Bool {
-        completionPhase.isPlaying && pourAnimation == nil
+        completionPhase.isPlaying && pourAnimation == nil && !isRewardedHintInProgress
     }
 
     var hintBadgeText: String {
@@ -309,17 +325,20 @@ final class HomeViewModel: ObservableObject {
     }
 
     func showHint() {
-        guard pourAnimation == nil, let plan = gameManager.firstValidMove() else { return }
+        guard pourAnimation == nil, !isRewardedHintInProgress, let plan = gameManager.firstValidMove() else { return }
 
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
         let nextHint = HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
         guard hintMove != nextHint else { return }
 
-        spendHintIfNeeded()
-        selectedFlaskIndex = nil
-        invalidFlaskIndices.removeAll()
-        hintMove = nextHint
+        let paymentMode = nextHintPaymentMode
+        switch paymentMode {
+        case .rewardedAd:
+            requestRewardedHint(nextHint)
+        case .free, .herbs:
+            applyHint(nextHint, paymentMode: paymentMode)
+        }
     }
 
     func startNewGame() {
@@ -570,8 +589,33 @@ final class HomeViewModel: ObservableObject {
         return .rewardedAd
     }
 
-    private func spendHintIfNeeded() {
-        let paymentMode = nextHintPaymentMode
+    private func requestRewardedHint(_ nextHint: HintMove) {
+        rewardedHintTask?.cancel()
+        selectedFlaskIndex = nil
+        invalidFlaskIndices.removeAll()
+        isRewardedHintInProgress = true
+
+        rewardedHintTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let didEarnReward = await self.rewardedAdProvider.showRewardedAd()
+            guard !Task.isCancelled else { return }
+
+            self.rewardedHintTask = nil
+            self.isRewardedHintInProgress = false
+            guard didEarnReward else { return }
+
+            self.applyHint(nextHint, paymentMode: .rewardedAd)
+        }
+    }
+
+    private func applyHint(_ nextHint: HintMove, paymentMode: HintPaymentMode) {
+        spendHintIfNeeded(paymentMode: paymentMode)
+        selectedFlaskIndex = nil
+        invalidFlaskIndices.removeAll()
+        hintMove = nextHint
+    }
+
+    private func spendHintIfNeeded(paymentMode: HintPaymentMode) {
         defer {
             hintsUsedThisLevel += 1
         }
@@ -638,6 +682,9 @@ final class HomeViewModel: ObservableObject {
         pourAnimationTask = nil
         invalidFeedbackTask?.cancel()
         invalidFeedbackTask = nil
+        rewardedHintTask?.cancel()
+        rewardedHintTask = nil
+        isRewardedHintInProgress = false
         cancelCompletionTasks()
     }
 

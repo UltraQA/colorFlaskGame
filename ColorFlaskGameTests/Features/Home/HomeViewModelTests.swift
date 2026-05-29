@@ -524,6 +524,7 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             herbsBalance: 0
         )
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -533,6 +534,7 @@ final class HomeViewModelTests: XCTestCase {
                 ]
             ),
             progressStore: progressStore,
+            rewardedAdProvider: rewardedAdProvider,
             timing: .immediate
         )
 
@@ -545,10 +547,46 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.canShowHint)
         XCTAssertEqual(viewModel.hintBadgeText, "Ad")
         viewModel.showHint()
+        XCTAssertTrue(viewModel.isRewardedHintInProgress)
+        await waitForScheduledMainQueueWork()
 
         XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 1, targetIndex: 0))
+        XCTAssertFalse(viewModel.isRewardedHintInProgress)
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertEqual(progressStore.herbsBalance, 0)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
+    }
+
+    func testRewardedAdHintDoesNotRevealHintWhenRewardFails() async {
+        let rewardedAdProvider = SpyRewardedAdProvider(result: false)
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: SpyProgressStore(
+                currentLevelIndex: 0,
+                isBonusFlaskPermanentlyUnlocked: false,
+                herbsBalance: 0
+            ),
+            rewardedAdProvider: rewardedAdProvider,
+            timing: .immediate
+        )
+
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+        viewModel.showHint()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertFalse(viewModel.isRewardedHintInProgress)
+        XCTAssertEqual(viewModel.hintsUsedThisLevel, 1)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
     }
 
     func testStartNewGameClearsTemporaryBonusUnlockAndHistory() async {
@@ -780,5 +818,19 @@ private final class SpyProgressStore: ProgressStore {
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
         self.hasCompletedOnboarding = hasCompletedOnboarding
+    }
+}
+
+private final class SpyRewardedAdProvider: RewardedAdProviding {
+    let result: Bool
+    private(set) var showCount = 0
+
+    init(result: Bool) {
+        self.result = result
+    }
+
+    func showRewardedAd() async -> Bool {
+        showCount += 1
+        return result
     }
 }

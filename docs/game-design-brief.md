@@ -447,8 +447,8 @@ Add:
 For MVP, permanent unlock is only a design/code stub and can live in `UserDefaults`.
 
 Rewarded ad:
-- use a stub for now;
-- keep API behind a protocol so an SDK can be added later.
+- use a stub for now. **Done:** rewarded hint currently uses a local stub instead of a real ad SDK;
+- keep API behind a protocol so an SDK can be added later. **Done:** `RewardedAdProviding` isolates ad presentation from `HomeViewModel`.
 
 ```swift
 protocol RewardedAdProviding {
