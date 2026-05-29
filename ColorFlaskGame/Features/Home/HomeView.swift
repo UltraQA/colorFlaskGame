@@ -27,6 +27,8 @@ struct HomeView: View {
                     .zIndex(GameLayer.background + 1)
 
                 ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
+                    let pourPose = flaskPourPose(for: index, in: proxy.size, scale: layoutScale)
+
                     Button {
                         viewModel.handleFlaskTap(at: index)
                     } label: {
@@ -40,6 +42,8 @@ struct HomeView: View {
                             width: GameMetric.flaskHitWidth * layoutScale,
                             height: GameMetric.flaskHitHeight * layoutScale
                         )
+                        .rotationEffect(pourPose.rotation, anchor: .top)
+                        .scaleEffect(pourPose.scale)
                     }
                     .buttonStyle(.plain)
                     .disabled(!isFlaskTappable(flask))
@@ -52,8 +56,12 @@ struct HomeView: View {
                     )
                     .blur(radius: gameSurfaceBlurRadius)
                     .opacity(gameSurfaceOpacity)
-                    .position(layout.flaskCenter(for: index, in: proxy.size, scale: layoutScale))
-                    .zIndex(GameLayer.board)
+                    .position(pourPose.center)
+                    .animation(
+                        reduceMotion ? nil : .easeInOut(duration: 0.28),
+                        value: viewModel.pourAnimation
+                    )
+                    .zIndex(pourPose.zIndex)
                 }
 
                 topControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
@@ -92,14 +100,14 @@ struct HomeView: View {
 
                 if let animation = viewModel.pourAnimation {
                     PourStreamView(
-                        from: layout.pourStartPoint(for: animation.sourceIndex, in: proxy.size, scale: layoutScale),
+                        from: pourStreamStartPoint(for: animation, in: proxy.size, scale: layoutScale),
                         to: layout.pourEndPoint(for: animation.targetIndex, in: proxy.size, scale: layoutScale),
                         color: animation.color.swiftUIColor,
                         scale: layoutScale,
                         reduceMotion: reduceMotion
                     )
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
-                    .zIndex(GameLayer.animation)
+                    .zIndex(GameLayer.animation + 2)
                 }
 
                 if viewModel.completionPhase.showsSparkles {
@@ -182,6 +190,67 @@ struct HomeView: View {
         case .transitioningToNextLevel:
             return 0.62
         }
+    }
+
+    private func flaskPourPose(for index: Int, in size: CGSize, scale: CGFloat) -> FlaskPourPose {
+        let restingCenter = layout.flaskCenter(for: index, in: size, scale: scale)
+        guard let animation = viewModel.pourAnimation,
+              animation.sourceIndex == index,
+              !reduceMotion else {
+            return FlaskPourPose(center: restingCenter, rotation: .zero, scale: 1, zIndex: GameLayer.board)
+        }
+
+        let targetCenter = layout.flaskCenter(for: animation.targetIndex, in: size, scale: scale)
+        let direction: CGFloat = targetCenter.x >= restingCenter.x ? 1 : -1
+        let mouthPoint = pouringMouthPoint(
+            sourceCenter: restingCenter,
+            targetCenter: targetCenter,
+            scale: scale
+        )
+        let liftedCenter = CGPoint(
+            x: mouthPoint.x,
+            y: mouthPoint.y + GameMetric.flaskHitHeight * scale / 2
+        )
+
+        return FlaskPourPose(
+            center: liftedCenter,
+            rotation: .degrees(direction > 0 ? 62 : -62),
+            scale: 1.04,
+            zIndex: GameLayer.animation + 1
+        )
+    }
+
+    private func pourStreamStartPoint(for animation: PourAnimation, in size: CGSize, scale: CGFloat) -> CGPoint {
+        guard !reduceMotion else {
+            return layout.pourStartPoint(for: animation.sourceIndex, in: size, scale: scale)
+        }
+
+        let sourceCenter = layout.flaskCenter(for: animation.sourceIndex, in: size, scale: scale)
+        let targetCenter = layout.flaskCenter(for: animation.targetIndex, in: size, scale: scale)
+        let direction: CGFloat = targetCenter.x >= sourceCenter.x ? 1 : -1
+        let mouthPoint = pouringMouthPoint(
+            sourceCenter: sourceCenter,
+            targetCenter: targetCenter,
+            scale: scale
+        )
+
+        return CGPoint(
+            x: mouthPoint.x + direction * 10 * scale,
+            y: mouthPoint.y + 8 * scale
+        )
+    }
+
+    private func pouringMouthPoint(sourceCenter: CGPoint, targetCenter: CGPoint, scale: CGFloat) -> CGPoint {
+        let direction: CGFloat = targetCenter.x >= sourceCenter.x ? 1 : -1
+        let targetOpening = CGPoint(
+            x: targetCenter.x,
+            y: targetCenter.y - 92 * scale
+        )
+
+        return CGPoint(
+            x: targetOpening.x - direction * 46 * scale,
+            y: targetOpening.y - 16 * scale
+        )
     }
 
     private func gameBackground(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
@@ -355,6 +424,13 @@ struct HomeView: View {
         return flask.isPlayable || flask.isBonus
     }
 
+}
+
+private struct FlaskPourPose {
+    let center: CGPoint
+    let rotation: Angle
+    let scale: CGFloat
+    let zIndex: Double
 }
 
 private struct LevelBadge: View {
