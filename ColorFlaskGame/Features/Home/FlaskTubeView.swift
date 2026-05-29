@@ -30,10 +30,6 @@ struct FlaskTubeView: View {
         GameMetric.flaskHeight - 42
     }
 
-    private var sectionHeight: CGFloat {
-        liquidColumnHeight / CGFloat(Flask.maxCapacity)
-    }
-
     private var bottleOpacity: Double {
         guard !flask.isPlayable else {
             return 1
@@ -47,9 +43,9 @@ struct FlaskTubeView: View {
             bottleGlow
             hintHalo
 
-            liquidStack
+            PotionLiquidColumnView(colors: flask.colors)
                 .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
-                .clipShape(PotionFlaskLiquidShape())
+                .mask(PotionFlaskLiquidShape())
                 .padding(.bottom, 10)
 
             PotionFlaskGlassView(
@@ -118,29 +114,6 @@ struct FlaskTubeView: View {
         default:
             EmptyView()
         }
-    }
-
-    private var liquidStack: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-
-            ForEach(Array(flask.colors.reversed().enumerated()), id: \.offset) { _, color in
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                color.swiftUIColor.opacity(0.82),
-                                color.swiftUIColor,
-                                color.swiftUIColor.opacity(0.9)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(height: sectionHeight)
-            }
-        }
-        .frame(maxHeight: .infinity, alignment: .bottom)
     }
 
     private var shadowColor: Color {
@@ -419,6 +392,89 @@ struct FlaskTubeView: View {
             .frame(width: bottleImageWidth - 8, height: GameMetric.flaskHeight - 18)
             .padding(.bottom, 7)
         }
+    }
+}
+
+private struct PotionLiquidColumnView: View {
+    let colors: [LiquidColor]
+
+    var body: some View {
+        GeometryReader { proxy in
+            let sectionHeight = proxy.size.height / CGFloat(Flask.maxCapacity)
+            let filledHeight = min(proxy.size.height, sectionHeight * CGFloat(colors.count))
+
+            ZStack(alignment: .bottom) {
+                ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
+                    PotionLiquidSectionView(
+                        color: color,
+                        isTopSection: index == colors.count - 1
+                    )
+                    .frame(height: sectionHeight + 0.6)
+                    .offset(y: -sectionHeight * CGFloat(index))
+                }
+
+                if let topColor = colors.last {
+                    LiquidSurfaceView(color: topColor)
+                        .frame(width: proxy.size.width * 0.96, height: min(12, sectionHeight * 0.32))
+                        .offset(y: -filledHeight + min(6, sectionHeight * 0.16))
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
+        }
+        .clipped()
+    }
+}
+
+private struct PotionLiquidSectionView: View {
+    let color: LiquidColor
+    let isTopSection: Bool
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    color.swiftUIColor.opacity(0.86),
+                    color.swiftUIColor,
+                    color.swiftUIColor.opacity(0.92)
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+
+            LinearGradient(
+                colors: [
+                    .white.opacity(isTopSection ? 0.22 : 0.14),
+                    .clear,
+                    .black.opacity(0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+}
+
+private struct LiquidSurfaceView: View {
+    let color: LiquidColor
+
+    var body: some View {
+        Capsule()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(0.34),
+                        color.swiftUIColor.opacity(0.95),
+                        color.swiftUIColor.opacity(0.72)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                Capsule()
+                    .stroke(.white.opacity(0.28), lineWidth: 0.8)
+            )
+            .shadow(color: .white.opacity(0.12), radius: 2, x: 0, y: -1)
     }
 }
 
