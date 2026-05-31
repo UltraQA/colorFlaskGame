@@ -404,81 +404,92 @@ private struct PotionLiquidColumnView: View {
     let reduceMotion: Bool
     let isCompleted: Bool
 
-    private var colorRuns: [PotionLiquidRun] {
-        colors.reduce(into: []) { runs, color in
-            if let lastRun = runs.last, lastRun.color == color {
-                runs[runs.count - 1] = PotionLiquidRun(
-                    color: color,
-                    sectionCount: lastRun.sectionCount + 1
-                )
-            } else {
-                runs.append(PotionLiquidRun(color: color, sectionCount: 1))
-            }
-        }
-    }
-
     var body: some View {
         GeometryReader { proxy in
-            let sectionHeight = proxy.size.height / CGFloat(Flask.maxCapacity)
-            let filledHeight = min(proxy.size.height, sectionHeight * CGFloat(colors.count))
-            let runs = colorRuns
+            let size = proxy.size
 
-            ZStack(alignment: .bottom) {
-                ForEach(Array(runs.enumerated()), id: \.offset) { index, run in
-                    let sectionsBelow = runs
-                        .prefix(index)
-                        .reduce(0) { $0 + $1.sectionCount }
-                    let isTopRun = index == runs.count - 1
+            if size.width > 1, size.height > 1 {
+                let sectionHeight = size.height / CGFloat(Flask.maxCapacity)
+                let filledHeight = min(size.height, sectionHeight * CGFloat(colors.count))
 
-                    PotionLiquidSectionView(
-                        color: run.color,
-                        isTopSection: isTopRun
-                    )
-                    .frame(height: sectionHeight * CGFloat(run.sectionCount) + 0.8)
-                    .clipShape(
-                        PotionLiquidRunShape(
-                            roundsTop: isTopRun,
-                            topRadius: min(16, sectionHeight * 0.38)
+                ZStack(alignment: .bottom) {
+                    PotionLiquidCanvas(colors: colors)
+                        .frame(width: size.width, height: size.height)
+
+                    if !colors.isEmpty, filledHeight > 8 {
+                        PotionBubbleLayer(
+                            colors: colors,
+                            reduceMotion: reduceMotion,
+                            isCompleted: isCompleted
                         )
-                    )
-                    .offset(y: -sectionHeight * CGFloat(sectionsBelow))
+                        .frame(width: size.width, height: max(1, filledHeight - 4))
+                        .opacity(isCompleted ? 1 : 0.72)
+                        .allowsHitTesting(false)
+                    }
                 }
-
-                if !colors.isEmpty {
-                    PotionBubbleLayer(
-                        colors: colors,
-                        reduceMotion: reduceMotion,
-                        isCompleted: isCompleted
-                    )
-                    .frame(width: proxy.size.width, height: max(0, filledHeight - 4))
-                    .opacity(isCompleted ? 1 : 0.72)
-                    .allowsHitTesting(false)
-                }
-
-                if let topColor = colors.last {
-                    let surfaceHeight = min(10, sectionHeight * 0.28)
-
-                    LiquidSurfaceView(color: topColor)
-                        .frame(width: proxy.size.width * 0.92, height: surfaceHeight)
-                        .offset(y: -filledHeight + surfaceHeight / 2 + 1)
-                }
+                .frame(width: size.width, height: size.height, alignment: .bottom)
+            } else {
+                Color.clear
             }
-            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
         }
         .clipped()
     }
 }
 
-private struct PotionLiquidRun: Equatable {
-    let color: LiquidColor
-    let sectionCount: Int
-}
+private struct PotionLiquidCanvas: View {
+    let colors: [LiquidColor]
 
-private struct PotionLiquidRunShape: Shape {
-    let roundsTop: Bool
-    let topRadius: CGFloat
+    var body: some View {
+        Canvas { context, size in
+            guard !colors.isEmpty, size.width > 1, size.height > 1 else { return }
 
-    func path(in rect: CGRect) -> Path {
+            let sectionHeight = size.height / CGFloat(Flask.maxCapacity)
+            for index in colors.indices {
+                let color = colors[index]
+                let isTopSection = index == colors.count - 1
+                let softensTopEdge = index > 0 && colors[index - 1] == color
+                let overlap: CGFloat = index == 0 ? 0 : 0.8
+                let rect = CGRect(
+                    x: 0,
+                    y: size.height - sectionHeight * CGFloat(index + 1) - overlap,
+                    width: size.width,
+                    height: sectionHeight + overlap
+                )
+
+                let path = liquidSectionPath(
+                    in: rect,
+                    roundsTop: isTopSection,
+                    topRadius: min(18, sectionHeight * 0.46)
+                )
+                context.fill(path, with: .linearGradient(
+                    Gradient(colors: [
+                        color.swiftUIColor.opacity(0.86),
+                        color.swiftUIColor,
+                        color.swiftUIColor.opacity(0.92)
+                    ]),
+                    startPoint: CGPoint(x: rect.minX, y: rect.midY),
+                    endPoint: CGPoint(x: rect.maxX, y: rect.midY)
+                ))
+
+                let highlightOpacity: Double = if isTopSection {
+                    0.24
+                } else {
+                    softensTopEdge ? 0.02 : 0.07
+                }
+                context.fill(path, with: .linearGradient(
+                    Gradient(colors: [
+                        .white.opacity(highlightOpacity),
+                        .clear,
+                        .black.opacity(softensTopEdge ? 0.02 : 0.06)
+                    ]),
+                    startPoint: CGPoint(x: rect.minX, y: rect.minY),
+                    endPoint: CGPoint(x: rect.maxX, y: rect.maxY)
+                ))
+            }
+        }
+    }
+
+    private func liquidSectionPath(in rect: CGRect, roundsTop: Bool, topRadius: CGFloat) -> Path {
         guard roundsTop, topRadius > 0 else {
             return Path(rect)
         }
@@ -577,59 +588,6 @@ private struct PotionBubbleLayer: View {
         let fadeIn = min(1, progress * 4)
         let fadeOut = min(1, (1 - progress) * 3)
         return Double(min(fadeIn, fadeOut)) * (isCompleted ? 0.9 : 0.68)
-    }
-}
-
-private struct PotionLiquidSectionView: View {
-    let color: LiquidColor
-    let isTopSection: Bool
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    color.swiftUIColor.opacity(0.86),
-                    color.swiftUIColor,
-                    color.swiftUIColor.opacity(0.92)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-
-            LinearGradient(
-                colors: [
-                    .white.opacity(isTopSection ? 0.22 : 0.14),
-                    .clear,
-                    .black.opacity(0.08)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-}
-
-private struct LiquidSurfaceView: View {
-    let color: LiquidColor
-
-    var body: some View {
-        Capsule()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        .white.opacity(0.34),
-                        color.swiftUIColor.opacity(0.95),
-                        color.swiftUIColor.opacity(0.72)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                Capsule()
-                    .stroke(.white.opacity(0.28), lineWidth: 0.8)
-            )
-            .shadow(color: .white.opacity(0.12), radius: 2, x: 0, y: -1)
     }
 }
 
