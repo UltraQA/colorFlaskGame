@@ -632,8 +632,8 @@ Client Orders give the game a stronger identity than standard Water Sort. The pl
 ### Priority B: Cozy Potion Shop Visual Pass
 
 Tasks:
-- Replace the current background with an interior cozy potion shop board scene.
-- Keep the board center low-noise so empty flasks and glass outlines remain readable.
+- Replace the current background with an interior cozy potion shop board scene. **Done:** gameplay now layers a procedural cozy shop backdrop with shelves, potion bottles, window glow, and a counter over a subdued texture.
+- Keep the board center low-noise so empty flasks and glass outlines remain readable. **Done:** the shop backdrop uses central contrast/vignette washes and muted decorative opacity so active flasks remain the primary read.
 - Unify Reset, Undo, and Hint into one visual language. **Done:** Reset no longer uses a separate bitmap asset and now shares the same circular SwiftUI control style as Hint, Undo, and Menu.
 - Decide whether flasks stay SwiftUI-procedural or move to sprite overlays based on `Flask.pxo`. **Done:** flasks now use procedural SwiftUI bottle shapes for scalable glass, liquid clipping, and state styling.
 - Create locked bonus flask art that feels like an optional cozy object, not an aggressive monetization gate. **Done:** locked bonus flask now uses a softer gold wash, lighter ghosted bottle treatment, small lock affordance, and rewarded-video hint icon instead of a heavy blocking overlay.

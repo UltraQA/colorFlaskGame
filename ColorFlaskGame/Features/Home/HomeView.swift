@@ -238,7 +238,11 @@ struct HomeView: View {
             Image("GameBackground")
                 .resizable()
                 .scaledToFill()
-                .opacity(0.92)
+                .saturation(0.52)
+                .brightness(-0.16)
+                .opacity(0.34)
+
+            CozyPotionShopBackgroundView()
         }
         .frame(
             width: size.width + safeAreaInsets.leading + safeAreaInsets.trailing,
@@ -504,6 +508,196 @@ private struct BoardVignetteView: View {
         .frame(width: GameMetric.baseBoardWidth * scale, height: 560 * scale)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private struct CozyPotionShopBackgroundView: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.09, green: 0.07, blue: 0.15),
+                        Color(red: 0.18, green: 0.10, blue: 0.18),
+                        Color(red: 0.08, green: 0.12, blue: 0.16)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                VStack(spacing: size.height * 0.085) {
+                    PotionShelf(width: size.width * 0.78, bottleScale: 0.82)
+                        .opacity(0.52)
+
+                    Spacer(minLength: size.height * 0.34)
+
+                    PotionShelf(width: size.width * 0.68, bottleScale: 0.68)
+                        .opacity(0.34)
+                }
+                .padding(.top, size.height * 0.11)
+                .padding(.bottom, size.height * 0.16)
+
+                WindowGlow()
+                    .frame(width: size.width * 0.34, height: size.height * 0.28)
+                    .position(x: size.width * 0.82, y: size.height * 0.25)
+                    .opacity(0.28)
+
+                CounterSilhouette()
+                    .frame(width: size.width * 1.08, height: size.height * 0.22)
+                    .position(x: size.width / 2, y: size.height * 0.91)
+
+                Rectangle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                .clear,
+                                GameColor.potionBackground.opacity(0.32),
+                                GameColor.potionBackground.opacity(0.72)
+                            ],
+                            center: .center,
+                            startRadius: min(size.width, size.height) * 0.18,
+                            endRadius: max(size.width, size.height) * 0.64
+                        )
+                    )
+
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                .black.opacity(0.18),
+                                .clear,
+                                .clear,
+                                .black.opacity(0.36)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct PotionShelf: View {
+    let width: CGFloat
+    let bottleScale: CGFloat
+
+    private let bottleColors: [Color] = [
+        Color(red: 0.34, green: 0.93, blue: 0.66),
+        Color(red: 1.00, green: 0.72, blue: 0.25),
+        Color(red: 0.72, green: 0.43, blue: 1.00),
+        Color(red: 0.29, green: 0.91, blue: 0.96),
+        Color(red: 1.00, green: 0.42, blue: 0.77)
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .bottom, spacing: 16 * bottleScale) {
+                ForEach(Array(bottleColors.enumerated()), id: \.offset) { index, color in
+                    ShelfBottle(color: color, height: bottleHeight(at: index) * bottleScale)
+                }
+            }
+            .padding(.bottom, 4)
+
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.41, green: 0.26, blue: 0.19),
+                            Color(red: 0.23, green: 0.13, blue: 0.13)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: width, height: 10)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.34), radius: 14, x: 0, y: 8)
+        }
+    }
+
+    private func bottleHeight(at index: Int) -> CGFloat {
+        [44, 58, 50, 64, 48][index]
+    }
+}
+
+private struct ShelfBottle: View {
+    let color: Color
+    let height: CGFloat
+
+    var body: some View {
+        VStack(spacing: -1) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(GameColor.glassStroke.opacity(0.34))
+                .frame(width: height * 0.22, height: height * 0.18)
+
+            RoundedRectangle(cornerRadius: height * 0.14)
+                .fill(color.opacity(0.58))
+                .frame(width: height * 0.42, height: height)
+                .overlay(
+                    RoundedRectangle(cornerRadius: height * 0.14)
+                        .stroke(GameColor.glassStroke.opacity(0.38), lineWidth: 1.5)
+                )
+                .overlay(alignment: .topLeading) {
+                    Capsule()
+                        .fill(.white.opacity(0.24))
+                        .frame(width: height * 0.09, height: height * 0.58)
+                        .padding(.leading, height * 0.08)
+                        .padding(.top, height * 0.12)
+                }
+        }
+        .shadow(color: color.opacity(0.22), radius: 8, x: 0, y: 4)
+    }
+}
+
+private struct WindowGlow: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 28)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.38, green: 0.74, blue: 0.82).opacity(0.44),
+                        Color(red: 0.98, green: 0.82, blue: 0.48).opacity(0.22)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 2)
+            )
+            .shadow(color: Color(red: 0.29, green: 0.91, blue: 0.96).opacity(0.18), radius: 28)
+    }
+}
+
+private struct CounterSilhouette: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color(red: 0.44, green: 0.28, blue: 0.19).opacity(0.9))
+                .frame(height: 18)
+
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.25, green: 0.15, blue: 0.14).opacity(0.94),
+                            Color(red: 0.08, green: 0.06, blue: 0.10)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        }
+        .shadow(color: .black.opacity(0.34), radius: 22, x: 0, y: -8)
     }
 }
 
