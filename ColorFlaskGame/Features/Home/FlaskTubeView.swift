@@ -404,19 +404,44 @@ private struct PotionLiquidColumnView: View {
     let reduceMotion: Bool
     let isCompleted: Bool
 
+    private var colorRuns: [PotionLiquidRun] {
+        colors.reduce(into: []) { runs, color in
+            if let lastRun = runs.last, lastRun.color == color {
+                runs[runs.count - 1] = PotionLiquidRun(
+                    color: color,
+                    sectionCount: lastRun.sectionCount + 1
+                )
+            } else {
+                runs.append(PotionLiquidRun(color: color, sectionCount: 1))
+            }
+        }
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let sectionHeight = proxy.size.height / CGFloat(Flask.maxCapacity)
             let filledHeight = min(proxy.size.height, sectionHeight * CGFloat(colors.count))
+            let runs = colorRuns
 
             ZStack(alignment: .bottom) {
-                ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
+                ForEach(Array(runs.enumerated()), id: \.offset) { index, run in
+                    let sectionsBelow = runs
+                        .prefix(index)
+                        .reduce(0) { $0 + $1.sectionCount }
+                    let isTopRun = index == runs.count - 1
+
                     PotionLiquidSectionView(
-                        color: color,
-                        isTopSection: index == colors.count - 1
+                        color: run.color,
+                        isTopSection: isTopRun
                     )
-                    .frame(height: sectionHeight + 0.6)
-                    .offset(y: -sectionHeight * CGFloat(index))
+                    .frame(height: sectionHeight * CGFloat(run.sectionCount) + 0.8)
+                    .clipShape(
+                        PotionLiquidRunShape(
+                            roundsTop: isTopRun,
+                            topRadius: min(16, sectionHeight * 0.38)
+                        )
+                    )
+                    .offset(y: -sectionHeight * CGFloat(sectionsBelow))
                 }
 
                 if !colors.isEmpty {
@@ -441,6 +466,39 @@ private struct PotionLiquidColumnView: View {
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
         }
         .clipped()
+    }
+}
+
+private struct PotionLiquidRun: Equatable {
+    let color: LiquidColor
+    let sectionCount: Int
+}
+
+private struct PotionLiquidRunShape: Shape {
+    let roundsTop: Bool
+    let topRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        guard roundsTop, topRadius > 0 else {
+            return Path(rect)
+        }
+
+        let radius = min(topRadius, rect.width / 2, rect.height / 2)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX + radius, y: rect.minY),
+            control: CGPoint(x: rect.minX, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
+            control: CGPoint(x: rect.maxX, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 

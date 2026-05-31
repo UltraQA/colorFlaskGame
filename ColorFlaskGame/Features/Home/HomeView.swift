@@ -536,7 +536,7 @@ private struct CozyPotionShopBackgroundView: View {
                     PotionShelf(width: size.width * 0.68, bottleScale: 0.68)
                         .opacity(0.34)
                 }
-                .padding(.top, size.height * 0.11)
+                .padding(.top, size.height * 0.17)
                 .padding(.bottom, size.height * 0.16)
 
                 WindowGlow()

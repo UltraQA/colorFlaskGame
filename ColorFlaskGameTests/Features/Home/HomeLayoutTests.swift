@@ -31,14 +31,15 @@ final class HomeLayoutTests: XCTestCase {
         )
     }
 
-    func testBottomControlsStayWithinSafeArea() {
+    func testBottomControlsSitNearPhysicalBottom() {
         let size = CGSize(width: 393, height: 852)
         let safeAreaInsets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
         let scale = layout.scale(in: size)
         let centerY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
         let bottomEdge = centerY + GameMetric.bottomControlDockHeight * scale / 2
 
-        XCTAssertLessThanOrEqual(bottomEdge, size.height - safeAreaInsets.bottom)
+        XCTAssertLessThanOrEqual(bottomEdge, size.height)
+        XCTAssertGreaterThan(bottomEdge, size.height - safeAreaInsets.bottom)
     }
 
     func testBoardKeepsClearanceFromBottomControlsOnStandardPhone() {

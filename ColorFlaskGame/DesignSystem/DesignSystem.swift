@@ -67,7 +67,7 @@ enum GameMetric {
     static let topControlInset: CGFloat = 6
     static let orderBannerTopInset: CGFloat = 22
     static let tutorialPromptBottomGap: CGFloat = 12
-    static let bottomControlInset: CGFloat = 0
+    static let bottomControlInset: CGFloat = -34
 }
 
 enum GameColor {
