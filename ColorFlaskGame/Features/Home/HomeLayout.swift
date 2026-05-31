@@ -9,6 +9,10 @@ struct HomeLayout {
     }
 
     func scale(in size: CGSize) -> CGFloat {
+        guard size.width.isFinite, size.height.isFinite, size.width > 1, size.height > 1 else {
+            return 1
+        }
+
         guard size.width > GameMetric.baseBoardWidth || size.height > GameMetric.baseBoardHeight else {
             return 1
         }
@@ -22,7 +26,10 @@ struct HomeLayout {
     func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
         let column = index % columns
         let row = index / columns
-        let boardWidth = min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
+        let boardWidth = max(
+            GameMetric.flaskHitWidth * scale,
+            min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
+        )
         let boardOriginX = (size.width - boardWidth) / 2
         let verticalCenter = size.height * GameMetric.boardVerticalCenterRatio
         let cellWidth = boardWidth / CGFloat(columns)

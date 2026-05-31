@@ -134,6 +134,7 @@ struct HomeView: View {
                 }
             )
             .readHeight { height in
+                guard height.isFinite, height > 0 else { return }
                 bonusSheetHeight = min(max(height, 244), 420)
             }
             .presentationDetents([.height(bonusSheetHeight)])
@@ -245,8 +246,8 @@ struct HomeView: View {
             CozyPotionShopBackgroundView()
         }
         .frame(
-            width: size.width + safeAreaInsets.leading + safeAreaInsets.trailing,
-            height: size.height + safeAreaInsets.top + safeAreaInsets.bottom
+            width: max(1, size.width + safeAreaInsets.leading + safeAreaInsets.trailing),
+            height: max(1, size.height + safeAreaInsets.top + safeAreaInsets.bottom)
         )
         .clipped()
         .ignoresSafeArea()
@@ -353,7 +354,8 @@ struct HomeView: View {
 
     private func bottomControls(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> some View {
         let controlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
-        let dockWidth = min(GameMetric.bottomControlDockWidth, (size.width - GameMetric.horizontalInset * 2 * scale) / scale)
+        let availableWidth = (size.width - GameMetric.horizontalInset * 2 * scale) / max(scale, 0.001)
+        let dockWidth = max(1, min(GameMetric.bottomControlDockWidth, availableWidth))
 
         return BottomControlDock(
             width: dockWidth,
