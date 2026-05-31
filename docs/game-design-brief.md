@@ -810,7 +810,7 @@ Scope:
 - themed buttons;
 - lock visual;
 - hint/undo/reset icons;
-- bubbles/sparkles.
+- bubbles/sparkles. **Done:** active potion liquid now has clipped SwiftUI bubble motion inside each flask, with a static Reduce Motion fallback.
 
 Owner:
 - Confucius + Hume.

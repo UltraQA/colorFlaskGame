@@ -43,7 +43,11 @@ struct FlaskTubeView: View {
             bottleGlow
             hintHalo
 
-            PotionLiquidColumnView(colors: flask.colors)
+            PotionLiquidColumnView(
+                colors: flask.colors,
+                reduceMotion: reduceMotion,
+                isCompleted: visualState == .completed
+            )
                 .frame(width: liquidColumnWidth, height: liquidColumnHeight, alignment: .bottom)
                 .mask(PotionFlaskLiquidShape())
                 .padding(.bottom, 14)
@@ -397,6 +401,8 @@ struct FlaskTubeView: View {
 
 private struct PotionLiquidColumnView: View {
     let colors: [LiquidColor]
+    let reduceMotion: Bool
+    let isCompleted: Bool
 
     var body: some View {
         GeometryReader { proxy in
@@ -413,6 +419,17 @@ private struct PotionLiquidColumnView: View {
                     .offset(y: -sectionHeight * CGFloat(index))
                 }
 
+                if !colors.isEmpty {
+                    PotionBubbleLayer(
+                        colors: colors,
+                        reduceMotion: reduceMotion,
+                        isCompleted: isCompleted
+                    )
+                    .frame(width: proxy.size.width, height: max(0, filledHeight - 4))
+                    .opacity(isCompleted ? 1 : 0.72)
+                    .allowsHitTesting(false)
+                }
+
                 if let topColor = colors.last {
                     let surfaceHeight = min(10, sectionHeight * 0.28)
 
@@ -424,6 +441,84 @@ private struct PotionLiquidColumnView: View {
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
         }
         .clipped()
+    }
+}
+
+private struct PotionBubbleLayer: View {
+    let colors: [LiquidColor]
+    let reduceMotion: Bool
+    let isCompleted: Bool
+
+    private let xPositions: [CGFloat] = [0.24, 0.48, 0.68, 0.34, 0.58, 0.78]
+
+    var body: some View {
+        if reduceMotion {
+            bubbles(phase: 0.32)
+        } else {
+            TimelineView(.animation) { timeline in
+                let duration = isCompleted ? 1.7 : 2.8
+                let phase = timeline.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: duration) / duration
+                bubbles(phase: phase)
+            }
+        }
+    }
+
+    private func bubbles(phase: TimeInterval) -> some View {
+        GeometryReader { proxy in
+            ForEach(0..<bubbleCount, id: \.self) { index in
+                let progress = bubbleProgress(for: index, phase: phase)
+                let size = bubbleSize(for: index)
+                let x = xPositions[index % xPositions.count] * proxy.size.width
+                let y = proxy.size.height * (1 - progress)
+                let tint = colors[index % colors.count].swiftUIColor
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                .white.opacity(isCompleted ? 0.72 : 0.52),
+                                tint.opacity(0.16),
+                                .clear
+                            ],
+                            center: .topLeading,
+                            startRadius: 1,
+                            endRadius: size
+                        )
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(.white.opacity(isCompleted ? 0.42 : 0.26), lineWidth: 0.8)
+                    )
+                    .frame(width: size, height: size)
+                    .position(
+                        x: x + sin(progress * .pi * 2 + CGFloat(index)) * 5,
+                        y: y
+                    )
+                    .opacity(bubbleOpacity(progress: progress))
+            }
+        }
+        .compositingGroup()
+    }
+
+    private var bubbleCount: Int {
+        isCompleted ? 8 : 6
+    }
+
+    private func bubbleProgress(for index: Int, phase: TimeInterval) -> CGFloat {
+        let offset = Double(index) * 0.19
+        return CGFloat((phase + offset).truncatingRemainder(dividingBy: 1))
+    }
+
+    private func bubbleSize(for index: Int) -> CGFloat {
+        let sizes: [CGFloat] = isCompleted ? [5, 8, 6, 10, 7, 5, 9, 6] : [4, 6, 5, 7, 5, 4]
+        return sizes[index % sizes.count]
+    }
+
+    private func bubbleOpacity(progress: CGFloat) -> Double {
+        let fadeIn = min(1, progress * 4)
+        let fadeOut = min(1, (1 - progress) * 3)
+        return Double(min(fadeIn, fadeOut)) * (isCompleted ? 0.9 : 0.68)
     }
 }
 
