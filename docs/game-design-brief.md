@@ -155,6 +155,35 @@ Rule of thumb:
 - only move to 5-section flasks once the player already understands 7-8 color puzzles;
 - each color must still appear exactly once per flask section count, for example 4 times in 4-section levels and 5 times in 5-section levels.
 
+### Future Cosmetic Progression
+
+The game can add long-term freshness by changing the visual theme as the player advances, without changing the core Water Sort rules.
+
+Possible cadence:
+- every 20 levels for early progression rewards;
+- every 50 levels for larger chapter changes once the level count grows.
+
+Unlockable categories:
+- background scenes, for example a simple starter shop, a warmer apothecary room, a moonlit shelf, a greenhouse corner, or a festival shop;
+- color schemes for UI controls, highlights, glass glow, and celebration effects;
+- flask variants, such as different silhouettes, caps, labels, wraps, corks, ribbons, or small charms;
+- potion shelf or shop decorations as a future meta layer.
+
+Herbs economy:
+- herbs can remain hint currency for MVP;
+- later, herbs can also buy cosmetic flask skins, backgrounds, UI palettes, or shop decorations;
+- paid/progression cosmetics should not affect puzzle solvability.
+
+UX entry points:
+- main menu/settings can include sound on/off, haptics on/off, and a customization menu;
+- customization menu can list unlocked and locked backgrounds, color palettes, and flask styles;
+- locked cosmetics should show unlock requirements, such as `Complete 20 orders` or `Buy with herbs`.
+
+Completion flow:
+- after a level is completed, the outro/win screen can show progress toward the next cosmetic reward;
+- examples: `5/20 orders until new background`, `12/20 orders until new flask style`, or `+8 herbs`;
+- this should be a gentle retention cue, not pressure.
+
 ## Mechanics Priorities
 
 ### Priority 1: Stable Level System
@@ -823,6 +852,10 @@ Goal:
 Scope:
 - daily herbs gift;
 - potion shelf collection;
+- unlockable backgrounds, color palettes, and flask skins over level milestones;
+- herb-based cosmetic purchases for flask styles, backgrounds, color palettes, or shop decorations;
+- main menu settings for sound, haptics, and customization collections;
+- outro progress toward the next cosmetic or herbs reward;
 - future shop meta with customers who request special nectars, tinctures, potions, and other cozy potion orders;
 - optional shop decorations as long-term progression;
 - future achievement list, where perfect-level completion can exist as an optional mastery achievement;

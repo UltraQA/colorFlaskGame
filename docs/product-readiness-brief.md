@@ -118,6 +118,9 @@ Current status: not release-candidate ready.
 - Herbs exist, but their long-term role is limited. Decide whether herbs are only hint currency for v1 or become shop upgrade currency later.
 - Need a lightweight milestone structure: first order complete, chapter markers, or new potion sets.
 - Daily rewards, achievements, customers, and shop upgrades should stay post-v1 unless they directly improve retention in testing.
+- Future customization can add unlockable backgrounds, UI color palettes, and flask styles every 20 or 50 levels.
+- Herbs can later become cosmetic currency for flask skins, backgrounds, color schemes, or shop decorations.
+- Completion/outro should eventually show progress toward the next reward, for example `5/20 orders until new background`.
 
 ### Onboarding And Clarity
 
@@ -180,6 +183,8 @@ Tasks:
 - Design App Store screenshot compositions around real gameplay value, not marketing-only art.
 - Define accessibility expectations: labels, contrast, reduced motion, touch target sizes, and readable color differentiation.
 - Keep full shop meta, large map, NPC conversations, daily reward calendar, and cosmetic store out of v1 unless PM re-prioritizes.
+- For post-v1 customization, design a main menu entry for sound toggle, haptics toggle, and collections for backgrounds, palettes, and flask styles.
+- Define how locked cosmetics show requirements without feeling like a hard monetization wall.
 
 Design constraint: do not spend the next iteration on font micro-tuning or pixel-perfect alignment before the release flow and monetization/service decisions are settled.
 
@@ -195,6 +200,8 @@ Tasks:
 - Ensure liquid colors remain distinguishable, including for color-vision accessibility.
 - Replace placeholder art before beta unless intentionally accepted as final.
 - Provide export specs for iOS assets: sizes, naming, scale factors, compression guidance.
+- Plan future cosmetic sets in families: background scene, matching UI palette, flask variant, small decorative details, and matching celebration accents.
+- Flask variants can change silhouette or add non-gameplay elements such as corks, caps, labels, wraps, charms, or ribbons.
 
 Art constraint: readability beats decoration. Cozy atmosphere should support the puzzle board, not compete with it.
 
