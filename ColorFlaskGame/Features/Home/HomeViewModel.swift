@@ -198,7 +198,6 @@ final class HomeViewModel: ObservableObject {
         )
         self.selectedFlaskIndex = self.gameManager.level?.initialSelectedFlaskIndex
         bindGameManager()
-        presentHerbsTutorialIfNeeded()
     }
 
     var progress: Double {
@@ -320,6 +319,10 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
+    var menuRewardText: String {
+        currentLevelNumber <= 4 ? "" : "+\(Self.herbsRewardPerCompletedOrder)"
+    }
+
     func handleFlaskTap(at index: Int) {
         guard gameManager.flasks.indices.contains(index), canInteractWithBoard else { return }
 
@@ -390,6 +393,10 @@ final class HomeViewModel: ObservableObject {
 
     func startNewGame() {
         loadLevel(at: currentLevelIndex)
+    }
+
+    func beginCurrentOrder() {
+        presentHerbsTutorialIfNeeded()
     }
 
     func requestReset() {
@@ -464,7 +471,6 @@ final class HomeViewModel: ObservableObject {
         )
         selectedFlaskIndex = gameManager.level?.initialSelectedFlaskIndex
         bindGameManager()
-        presentHerbsTutorialIfNeeded()
         objectWillChange.send()
     }
 
@@ -647,7 +653,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func awardHerbsForCompletedOrder() {
-        guard currentLevelNumber > 5 else {
+        guard currentLevelNumber > 4 else {
             lastHerbsReward = nil
             return
         }
@@ -739,11 +745,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     func claimHerbsTutorialReward() {
-        guard let prompt = herbsTutorialPrompt else { return }
+        guard herbsTutorialPrompt != nil else { return }
 
-        herbsBalance += prompt.herbsAmount
-        progressStore.herbsBalance = herbsBalance
-        progressStore.hasSeenHerbsTutorial = true
         herbsTutorialPrompt = nil
         gameFeedbackProvider.play(.hintUsed)
     }
@@ -786,7 +789,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func presentHerbsTutorialIfNeeded() {
-        guard currentLevelNumber == 5,
+        guard currentLevelIndex == 4,
+              currentLevelNumber == 5,
               !progressStore.hasSeenHerbsTutorial else { return }
 
         let missingHerbs = max(0, Self.extraHintHerbsCost - herbsBalance)
@@ -795,6 +799,9 @@ final class HomeViewModel: ObservableObject {
             return
         }
 
+        herbsBalance += missingHerbs
+        progressStore.herbsBalance = herbsBalance
+        progressStore.hasSeenHerbsTutorial = true
         herbsTutorialPrompt = HerbsTutorialPrompt(herbsAmount: missingHerbs)
     }
 

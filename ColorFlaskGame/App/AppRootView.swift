@@ -30,13 +30,14 @@ struct AppRootView: View {
                     orderSubtitle: viewModel.orderSubtitle,
                     objectiveSummary: viewModel.orderObjectiveSummary,
                     completedOrders: viewModel.currentLevelIndex,
-                    rewardHerbs: HomeViewModel.herbsRewardPerCompletedOrder,
+                    rewardText: viewModel.menuRewardText,
                     isCurrentOrderInProgress: activeOrderLevelIndex == viewModel.currentLevelIndex,
                     isSoundEnabled: feedbackProvider.isSoundEnabled,
                     isHapticsEnabled: feedbackProvider.isHapticsEnabled,
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
                         activeOrderLevelIndex = viewModel.currentLevelIndex
+                        viewModel.beginCurrentOrder()
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .game
                         }
@@ -143,7 +144,7 @@ private struct MainMenuView: View {
     let orderSubtitle: String
     let objectiveSummary: OrderObjectiveSummary?
     let completedOrders: Int
-    let rewardHerbs: Int
+    let rewardText: String
     let isCurrentOrderInProgress: Bool
     let isSoundEnabled: Bool
     let isHapticsEnabled: Bool
@@ -285,10 +286,8 @@ private struct MainMenuView: View {
 
                 Spacer()
 
-                Label("+\(rewardHerbs)", systemImage: "leaf.fill")
-                    .font(DSTypography.caption)
+                RewardValueView(value: rewardText, font: DSTypography.caption)
                     .foregroundStyle(GameColor.glassStroke.opacity(0.84))
-                    .lineLimit(1)
             }
 
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
@@ -350,7 +349,7 @@ private struct MainMenuView: View {
     private var statsPanel: some View {
         HStack(spacing: DSSpacing.md) {
             MenuStatView(title: "Completed", value: "\(completedOrders)")
-            MenuStatView(title: "Reward", value: "+\(rewardHerbs)", systemImage: "leaf.fill")
+            MenuStatView(title: "Reward", value: rewardText, systemImage: "leaf.fill")
         }
     }
 }
@@ -370,10 +369,12 @@ private struct MenuStatView: View {
                         .accessibilityHidden(true)
                 }
 
-                Text(value)
-                    .font(.system(size: 24, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                if !value.isEmpty {
+                    Text(value)
+                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                }
             }
 
             Text(title)
@@ -391,6 +392,24 @@ private struct MenuStatView: View {
                         .stroke(GameColor.glassStroke.opacity(0.12), lineWidth: 1)
                 )
         )
+    }
+}
+
+private struct RewardValueView: View {
+    let value: String
+    let font: Font
+
+    var body: some View {
+        HStack(spacing: DSSpacing.xs) {
+            Image(systemName: "leaf.fill")
+
+            if !value.isEmpty {
+                Text(value)
+            }
+        }
+        .font(font)
+        .lineLimit(1)
+        .accessibilityLabel(value.isEmpty ? "Herbs reward" : "\(value) herbs reward")
     }
 }
 

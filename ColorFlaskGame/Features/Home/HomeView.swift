@@ -106,6 +106,17 @@ struct HomeView: View {
                     .zIndex(GameLayer.controls + 1)
                 }
 
+                if let herbsPrompt = viewModel.herbsTutorialPrompt, viewModel.completionPhase.isPlaying {
+                    HerbsTutorialOverlay(
+                        herbsAmount: herbsPrompt.herbsAmount,
+                        reduceMotion: reduceMotion
+                    ) {
+                        viewModel.claimHerbsTutorialReward()
+                    }
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94)))
+                    .zIndex(GameLayer.controls + 4)
+                }
+
                 if viewModel.completionPhase.showsSparkles {
                     WinCelebrationView(reduceMotion: reduceMotion)
                         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
@@ -157,15 +168,6 @@ struct HomeView: View {
             }
         } message: {
             Text("Your current potion progress will be cleared.")
-        }
-        .alert(item: $viewModel.herbsTutorialPrompt) { prompt in
-            Alert(
-                title: Text("Here are some herbs"),
-                message: Text("Use herbs to get a hint when a potion order feels tricky."),
-                dismissButton: .default(Text("Use Hint")) {
-                    viewModel.claimHerbsTutorialReward()
-                }
-            )
         }
     }
 
@@ -932,6 +934,74 @@ private struct TutorialPromptView: View {
         .allowsHitTesting(false)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(subtitle)")
+    }
+}
+
+private struct HerbsTutorialOverlay: View {
+    let herbsAmount: Int
+    let reduceMotion: Bool
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            GameColor.controlSurface
+                .opacity(0.28)
+                .ignoresSafeArea()
+
+            VStack(spacing: DSSpacing.md) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlSurface)
+                    .frame(width: 58, height: 58)
+                    .background(
+                        Circle()
+                            .fill(GameColor.successAccent)
+                            .shadow(color: GameColor.successAccent.opacity(0.32), radius: 16, x: 0, y: 8)
+                    )
+
+                VStack(spacing: DSSpacing.xs) {
+                    Text("+\(herbsAmount) herbs")
+                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+
+                    Text("Use herbs to reveal a hint.")
+                        .font(DSTypography.body)
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+
+                Button(action: onDismiss) {
+                    Text("Got it")
+                        .font(DSTypography.headline)
+                        .foregroundStyle(GameColor.controlSurface)
+                        .frame(width: 148, height: 46)
+                        .background(
+                            Capsule()
+                                .fill(GameColor.controlAccent)
+                                .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 12, x: 0, y: 8)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, DSSpacing.lg)
+            .padding(.vertical, DSSpacing.lg)
+            .frame(width: 304)
+            .background(
+                RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                    .fill(GameColor.controlSurface.opacity(0.92))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                            .stroke(GameColor.successAccent.opacity(0.42), lineWidth: 2)
+                    )
+            )
+            .shadow(color: .black.opacity(0.34), radius: 24, x: 0, y: 16)
+            .scaleEffect(reduceMotion ? 1 : 1.02)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Received \(herbsAmount) herbs. Use herbs to reveal a hint.")
     }
 }
 

@@ -614,13 +614,6 @@ final class HomeViewModelTests: XCTestCase {
             hasSeenHerbsTutorial: true
         )
         let viewModel = HomeViewModel(
-            gameManager: GameManager(
-                flasks: [
-                    Flask(colors: [red]),
-                    Flask(colors: [green]),
-                    Flask()
-                ]
-            ),
             progressStore: progressStore,
             currentLevelIndex: 4,
             timing: .immediate
@@ -643,26 +636,22 @@ final class HomeViewModelTests: XCTestCase {
             herbsBalance: 0
         )
         let viewModel = HomeViewModel(
-            gameManager: GameManager(
-                flasks: [
-                    Flask(colors: [red]),
-                    Flask(colors: [green]),
-                    Flask()
-                ]
-            ),
             progressStore: progressStore,
             currentLevelIndex: 4,
             timing: .immediate
         )
 
+        XCTAssertNil(viewModel.herbsTutorialPrompt)
+        viewModel.beginCurrentOrder()
         XCTAssertEqual(viewModel.herbsTutorialPrompt?.herbsAmount, HomeViewModel.extraHintHerbsCost)
-        viewModel.showHint()
-        XCTAssertNil(viewModel.hintMove)
+        XCTAssertTrue(progressStore.hasSeenHerbsTutorial)
+        XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
+        XCTAssertEqual(progressStore.herbsBalance, HomeViewModel.extraHintHerbsCost)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
 
         viewModel.claimHerbsTutorialReward()
 
         XCTAssertNil(viewModel.herbsTutorialPrompt)
-        XCTAssertTrue(progressStore.hasSeenHerbsTutorial)
         XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertFalse(viewModel.canInteractWithBoard)
 
@@ -671,6 +660,52 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.hintMove)
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertTrue(viewModel.canInteractWithBoard)
+    }
+
+    func testMenuRewardUsesLeafOnlyUntilFourthLevelIsCompleted() {
+        let tutorialViewModel = HomeViewModel(
+            progressStore: SpyProgressStore(
+                currentLevelIndex: 3,
+                isBonusFlaskPermanentlyUnlocked: false
+            ),
+            currentLevelIndex: 3,
+            timing: .immediate
+        )
+        let rewardViewModel = HomeViewModel(
+            progressStore: SpyProgressStore(
+                currentLevelIndex: 4,
+                isBonusFlaskPermanentlyUnlocked: false
+            ),
+            currentLevelIndex: 4,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(tutorialViewModel.menuRewardText, "")
+        XCTAssertEqual(rewardViewModel.menuRewardText, "+\(HomeViewModel.herbsRewardPerCompletedOrder)")
+    }
+
+    @MainActor
+    func testAdvancingToLevelFiveDoesNotPresentHerbsTutorialBeforeOrderStarts() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 3,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 0
+        )
+        let viewModel = HomeViewModel(
+            progressStore: progressStore,
+            currentLevelIndex: 3,
+            timing: .immediate
+        )
+
+        viewModel.advanceToNextLevel()
+
+        XCTAssertEqual(viewModel.currentLevelIndex, 4)
+        XCTAssertEqual(viewModel.currentLevelNumber, 5)
+        XCTAssertNil(viewModel.herbsTutorialPrompt)
+
+        viewModel.beginCurrentOrder()
+
+        XCTAssertEqual(viewModel.herbsTutorialPrompt?.herbsAmount, HomeViewModel.extraHintHerbsCost)
     }
 
     func testSecondLevelStartsWithMiddleFlaskSelectedAndMarkersVisible() {
