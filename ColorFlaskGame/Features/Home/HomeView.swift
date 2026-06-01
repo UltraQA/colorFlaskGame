@@ -1230,8 +1230,6 @@ private struct BottomControlDock<ResetButton: View>: View {
     let isHintAttentionActive: Bool
     let onHint: () -> Void
 
-    @State private var hintPulse = false
-
     var body: some View {
         HStack(alignment: .center) {
             resetButton
@@ -1244,33 +1242,13 @@ private struct BottomControlDock<ResetButton: View>: View {
                 title: "Hint",
                 style: .accent,
                 isEnabled: isHintEnabled,
+                attractsAttention: isHintAttentionActive,
                 action: onHint
             )
             .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
             .overlay(alignment: .topTrailing) {
                 HintCostBadge(text: hintBadgeText, isEnabled: isHintEnabled)
                     .offset(x: 6, y: -2)
-            }
-            .overlay {
-                if isHintAttentionActive {
-                    Circle()
-                        .stroke(GameColor.controlAccent.opacity(hintPulse ? 0.12 : 0.68), lineWidth: 4)
-                        .scaleEffect(hintPulse ? 1.34 : 1.02)
-                        .allowsHitTesting(false)
-                }
-            }
-            .scaleEffect(isHintAttentionActive && hintPulse ? 1.06 : 1)
-            .animation(
-                isHintAttentionActive
-                    ? .easeInOut(duration: 0.72).repeatForever(autoreverses: true)
-                    : .easeOut(duration: 0.18),
-                value: hintPulse
-            )
-            .onAppear {
-                hintPulse = isHintAttentionActive
-            }
-            .onChange(of: isHintAttentionActive) { _, isActive in
-                hintPulse = isActive
             }
             .accessibilityLabel("Hint")
         }
@@ -1340,7 +1318,10 @@ private struct GameIconButton: View {
     let title: String
     let style: Style
     var isEnabled = true
+    var attractsAttention = false
     let action: () -> Void
+
+    @State private var attentionPulse = false
 
     var body: some View {
         Button(action: action) {
@@ -1355,13 +1336,20 @@ private struct GameIconButton: View {
                 )
                 .overlay(
                     Circle()
-                        .stroke(borderColor, lineWidth: 2)
+                        .stroke(borderColor, lineWidth: attractsAttention && attentionPulse ? 3 : 2)
                 )
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.52)
+        .shadow(color: attentionShadowColor, radius: attentionShadowRadius, x: 0, y: 0)
+        .onAppear {
+            updateAttentionPulse(isActive: attractsAttention)
+        }
+        .onChange(of: attractsAttention) { _, isActive in
+            updateAttentionPulse(isActive: isActive)
+        }
         .accessibilityLabel(title)
     }
 
@@ -1386,9 +1374,33 @@ private struct GameIconButton: View {
     private var borderColor: Color {
         switch style {
         case .accent:
-            return Color.white.opacity(0.38)
+            return attractsAttention && attentionPulse ? Color.white.opacity(0.78) : Color.white.opacity(0.38)
         case .muted:
             return Color.white.opacity(0.18)
+        }
+    }
+
+    private var attentionShadowColor: Color {
+        guard attractsAttention, isEnabled else { return .clear }
+        return GameColor.controlAccent.opacity(attentionPulse ? 0.58 : 0.14)
+    }
+
+    private var attentionShadowRadius: CGFloat {
+        guard attractsAttention, isEnabled else { return 0 }
+        return attentionPulse ? 18 : 6
+    }
+
+    private func updateAttentionPulse(isActive: Bool) {
+        guard isActive else {
+            withAnimation(.easeOut(duration: 0.18)) {
+                attentionPulse = false
+            }
+            return
+        }
+
+        attentionPulse = false
+        withAnimation(.easeInOut(duration: 0.72).repeatForever(autoreverses: true)) {
+            attentionPulse = true
         }
     }
 }
