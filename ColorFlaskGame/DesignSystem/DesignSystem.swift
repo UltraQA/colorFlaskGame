@@ -59,6 +59,7 @@ enum GameMetric {
     static let bottomControlDockWidth: CGFloat = 322
     static let bottomControlDockHeight: CGFloat = 92
     static let boardVerticalCenterRatio: CGFloat = 0.52
+    static let sparseTutorialBoardVerticalCenterRatio: CGFloat = 0.50
     static let boardRowSpacingRatio: CGFloat = 0.23
     static let orderBannerWidth: CGFloat = 292
     static let tutorialPromptWidth: CGFloat = 300
@@ -76,6 +77,7 @@ enum GameColor {
     static let controlMuted = Color(red: 0.28, green: 0.30, blue: 0.34)
     static let controlAccent = Color(red: 1.00, green: 0.72, blue: 0.25)
     static let successAccent = Color(red: 0.34, green: 0.93, blue: 0.66)
+    static let errorAccent = Color(red: 1.00, green: 0.25, blue: 0.22)
     static let glassFill = Color.white.opacity(0.14)
     static let glassStroke = Color(red: 0.87, green: 0.82, blue: 0.95)
     static let glassHighlight = Color.white.opacity(0.44)

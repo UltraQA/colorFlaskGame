@@ -196,10 +196,31 @@ struct Level: Identifiable, Equatable {
     let id: Int
     let difficulty: Difficulty
     let filledFlasks: [Flask]
+    let initialSelectedFlaskIndex: Int?
     let availableEmptyFlaskCount: Int
     let hasLockedBonusFlask: Bool
     let objective: LevelObjective
     let customerOrder: CustomerOrder?
+
+    init(
+        id: Int,
+        difficulty: Difficulty,
+        filledFlasks: [Flask],
+        initialSelectedFlaskIndex: Int? = nil,
+        availableEmptyFlaskCount: Int,
+        hasLockedBonusFlask: Bool,
+        objective: LevelObjective = .sortAll,
+        customerOrder: CustomerOrder? = nil
+    ) {
+        self.id = id
+        self.difficulty = difficulty
+        self.filledFlasks = filledFlasks
+        self.initialSelectedFlaskIndex = initialSelectedFlaskIndex
+        self.availableEmptyFlaskCount = availableEmptyFlaskCount
+        self.hasLockedBonusFlask = hasLockedBonusFlask
+        self.objective = objective
+        self.customerOrder = customerOrder
+    }
 
     init(
         id: Int,
@@ -210,19 +231,31 @@ struct Level: Identifiable, Equatable {
         objective: LevelObjective = .sortAll,
         customerOrder: CustomerOrder? = nil
     ) {
-        self.id = id
-        self.difficulty = difficulty
-        self.filledFlasks = filledFlasks
-        self.availableEmptyFlaskCount = availableEmptyFlaskCount
-        self.hasLockedBonusFlask = hasLockedBonusFlask
-        self.objective = objective
-        self.customerOrder = customerOrder
+        self.init(
+            id: id,
+            difficulty: difficulty,
+            filledFlasks: filledFlasks,
+            initialSelectedFlaskIndex: nil,
+            availableEmptyFlaskCount: availableEmptyFlaskCount,
+            hasLockedBonusFlask: hasLockedBonusFlask,
+            objective: objective,
+            customerOrder: customerOrder
+        )
     }
 
     var validationIssues: [LevelValidationIssue] {
         var issues: [LevelValidationIssue] = []
 
-        if availableEmptyFlaskCount != GameManager.startingEmptyFlaskCount {
+        if difficulty == .tutorial {
+            if !(0...GameManager.startingEmptyFlaskCount).contains(availableEmptyFlaskCount) {
+                issues.append(
+                    LevelValidationIssue(
+                        levelID: id,
+                        message: "Tutorial levels can start with 0...\(GameManager.startingEmptyFlaskCount) available empty flasks."
+                    )
+                )
+            }
+        } else if availableEmptyFlaskCount != GameManager.startingEmptyFlaskCount {
             issues.append(
                 LevelValidationIssue(
                     levelID: id,
@@ -250,7 +283,7 @@ struct Level: Identifiable, Equatable {
                 )
             }
 
-            if !flask.isFull {
+            if difficulty != .tutorial && !flask.isFull {
                 issues.append(
                     LevelValidationIssue(
                         levelID: id,
@@ -258,6 +291,16 @@ struct Level: Identifiable, Equatable {
                     )
                 )
             }
+        }
+
+        if let initialSelectedFlaskIndex,
+           !filledFlasks.indices.contains(initialSelectedFlaskIndex) {
+            issues.append(
+                LevelValidationIssue(
+                    levelID: id,
+                    message: "Initial selected flask index must point to a filled flask."
+                )
+            )
         }
 
         let colorCounts = filledFlasks
@@ -923,39 +966,46 @@ private extension HandcraftedLevelRepository {
                 id: 1,
                 difficulty: .tutorial,
                 rows: [
-                    [0, 0, 1, 1],
-                    [1, 1, 2, 2],
-                    [2, 2, 0, 0]
-                ]
+                    [0, 0],
+                    [0, 0]
+                ],
+                availableEmptyFlaskCount: 0
             ),
             makeLevel(
                 id: 2,
                 difficulty: .tutorial,
                 rows: [
-                    [0, 1, 0, 1],
-                    [1, 2, 1, 2],
-                    [2, 0, 2, 0]
-                ]
+                    [0, 0],
+                    [0, 0],
+                    [2, 2, 2, 2]
+                ],
+                availableEmptyFlaskCount: 0,
+                selectedFlaskIndex: 1
             ),
             makeLevel(
                 id: 3,
                 difficulty: .tutorial,
                 rows: [
-                    [0, 1, 0, 2],
-                    [1, 2, 3, 0],
-                    [2, 3, 1, 3],
-                    [3, 0, 2, 1]
+                    [0, 3, 3, 3],
+                    [1, 0, 0, 0],
+                    [3, 1, 1, 1]
                 ]
             ),
             makeLevel(
                 id: 4,
-                difficulty: .easy,
+                difficulty: .tutorial,
                 rows: [
-                    [0, 1, 2, 3],
-                    [1, 0, 3, 2],
-                    [2, 3, 0, 1],
-                    [3, 2, 1, 0]
-                ]
+                    [2, 1, 1, 1],
+                    [0, 2, 2, 2],
+                    [1, 0, 0, 0]
+                ],
+                objective: .completeColor(palette[2]),
+                customerOrder: makeOrder(
+                    customerName: "Mira",
+                    potionName: "Luck Potion",
+                    targetColor: palette[2],
+                    shortCopy: "Brew one bright luck potion."
+                )
             ),
             makeLevel(
                 id: 5,
@@ -967,12 +1017,12 @@ private extension HandcraftedLevelRepository {
                     [3, 4, 0, 3],
                     [4, 0, 1, 4]
                 ],
-                objective: .completeColor(palette[2]),
+                objective: .completeColor(palette[0]),
                 customerOrder: makeOrder(
-                    customerName: "Mira",
-                    potionName: "Luck Potion",
-                    targetColor: palette[2],
-                    shortCopy: "Brew one bright luck potion."
+                    customerName: "Rowan",
+                    potionName: "Ruby Remedy",
+                    targetColor: palette[0],
+                    shortCopy: "Bottle one ruby remedy."
                 )
             ),
             makeLevel(
@@ -1051,6 +1101,8 @@ private extension HandcraftedLevelRepository {
         id: Int,
         difficulty: Difficulty,
         rows: [[Int]],
+        availableEmptyFlaskCount: Int = GameManager.startingEmptyFlaskCount,
+        selectedFlaskIndex: Int? = nil,
         objective: LevelObjective = .sortAll,
         customerOrder: CustomerOrder? = nil
     ) -> Level {
@@ -1060,7 +1112,8 @@ private extension HandcraftedLevelRepository {
             filledFlasks: rows.map { row in
                 Flask(colors: row.map { palette[$0] })
             },
-            availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
+            initialSelectedFlaskIndex: selectedFlaskIndex,
+            availableEmptyFlaskCount: availableEmptyFlaskCount,
             hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID,
             objective: objective,
             customerOrder: customerOrder

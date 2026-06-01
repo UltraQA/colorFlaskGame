@@ -293,7 +293,7 @@ final class HomeViewModelTests: XCTestCase {
         )
 
         XCTAssertTrue(viewModel.isTutorialPromptVisible)
-        XCTAssertEqual(viewModel.tutorialTitle, "Pick a potion")
+        XCTAssertEqual(viewModel.tutorialTitle, "Pour a potion")
         XCTAssertEqual(viewModel.tutorialMove, HintMove(sourceIndex: 0, targetIndex: 1))
     }
 
@@ -310,9 +310,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isTutorialPromptVisible)
     }
 
-    func testTutorialCompletionPersistsOnThirdOrderInteraction() {
+    func testTutorialCompletionPersistsOnFifthOrderInteraction() {
         let progressStore = SpyProgressStore(
-            currentLevelIndex: 2,
+            currentLevelIndex: 4,
             isBonusFlaskPermanentlyUnlocked: false
         )
         let viewModel = HomeViewModel(
@@ -323,7 +323,7 @@ final class HomeViewModelTests: XCTestCase {
                 ]
             ),
             progressStore: progressStore,
-            currentLevelIndex: 2,
+            currentLevelIndex: 4,
             timing: .immediate
         )
 
@@ -434,7 +434,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testVictoryAwardsAndPersistsHerbs() async {
         let progressStore = SpyProgressStore(
-            currentLevelIndex: 0,
+            currentLevelIndex: 5,
             isBonusFlaskPermanentlyUnlocked: false,
             herbsBalance: 12
         )
@@ -446,6 +446,7 @@ final class HomeViewModelTests: XCTestCase {
                 ]
             ),
             progressStore: progressStore,
+            currentLevelIndex: 5,
             timing: HomeViewModelTiming(
                 pourAnimationDuration: 0,
                 completionDuration: 10,
@@ -461,6 +462,37 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.lastHerbsReward, HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(viewModel.herbsBalance, 12 + HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+    }
+
+    func testTrainingRoundsDoNotAwardHerbs() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 3,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 12
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [red, red, red])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 3,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.lastHerbsReward)
+        XCTAssertEqual(viewModel.herbsBalance, 12)
+        XCTAssertEqual(progressStore.herbsBalance, 12)
     }
 
     func testCompletionFlowAdvancesFromResolvingToCelebrating() async {
@@ -572,6 +604,92 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.herbsBalance, 5 - HomeViewModel.extraHintHerbsCost)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+    }
+
+    func testLevelFiveFirstHintCostsHerbs() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 4,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 8,
+            hasSeenHerbsTutorial: true
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 4,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(viewModel.currentLevelNumber, 5)
+        XCTAssertEqual(viewModel.tutorialTitle, "Use herbs")
+        XCTAssertEqual(viewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
+
+        viewModel.showHint()
+
+        XCTAssertEqual(viewModel.herbsBalance, 8 - HomeViewModel.extraHintHerbsCost)
+        XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+    }
+
+    func testLevelFivePresentsHerbsTutorialAndBlocksHintUntilClaimed() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 4,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 0
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 4,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(viewModel.herbsTutorialPrompt?.herbsAmount, HomeViewModel.extraHintHerbsCost)
+        viewModel.showHint()
+        XCTAssertNil(viewModel.hintMove)
+
+        viewModel.claimHerbsTutorialReward()
+
+        XCTAssertNil(viewModel.herbsTutorialPrompt)
+        XCTAssertTrue(progressStore.hasSeenHerbsTutorial)
+        XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
+
+        viewModel.showHint()
+
+        XCTAssertNotNil(viewModel.hintMove)
+        XCTAssertEqual(viewModel.herbsBalance, 0)
+        XCTAssertTrue(viewModel.canInteractWithBoard)
+    }
+
+    func testSecondLevelStartsWithMiddleFlaskSelectedAndMarkersVisible() {
+        let viewModel = HomeViewModel(
+            levelRepository: HandcraftedLevelRepository(),
+            progressStore: SpyProgressStore(
+                currentLevelIndex: 1,
+                isBonusFlaskPermanentlyUnlocked: false
+            ),
+            currentLevelIndex: 1,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(viewModel.selectedFlaskIndex, 1)
+        XCTAssertEqual(viewModel.tutorialMarkers, [
+            TutorialMarker(flaskIndex: 0, kind: .correctTarget),
+            TutorialMarker(flaskIndex: 2, kind: .blockedTarget)
+        ])
+        XCTAssertTrue(viewModel.centersSparseTutorialRows)
     }
 
     func testRepeatedTapOnSameHintDoesNotSpendHerbsAgain() {
@@ -893,6 +1011,7 @@ private final class SpyProgressStore: ProgressStore {
     var isBonusFlaskPermanentlyUnlocked: Bool
     var herbsBalance: Int
     var hasCompletedOnboarding: Bool
+    var hasSeenHerbsTutorial: Bool
     var isSoundEnabled: Bool
     var isHapticsEnabled: Bool
 
@@ -901,6 +1020,7 @@ private final class SpyProgressStore: ProgressStore {
         isBonusFlaskPermanentlyUnlocked: Bool,
         herbsBalance: Int = 0,
         hasCompletedOnboarding: Bool = false,
+        hasSeenHerbsTutorial: Bool = false,
         isSoundEnabled: Bool = true,
         isHapticsEnabled: Bool = true
     ) {
@@ -908,6 +1028,7 @@ private final class SpyProgressStore: ProgressStore {
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
         self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.hasSeenHerbsTutorial = hasSeenHerbsTutorial
         self.isSoundEnabled = isSoundEnabled
         self.isHapticsEnabled = isHapticsEnabled
     }

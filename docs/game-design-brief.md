@@ -54,30 +54,34 @@ The key fantasy: the player is not solving an abstract sorting puzzle, they are 
 The first levels should be handcrafted, not fully random. Their job is to teach the player without overload.
 
 **Level 1**
+- 1 color;
+- 2 half-filled flasks;
+- 0 empty flasks;
+- sparse tutorial layout centers the two flasks in the play area;
+- locked bonus flask is not visible yet;
+- teaches source tap -> target tap with a one-move win.
+
+**Level 2**
+- 2 colors;
+- 2 half-filled matching flasks and 1 full solved flask of another color;
+- 0 empty flasks;
+- sparse tutorial layout centers the three flasks in the play area;
+- middle flask starts selected;
+- green check marker appears above the correct matching target;
+- red cross marker appears above the already completed wrong-color flask;
+- teaches that liquid can only pour onto the same color or into a valid space.
+
+**Level 3**
 - 3 colors;
 - 3 filled flasks;
 - 2 empty flasks;
-- locked bonus flask is not visible yet;
-- teaches source tap -> target tap.
-
-**Level 2**
-- 3 colors;
-- 4 filled flasks;
-- 2 empty flasks;
-- one color is almost completed;
-- teaches empty flasks as buffers.
-
-**Level 3**
-- 4 colors;
-- 4 filled flasks;
-- 2 empty flasks;
-- first small planning level.
+- first small planning level with empty flasks as buffers.
 
 **Level 4**
 - 4 colors;
-- 5 filled flasks;
+- 3 filled flasks;
 - 2 empty flasks;
-- full board without high difficulty.
+- first potion shop order: complete the requested target-color flask, even if the rest of the board is not fully sorted.
 
 **Bonus Flask Introduction**
 - locked bonus flask is introduced as an optional extra buffer;
@@ -88,7 +92,15 @@ The first levels should be handcrafted, not fully random. Their job is to teach 
 - 5 filled flasks;
 - 2 empty flasks;
 - low shuffle;
-- first standard level.
+- first standard level with locked bonus flask;
+- teaches herbs spending through the Hint button;
+- a one-time herbs tutorial popup grants exactly enough herbs for one hint;
+- board interaction is blocked until the player spends herbs on the first hint;
+- first hint is no longer free from this level onward.
+
+Training reward rule:
+- Levels 1-5 are onboarding/training rounds and do not award herbs on victory;
+- regular herbs rewards start from Level 6.
 
 **Level 6**
 - 5 colors;

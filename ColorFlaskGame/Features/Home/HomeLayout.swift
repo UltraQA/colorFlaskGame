@@ -23,22 +23,31 @@ struct HomeLayout {
         )
     }
 
-    func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
-        let column = index % columns
-        let row = index / columns
+    func flaskCenter(for index: Int, totalCount: Int, centersSparseRows: Bool, in size: CGSize, scale: CGFloat) -> CGPoint {
+        let columnsInRow = centersSparseRows ? columnsInRow(for: totalCount) : columns
+        let column = index % columnsInRow
+        let row = index / columnsInRow
         let boardWidth = max(
             GameMetric.flaskHitWidth * scale,
             min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
         )
         let boardOriginX = (size.width - boardWidth) / 2
-        let verticalCenter = size.height * GameMetric.boardVerticalCenterRatio
-        let cellWidth = boardWidth / CGFloat(columns)
+        let verticalCenterRatio = centersSparseRows
+            ? GameMetric.sparseTutorialBoardVerticalCenterRatio
+            : GameMetric.boardVerticalCenterRatio
+        let verticalCenter = size.height * verticalCenterRatio
+        let cellWidth = boardWidth / CGFloat(columnsInRow)
         let rowSpacing: CGFloat = min(210 * scale, size.height * GameMetric.boardRowSpacingRatio)
+        let rowOffset = centersSparseRows ? CGFloat(row) * rowSpacing : (CGFloat(row) - 0.5) * rowSpacing
 
         return CGPoint(
             x: boardOriginX + cellWidth * (CGFloat(column) + 0.5),
-            y: verticalCenter + (CGFloat(row) - 0.5) * rowSpacing
+            y: verticalCenter + rowOffset
         )
+    }
+
+    func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
+        flaskCenter(for: index, totalCount: columns, centersSparseRows: false, in: size, scale: scale)
     }
 
     func pourStartPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
@@ -53,5 +62,16 @@ struct HomeLayout {
 
     func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
         size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.bottomControlDockHeight * scale / 2
+    }
+
+    private func columnsInRow(for totalCount: Int) -> Int {
+        switch totalCount {
+        case 0...2:
+            return max(1, totalCount)
+        case 3:
+            return 3
+        default:
+            return columns
+        }
     }
 }

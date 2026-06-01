@@ -65,6 +65,13 @@ struct HomeView: View {
                     .zIndex(pourPose.zIndex)
                 }
 
+                ForEach(viewModel.tutorialMarkers, id: \.flaskIndex) { marker in
+                    TutorialFlaskMarkerView(kind: marker.kind, scale: layoutScale)
+                        .position(tutorialMarkerCenter(for: marker.flaskIndex, in: proxy.size, scale: layoutScale))
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.8)))
+                        .zIndex(GameLayer.controls + 2)
+                }
+
                 topControls(in: proxy.size, safeAreaInsets: proxy.safeAreaInsets, scale: layoutScale)
                     .blur(radius: gameSurfaceBlurRadius)
                     .opacity(gameSurfaceOpacity)
@@ -151,6 +158,15 @@ struct HomeView: View {
         } message: {
             Text("Your current potion progress will be cleared.")
         }
+        .alert(item: $viewModel.herbsTutorialPrompt) { prompt in
+            Alert(
+                title: Text("Here are some herbs"),
+                message: Text("Use herbs to get a hint when a potion order feels tricky."),
+                dismissButton: .default(Text("Use Hint")) {
+                    viewModel.claimHerbsTutorialReward()
+                }
+            )
+        }
     }
 
     private var isResetConfirmationPresented: Binding<Bool> {
@@ -191,14 +207,14 @@ struct HomeView: View {
     }
 
     private func flaskPourPose(for index: Int, in size: CGSize, scale: CGFloat) -> FlaskPourPose {
-        let restingCenter = layout.flaskCenter(for: index, in: size, scale: scale)
+        let restingCenter = flaskCenter(for: index, in: size, scale: scale)
         guard let animation = viewModel.pourAnimation,
               animation.sourceIndex == index,
               !reduceMotion else {
             return FlaskPourPose(center: restingCenter, rotation: .zero, scale: 1, zIndex: GameLayer.board)
         }
 
-        let targetCenter = layout.flaskCenter(for: animation.targetIndex, in: size, scale: scale)
+        let targetCenter = flaskCenter(for: animation.targetIndex, in: size, scale: scale)
         let direction: CGFloat = targetCenter.x >= restingCenter.x ? 1 : -1
         let mouthPoint = pouringMouthPoint(
             sourceCenter: restingCenter,
@@ -370,6 +386,21 @@ struct HomeView: View {
         .position(x: size.width / 2, y: controlCenterY)
     }
 
+    private func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
+        layout.flaskCenter(
+            for: index,
+            totalCount: viewModel.gameManager.flasks.count,
+            centersSparseRows: viewModel.centersSparseTutorialRows,
+            in: size,
+            scale: scale
+        )
+    }
+
+    private func tutorialMarkerCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
+        let center = flaskCenter(for: index, in: size, scale: scale)
+        return CGPoint(x: center.x, y: center.y - GameMetric.flaskHitHeight * scale * 0.48)
+    }
+
     private func flaskVisualState(for flask: Flask, at index: Int) -> FlaskVisualState {
         if !flask.isPlayable {
             return .lockedBonus
@@ -399,7 +430,8 @@ struct HomeView: View {
     }
 
     private var activeGuidanceMove: HintMove? {
-        viewModel.hintMove ?? viewModel.tutorialMove
+        guard viewModel.tutorialMarkers.isEmpty else { return nil }
+        return viewModel.hintMove ?? viewModel.tutorialMove
     }
 
     private func isFlaskTappable(_ flask: Flask) -> Bool {
@@ -510,6 +542,55 @@ private struct BoardVignetteView: View {
         .frame(width: GameMetric.baseBoardWidth * scale, height: 560 * scale)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private struct TutorialFlaskMarkerView: View {
+    let kind: TutorialMarkerKind
+    let scale: CGFloat
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 25 * scale, weight: .black, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(width: 42 * scale, height: 42 * scale)
+            .background(
+                Circle()
+                    .fill(fillColor)
+                    .overlay(
+                        Circle()
+                            .stroke(.white.opacity(0.72), lineWidth: 2 * scale)
+                    )
+            )
+            .shadow(color: fillColor.opacity(0.36), radius: 10 * scale, x: 0, y: 5 * scale)
+            .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var systemImage: String {
+        switch kind {
+        case .correctTarget:
+            return "checkmark"
+        case .blockedTarget:
+            return "xmark"
+        }
+    }
+
+    private var fillColor: Color {
+        switch kind {
+        case .correctTarget:
+            return GameColor.successAccent
+        case .blockedTarget:
+            return GameColor.errorAccent
+        }
+    }
+
+    private var accessibilityLabel: String {
+        switch kind {
+        case .correctTarget:
+            return "Correct flask"
+        case .blockedTarget:
+            return "Blocked flask"
+        }
     }
 }
 

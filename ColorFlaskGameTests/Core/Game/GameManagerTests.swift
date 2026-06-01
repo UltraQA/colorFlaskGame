@@ -80,12 +80,36 @@ final class GameManagerTests: XCTestCase {
         let repository = HandcraftedLevelRepository()
 
         XCTAssertNil(repository.levels[0].customerOrder)
-        XCTAssertEqual(repository.levels[4].customerOrder?.potionName, "Luck Potion")
-        XCTAssertEqual(repository.levels[4].objective, .completeColor(.honey))
+        XCTAssertEqual(repository.levels[3].customerOrder?.potionName, "Luck Potion")
+        XCTAssertEqual(repository.levels[3].objective, .completeColor(.honey))
+        XCTAssertEqual(repository.levels[4].customerOrder?.potionName, "Ruby Remedy")
+        XCTAssertEqual(repository.levels[4].objective, .completeColor(.ruby))
         XCTAssertEqual(repository.levels[6].customerOrder?.potionName, "Moonwater Draught")
         XCTAssertEqual(repository.levels[6].objective, .completeColor(.moonBlue))
         XCTAssertEqual(repository.levels[9].customerOrder?.potionName, "Violet Tonic")
         XCTAssertEqual(repository.levels[9].objective, .completeColor(.violet))
+    }
+
+    func testFirstTutorialLevelsUseGuidedShapes() {
+        let repository = HandcraftedLevelRepository()
+
+        XCTAssertEqual(repository.levels[0].filledFlasks.map(\.colors), [
+            [.ruby, .ruby],
+            [.ruby, .ruby]
+        ])
+        XCTAssertEqual(repository.levels[0].availableEmptyFlaskCount, 0)
+
+        XCTAssertEqual(repository.levels[1].filledFlasks.map(\.colors), [
+            [.ruby, .ruby],
+            [.ruby, .ruby],
+            [.honey, .honey, .honey, .honey]
+        ])
+        XCTAssertEqual(repository.levels[1].availableEmptyFlaskCount, 0)
+        XCTAssertEqual(repository.levels[1].initialSelectedFlaskIndex, 1)
+
+        XCTAssertEqual(repository.levels[2].availableEmptyFlaskCount, 2)
+        XCTAssertEqual(repository.levels[3].availableEmptyFlaskCount, 2)
+        XCTAssertEqual(repository.levels[3].objective, .completeColor(.honey))
     }
 
     func testHandcraftedLevelsAreSolvableWithoutBonusFlask() {

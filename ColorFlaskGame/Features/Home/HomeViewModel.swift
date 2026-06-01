@@ -40,6 +40,21 @@ struct ResetConfirmationPrompt: Identifiable, Equatable {
     let id = UUID()
 }
 
+struct HerbsTutorialPrompt: Identifiable, Equatable {
+    let id = UUID()
+    let herbsAmount: Int
+}
+
+enum TutorialMarkerKind: Equatable {
+    case correctTarget
+    case blockedTarget
+}
+
+struct TutorialMarker: Equatable {
+    let flaskIndex: Int
+    let kind: TutorialMarkerKind
+}
+
 struct OrderObjectiveSummary: Equatable {
     let potionName: String
     let targetColor: LiquidColor
@@ -129,6 +144,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
+    @Published var herbsTutorialPrompt: HerbsTutorialPrompt?
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
@@ -180,7 +196,9 @@ final class HomeViewModel: ObservableObject {
             levelRepository: levelRepository,
             isBonusFlaskUnlocked: resolvedBonusUnlock
         )
+        self.selectedFlaskIndex = self.gameManager.level?.initialSelectedFlaskIndex
         bindGameManager()
+        presentHerbsTutorialIfNeeded()
     }
 
     var progress: Double {
@@ -233,11 +251,15 @@ final class HomeViewModel: ObservableObject {
     var tutorialTitle: String {
         switch currentLevelNumber {
         case 1:
-            return "Pick a potion"
+            return "Pour a potion"
         case 2:
-            return "Use empty flasks"
+            return "Match colors"
         case 3:
-            return "Match the top color"
+            return "Sort more colors"
+        case 4:
+            return "Brew the order"
+        case 5:
+            return "Use herbs"
         default:
             return "Sort the order"
         }
@@ -246,11 +268,15 @@ final class HomeViewModel: ObservableObject {
     var tutorialSubtitle: String {
         switch currentLevelNumber {
         case 1:
-            return "Tap a flask, then tap where it should pour."
+            return "Tap one flask, then another."
         case 2:
-            return "Empty flasks give you room to brew."
+            return "Only pour into the same color."
         case 3:
-            return "Pour onto matching colors or empty glass."
+            return "Use empty flasks to move groups."
+        case 4:
+            return "Complete the requested potion color."
+        case 5:
+            return "Spend earned herbs on hints."
         default:
             return "Clear every potion to finish the order."
         }
@@ -277,7 +303,10 @@ final class HomeViewModel: ObservableObject {
     }
 
     var canInteractWithBoard: Bool {
-        completionPhase.isPlaying && pourAnimation == nil && !isRewardedAdInProgress
+        completionPhase.isPlaying
+            && pourAnimation == nil
+            && !isRewardedAdInProgress
+            && !requiresMandatoryHintBeforePlay
     }
 
     var hintBadgeText: String {
@@ -343,6 +372,7 @@ final class HomeViewModel: ObservableObject {
 
     func showHint() {
         guard pourAnimation == nil, !isRewardedAdInProgress, let plan = gameManager.firstValidMove() else { return }
+        guard currentLevelNumber != 5 || progressStore.hasSeenHerbsTutorial else { return }
 
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
@@ -394,9 +424,11 @@ final class HomeViewModel: ObservableObject {
         progressStore.isBonusFlaskPermanentlyUnlocked = false
         progressStore.herbsBalance = 0
         progressStore.hasCompletedOnboarding = false
+        progressStore.hasSeenHerbsTutorial = false
         isBonusFlaskPermanentlyUnlocked = false
         herbsBalance = 0
         resetConfirmationPrompt = nil
+        herbsTutorialPrompt = nil
         loadLevel(at: 0)
     }
 
@@ -411,6 +443,7 @@ final class HomeViewModel: ObservableObject {
         hintMove = nil
         bonusUnlockPrompt = nil
         resetConfirmationPrompt = nil
+        herbsTutorialPrompt = nil
         invalidFlaskIndices.removeAll()
         completionPhase = .playing
         victoryMessage = nil
@@ -429,7 +462,9 @@ final class HomeViewModel: ObservableObject {
             levelRepository: levelRepository,
             isBonusFlaskUnlocked: isBonusFlaskPermanentlyUnlocked
         )
+        selectedFlaskIndex = gameManager.level?.initialSelectedFlaskIndex
         bindGameManager()
+        presentHerbsTutorialIfNeeded()
         objectWillChange.send()
     }
 
@@ -612,6 +647,11 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func awardHerbsForCompletedOrder() {
+        guard currentLevelNumber > 5 else {
+            lastHerbsReward = nil
+            return
+        }
+
         let reward = Self.herbsRewardPerCompletedOrder
         lastHerbsReward = reward
         herbsBalance += reward
@@ -619,7 +659,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private var isNextHintFree: Bool {
-        hintsUsedThisLevel == 0
+        currentLevelNumber <= 4 && hintsUsedThisLevel == 0
     }
 
     private var isRewardedAdInProgress: Bool {
@@ -693,14 +733,49 @@ final class HomeViewModel: ObservableObject {
         guard isTutorialPromptVisible else { return }
 
         isTutorialPromptVisible = false
-        if currentLevelNumber >= 3 {
+        if currentLevelNumber >= 5 {
             progressStore.hasCompletedOnboarding = true
         }
     }
 
+    func claimHerbsTutorialReward() {
+        guard let prompt = herbsTutorialPrompt else { return }
+
+        herbsBalance += prompt.herbsAmount
+        progressStore.herbsBalance = herbsBalance
+        progressStore.hasSeenHerbsTutorial = true
+        herbsTutorialPrompt = nil
+        gameFeedbackProvider.play(.hintUsed)
+    }
+
+    var centersSparseTutorialRows: Bool {
+        gameManager.level?.difficulty == .tutorial && gameManager.flasks.count <= 4
+    }
+
+    var tutorialMarkers: [TutorialMarker] {
+        guard currentLevelNumber == 2,
+              selectedFlaskIndex == gameManager.level?.initialSelectedFlaskIndex,
+              gameManager.flasks.indices.contains(0),
+              gameManager.flasks.indices.contains(1),
+              gameManager.flasks.indices.contains(2) else {
+            return []
+        }
+
+        return [
+            TutorialMarker(flaskIndex: 0, kind: .correctTarget),
+            TutorialMarker(flaskIndex: 2, kind: .blockedTarget)
+        ]
+    }
+
+    private var requiresMandatoryHintBeforePlay: Bool {
+        currentLevelNumber == 5
+            && progressStore.hasSeenHerbsTutorial
+            && hintsUsedThisLevel == 0
+    }
+
     private func updateTutorialVisibility(for levelIndex: Int) {
         let levelNumber = levelIndex + 1
-        if levelNumber > 3 {
+        if levelNumber > 5 {
             progressStore.hasCompletedOnboarding = true
         }
 
@@ -710,11 +785,24 @@ final class HomeViewModel: ObservableObject {
         )
     }
 
+    private func presentHerbsTutorialIfNeeded() {
+        guard currentLevelNumber == 5,
+              !progressStore.hasSeenHerbsTutorial else { return }
+
+        let missingHerbs = max(0, Self.extraHintHerbsCost - herbsBalance)
+        guard missingHerbs > 0 else {
+            progressStore.hasSeenHerbsTutorial = true
+            return
+        }
+
+        herbsTutorialPrompt = HerbsTutorialPrompt(herbsAmount: missingHerbs)
+    }
+
     private nonisolated static func shouldShowTutorial(
         levelNumber: Int,
         hasCompletedOnboarding: Bool
     ) -> Bool {
-        !hasCompletedOnboarding && (1...3).contains(levelNumber)
+        !hasCompletedOnboarding && (1...5).contains(levelNumber)
     }
 
     private func bindGameManager() {

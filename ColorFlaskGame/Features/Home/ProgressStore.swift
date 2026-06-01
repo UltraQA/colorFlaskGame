@@ -5,6 +5,7 @@ protocol ProgressStore {
     var isBonusFlaskPermanentlyUnlocked: Bool { get set }
     var herbsBalance: Int { get set }
     var hasCompletedOnboarding: Bool { get set }
+    var hasSeenHerbsTutorial: Bool { get set }
     var isSoundEnabled: Bool { get set }
     var isHapticsEnabled: Bool { get set }
 }
@@ -15,6 +16,7 @@ struct UserDefaultsProgressStore: ProgressStore {
         static let bonusFlaskPurchase = "waterSort.bonusFlask.isPermanentlyUnlocked"
         static let herbsBalance = "waterSort.economy.herbsBalance"
         static let hasCompletedOnboarding = "waterSort.onboarding.hasCompleted"
+        static let hasSeenHerbsTutorial = "waterSort.onboarding.hasSeenHerbsTutorial"
         static let isSoundEnabled = "waterSort.settings.isSoundEnabled"
         static let isHapticsEnabled = "waterSort.settings.isHapticsEnabled"
     }
@@ -67,6 +69,15 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.isSoundEnabled)
+        }
+    }
+
+    var hasSeenHerbsTutorial: Bool {
+        get {
+            userDefaults.bool(forKey: Key.hasSeenHerbsTutorial)
+        }
+        set {
+            userDefaults.set(newValue, forKey: Key.hasSeenHerbsTutorial)
         }
     }
 

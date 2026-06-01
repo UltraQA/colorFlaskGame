@@ -54,6 +54,18 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertLessThanOrEqual(bottomRowEdge + 24 * scale, dockTopEdge)
     }
 
+    func testSparseTutorialFlasksSitInGameAreaCenter() {
+        let size = CGSize(width: 393, height: 852)
+        let scale = layout.scale(in: size)
+        let firstCenter = layout.flaskCenter(for: 0, totalCount: 2, centersSparseRows: true, in: size, scale: scale)
+        let secondCenter = layout.flaskCenter(for: 1, totalCount: 2, centersSparseRows: true, in: size, scale: scale)
+
+        XCTAssertEqual(firstCenter.y, size.height * GameMetric.sparseTutorialBoardVerticalCenterRatio, accuracy: 0.001)
+        XCTAssertEqual(secondCenter.y, firstCenter.y, accuracy: 0.001)
+        XCTAssertLessThan(firstCenter.x, size.width / 2)
+        XCTAssertGreaterThan(secondCenter.x, size.width / 2)
+    }
+
     private func assertBoardFits(size: CGSize, safeAreaInsets: EdgeInsets) {
         let scale = layout.scale(in: size)
         let flaskHalfWidth = GameMetric.flaskHitWidth * scale / 2
