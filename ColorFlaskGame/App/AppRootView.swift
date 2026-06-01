@@ -37,15 +37,23 @@ struct AppRootView: View {
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
                         activeOrderLevelIndex = viewModel.currentLevelIndex
-                        viewModel.beginCurrentOrder()
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .game
+                        }
+                        Task { @MainActor in
+                            await Task.yield()
+                            viewModel.beginCurrentOrder()
                         }
                     },
                     onResetProgress: {
                         feedbackProvider.play(.reset)
                         activeOrderLevelIndex = nil
                         viewModel.resetProgress()
+                    },
+                    onJumpToLevel: { levelNumber in
+                        feedbackProvider.play(.uiTap)
+                        activeOrderLevelIndex = nil
+                        viewModel.jumpToLevelForTesting(levelNumber)
                     },
                     onToggleSound: feedbackProvider.toggleSound,
                     onToggleHaptics: feedbackProvider.toggleHaptics
@@ -150,10 +158,12 @@ private struct MainMenuView: View {
     let isHapticsEnabled: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
+    let onJumpToLevel: (Int) -> Void
     let onToggleSound: () -> Void
     let onToggleHaptics: () -> Void
 
     @State private var isResetConfirmationPresented = false
+    @State private var testLevelText = ""
 
     private var startOrderTitle: String {
         isCurrentOrderInProgress ? "Continue Order" : "Start Order"
@@ -188,6 +198,8 @@ private struct MainMenuView: View {
                 .accessibilityHint("Opens the current potion order.")
 
                 statsPanel
+
+                testLevelPanel
 
                 Spacer(minLength: DSSpacing.md)
 
@@ -351,6 +363,48 @@ private struct MainMenuView: View {
             MenuStatView(title: "Completed", value: "\(completedOrders)")
             MenuStatView(title: "Reward", value: rewardText, systemImage: "leaf.fill")
         }
+    }
+
+    private var testLevelPanel: some View {
+        HStack(spacing: DSSpacing.sm) {
+            TextField("Level", text: $testLevelText)
+                .keyboardType(.numberPad)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+                .font(DSTypography.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, DSSpacing.md)
+                .frame(height: 44)
+                .background(
+                    Capsule()
+                        .fill(GameColor.controlSurface.opacity(0.68))
+                        .overlay(
+                            Capsule()
+                                .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                        )
+                )
+
+            Button {
+                guard let levelNumber = Int(testLevelText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                    return
+                }
+
+                onJumpToLevel(levelNumber)
+                testLevelText = ""
+            } label: {
+                Label("Go", systemImage: "arrow.turn.down.right")
+                    .font(DSTypography.headline)
+                    .foregroundStyle(GameColor.controlSurface)
+                    .padding(.horizontal, DSSpacing.md)
+                    .frame(height: 44)
+                    .background(
+                        Capsule()
+                            .fill(GameColor.successAccent)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 

@@ -443,6 +443,10 @@ final class HomeViewModel: ObservableObject {
         loadLevel(at: currentLevelIndex + 1)
     }
 
+    func jumpToLevelForTesting(_ levelNumber: Int) {
+        loadLevel(at: max(1, levelNumber) - 1)
+    }
+
     private func loadLevel(at levelIndex: Int) {
         cancelScheduledWork()
         selectedFlaskIndex = nil

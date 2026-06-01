@@ -39,6 +39,7 @@ final class HomeLayoutTests: XCTestCase {
         let bottomEdge = centerY + GameMetric.bottomControlDockHeight * scale / 2
 
         XCTAssertLessThanOrEqual(bottomEdge, size.height)
+        XCTAssertGreaterThanOrEqual(bottomEdge, size.height - 4 * scale)
         XCTAssertGreaterThan(bottomEdge, size.height - safeAreaInsets.bottom)
     }
 
@@ -64,6 +65,30 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertEqual(secondCenter.y, firstCenter.y, accuracy: 0.001)
         XCTAssertLessThan(firstCenter.x, size.width / 2)
         XCTAssertGreaterThan(secondCenter.x, size.width / 2)
+    }
+
+    func testLargeGeneratedBoardKeepsTallFlasksAboveBottomControls() {
+        let size = CGSize(width: 393, height: 852)
+        let safeAreaInsets = EdgeInsets(top: 59, leading: 0, bottom: 34, trailing: 0)
+        let scale = layout.scale(in: size)
+        let tallFlaskHitHeight = (
+            GameMetric.flaskHitHeight + CGFloat(Flask.maxProgressionCapacity - Flask.maxCapacity) * 12
+        ) * scale
+        let bottomControlCenterY = layout.bottomControlCenterY(in: size, safeAreaInsets: safeAreaInsets, scale: scale)
+        let dockTopEdge = bottomControlCenterY - GameMetric.bottomControlDockHeight * scale / 2
+
+        for index in 0..<12 {
+            let center = layout.flaskCenter(
+                for: index,
+                totalCount: 12,
+                centersSparseRows: false,
+                in: size,
+                scale: scale
+            )
+
+            XCTAssertGreaterThanOrEqual(center.y - tallFlaskHitHeight / 2, safeAreaInsets.top, "Flask \(index) clips top")
+            XCTAssertLessThanOrEqual(center.y + tallFlaskHitHeight / 2 + 12 * scale, dockTopEdge, "Flask \(index) overlaps dock")
+        }
     }
 
     private func assertBoardFits(size: CGSize, safeAreaInsets: EdgeInsets) {

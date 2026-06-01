@@ -510,7 +510,7 @@ final class HomeViewModelTests: XCTestCase {
 
         viewModel.handleFlaskTap(at: 0)
         viewModel.handleFlaskTap(at: 1)
-        await waitForScheduledMainQueueWork(nanoseconds: 220_000_000)
+        await waitForCompletionPhase(.celebrating, in: viewModel)
 
         XCTAssertEqual(viewModel.completionPhase, .celebrating)
     }
@@ -938,6 +938,30 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(progressStore.hasCompletedOnboarding)
     }
 
+    func testJumpToLevelForTestingLoadsRequestedLevelNumber() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 0,
+            hasCompletedOnboarding: true
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: HandcraftedLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.jumpToLevelForTesting(61)
+
+        XCTAssertEqual(viewModel.currentLevelIndex, 60)
+        XCTAssertEqual(viewModel.currentLevelNumber, 61)
+        XCTAssertEqual(progressStore.currentLevelIndex, 60)
+        XCTAssertEqual(viewModel.gameManager.level?.id, 61)
+        XCTAssertTrue(viewModel.gameManager.level?.revealsOnlyTopColor == true)
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertFalse(viewModel.canUndo)
+    }
+
     func testStartNewGameCancelsPendingPourAnimation() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
@@ -1011,6 +1035,20 @@ final class HomeViewModelTests: XCTestCase {
 
     private func waitForScheduledMainQueueWork(nanoseconds: UInt64 = 50_000_000) async {
         try? await Task.sleep(nanoseconds: nanoseconds)
+    }
+
+    private func waitForCompletionPhase(
+        _ phase: LevelCompletionPhase,
+        in viewModel: HomeViewModel,
+        timeoutNanoseconds: UInt64 = 700_000_000
+    ) async {
+        let stepNanoseconds: UInt64 = 25_000_000
+        var elapsedNanoseconds: UInt64 = 0
+
+        while viewModel.completionPhase != phase, elapsedNanoseconds < timeoutNanoseconds {
+            await waitForScheduledMainQueueWork(nanoseconds: stepNanoseconds)
+            elapsedNanoseconds += stepNanoseconds
+        }
     }
 
     private var testUserDefaults: UserDefaults {

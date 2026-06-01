@@ -27,18 +27,19 @@ struct HomeLayout {
         let columnsInRow = centersSparseRows ? columnsInRow(for: totalCount) : columns
         let column = index % columnsInRow
         let row = index / columnsInRow
+        let rowCount = Int(ceil(Double(max(totalCount, 1)) / Double(max(columnsInRow, 1))))
         let boardWidth = max(
             GameMetric.flaskHitWidth * scale,
             min(size.width - 36 * scale, GameMetric.baseBoardWidth * scale)
         )
         let boardOriginX = (size.width - boardWidth) / 2
-        let verticalCenterRatio = centersSparseRows
-            ? GameMetric.sparseTutorialBoardVerticalCenterRatio
-            : GameMetric.boardVerticalCenterRatio
+        let verticalCenterRatio = verticalCenterRatio(centersSparseRows: centersSparseRows, rowCount: rowCount)
         let verticalCenter = size.height * verticalCenterRatio
         let cellWidth = boardWidth / CGFloat(columnsInRow)
         let rowSpacing: CGFloat = min(210 * scale, size.height * GameMetric.boardRowSpacingRatio)
-        let rowOffset = centersSparseRows ? CGFloat(row) * rowSpacing : (CGFloat(row) - 0.5) * rowSpacing
+        let rowOffset = centersSparseRows
+            ? CGFloat(row) * rowSpacing
+            : (CGFloat(row) - CGFloat(rowCount - 1) / 2) * rowSpacing
 
         return CGPoint(
             x: boardOriginX + cellWidth * (CGFloat(column) + 0.5),
@@ -47,7 +48,7 @@ struct HomeLayout {
     }
 
     func flaskCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
-        flaskCenter(for: index, totalCount: columns, centersSparseRows: false, in: size, scale: scale)
+        flaskCenter(for: index, totalCount: columns * 2, centersSparseRows: false, in: size, scale: scale)
     }
 
     func pourStartPoint(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
@@ -61,7 +62,11 @@ struct HomeLayout {
     }
 
     func bottomControlCenterY(in size: CGSize, safeAreaInsets: EdgeInsets, scale: CGFloat) -> CGFloat {
-        size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - GameMetric.bottomControlDockHeight * scale / 2
+        let dockHeight = GameMetric.bottomControlDockHeight * scale
+        let desiredCenterY = size.height - safeAreaInsets.bottom - GameMetric.bottomControlInset * scale - dockHeight / 2
+        let lowestVisibleCenterY = size.height - dockHeight / 2 - 2 * scale
+
+        return min(desiredCenterY, lowestVisibleCenterY)
     }
 
     private func columnsInRow(for totalCount: Int) -> Int {
@@ -73,5 +78,17 @@ struct HomeLayout {
         default:
             return columns
         }
+    }
+
+    private func verticalCenterRatio(centersSparseRows: Bool, rowCount: Int) -> CGFloat {
+        if centersSparseRows {
+            return GameMetric.sparseTutorialBoardVerticalCenterRatio
+        }
+
+        if rowCount >= 3 {
+            return GameMetric.denseBoardVerticalCenterRatio
+        }
+
+        return GameMetric.boardVerticalCenterRatio
     }
 }
