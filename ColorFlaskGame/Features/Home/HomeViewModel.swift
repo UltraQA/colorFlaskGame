@@ -282,7 +282,9 @@ final class HomeViewModel: ObservableObject {
     }
 
     var tutorialMove: HintMove? {
-        guard isTutorialPromptVisible, let plan = gameManager.firstValidMove() else { return nil }
+        guard currentLevelNumber < 5,
+              isTutorialPromptVisible,
+              let plan = gameManager.firstValidMove() else { return nil }
         return HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex)
     }
 
@@ -297,8 +299,19 @@ final class HomeViewModel: ObservableObject {
         completionPhase.isPlaying
             && pourAnimation == nil
             && !isRewardedAdInProgress
+            && herbsTutorialPrompt == nil
             && !gameManager.isRoundCompleted
             && gameManager.firstValidMove() != nil
+    }
+
+    var shouldPromptHintUse: Bool {
+        currentLevelNumber == 5
+            && progressStore.hasSeenHerbsTutorial
+            && herbsTutorialPrompt == nil
+            && hintsUsedThisLevel == 0
+            && hintMove == nil
+            && completionPhase.isPlaying
+            && !isRewardedAdInProgress
     }
 
     var canInteractWithBoard: Bool {
@@ -374,7 +387,10 @@ final class HomeViewModel: ObservableObject {
     }
 
     func showHint() {
-        guard pourAnimation == nil, !isRewardedAdInProgress, let plan = gameManager.firstValidMove() else { return }
+        guard pourAnimation == nil,
+              !isRewardedAdInProgress,
+              herbsTutorialPrompt == nil,
+              let plan = gameManager.firstValidMove() else { return }
         guard currentLevelNumber != 5 || progressStore.hasSeenHerbsTutorial else { return }
 
         dismissOrderBanner()

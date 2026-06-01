@@ -648,18 +648,27 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertEqual(progressStore.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertFalse(viewModel.canInteractWithBoard)
+        XCTAssertFalse(viewModel.canShowHint)
+        XCTAssertNil(viewModel.tutorialMove)
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertFalse(viewModel.shouldPromptHintUse)
 
         viewModel.claimHerbsTutorialReward()
 
         XCTAssertNil(viewModel.herbsTutorialPrompt)
         XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertFalse(viewModel.canInteractWithBoard)
+        XCTAssertTrue(viewModel.canShowHint)
+        XCTAssertNil(viewModel.tutorialMove)
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertTrue(viewModel.shouldPromptHintUse)
 
         viewModel.showHint()
 
         XCTAssertNotNil(viewModel.hintMove)
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertTrue(viewModel.canInteractWithBoard)
+        XCTAssertFalse(viewModel.shouldPromptHintUse)
     }
 
     func testMenuRewardUsesLeafOnlyUntilFourthLevelIsCompleted() {

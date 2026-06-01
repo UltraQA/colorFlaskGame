@@ -380,7 +380,8 @@ struct HomeView: View {
             width: dockWidth,
             resetButton: resetButton(scale: 1, isEnabled: viewModel.canInteractWithBoard),
             isHintEnabled: viewModel.canShowHint,
-            hintBadgeText: viewModel.hintBadgeText
+            hintBadgeText: viewModel.hintBadgeText,
+            isHintAttentionActive: viewModel.shouldPromptHintUse
         ) {
             viewModel.showHint()
         }
@@ -1226,7 +1227,10 @@ private struct BottomControlDock<ResetButton: View>: View {
     let resetButton: ResetButton
     let isHintEnabled: Bool
     let hintBadgeText: String
+    let isHintAttentionActive: Bool
     let onHint: () -> Void
+
+    @State private var hintPulse = false
 
     var body: some View {
         HStack(alignment: .center) {
@@ -1246,6 +1250,27 @@ private struct BottomControlDock<ResetButton: View>: View {
             .overlay(alignment: .topTrailing) {
                 HintCostBadge(text: hintBadgeText, isEnabled: isHintEnabled)
                     .offset(x: 6, y: -2)
+            }
+            .overlay {
+                if isHintAttentionActive {
+                    Circle()
+                        .stroke(GameColor.controlAccent.opacity(hintPulse ? 0.12 : 0.68), lineWidth: 4)
+                        .scaleEffect(hintPulse ? 1.34 : 1.02)
+                        .allowsHitTesting(false)
+                }
+            }
+            .scaleEffect(isHintAttentionActive && hintPulse ? 1.06 : 1)
+            .animation(
+                isHintAttentionActive
+                    ? .easeInOut(duration: 0.72).repeatForever(autoreverses: true)
+                    : .easeOut(duration: 0.18),
+                value: hintPulse
+            )
+            .onAppear {
+                hintPulse = isHintAttentionActive
+            }
+            .onChange(of: isHintAttentionActive) { _, isActive in
+                hintPulse = isActive
             }
             .accessibilityLabel("Hint")
         }
