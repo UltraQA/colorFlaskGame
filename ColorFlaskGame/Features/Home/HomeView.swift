@@ -28,6 +28,7 @@ struct HomeView: View {
 
                 ForEach(Array(viewModel.gameManager.flasks.enumerated()), id: \.element.id) { index, flask in
                     let pourPose = flaskPourPose(for: index, in: proxy.size, scale: layoutScale)
+                    let flaskHitHeight = flaskHitHeight(for: flask)
 
                     Button {
                         viewModel.handleFlaskTap(at: index)
@@ -40,7 +41,7 @@ struct HomeView: View {
                         .scaleEffect(layoutScale)
                         .frame(
                             width: GameMetric.flaskHitWidth * layoutScale,
-                            height: GameMetric.flaskHitHeight * layoutScale
+                            height: flaskHitHeight * layoutScale
                         )
                         .rotationEffect(pourPose.rotation, anchor: .top)
                         .scaleEffect(pourPose.scale)
@@ -400,7 +401,12 @@ struct HomeView: View {
 
     private func tutorialMarkerCenter(for index: Int, in size: CGSize, scale: CGFloat) -> CGPoint {
         let center = flaskCenter(for: index, in: size, scale: scale)
-        return CGPoint(x: center.x, y: center.y - GameMetric.flaskHitHeight * scale * 0.48)
+        let flask = viewModel.gameManager.flasks[index]
+        return CGPoint(x: center.x, y: center.y - flaskHitHeight(for: flask) * scale * 0.48)
+    }
+
+    private func flaskHitHeight(for flask: Flask) -> CGFloat {
+        GameMetric.flaskHitHeight + CGFloat(max(0, flask.capacity - Flask.maxCapacity)) * 12
     }
 
     private func flaskVisualState(for flask: Flask, at index: Int) -> FlaskVisualState {

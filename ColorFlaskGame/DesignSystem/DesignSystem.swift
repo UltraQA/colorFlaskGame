@@ -118,6 +118,10 @@ extension LiquidColor {
             return Color(red: 1.00, green: 0.42, blue: 0.77)
         case .aqua:
             return Color(red: 0.29, green: 0.91, blue: 0.96)
+        case .mint:
+            return Color(red: 0.62, green: 1.00, blue: 0.58)
+        case .amber:
+            return Color(red: 1.00, green: 0.67, blue: 0.18)
         }
     }
 }

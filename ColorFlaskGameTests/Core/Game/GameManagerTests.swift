@@ -139,6 +139,76 @@ final class GameManagerTests: XCTestCase {
         XCTAssertNotNil(report.minimumMoveCount)
     }
 
+    func testGeneratedProgressionIncreasesCapacityAndColorCountAfterLevelTwenty() {
+        let repository = HandcraftedLevelRepository()
+        let level = repository.level(at: 20)
+
+        XCTAssertEqual(level.id, 21)
+        XCTAssertEqual(level.flaskCapacity, 6)
+        XCTAssertEqual(level.filledFlasks.count, 6)
+        XCTAssertEqual(level.availableEmptyFlaskCount, 2)
+        XCTAssertFalse(level.revealsOnlyTopColor, "Level \(level.id) should not use mystery reveal.")
+        XCTAssertTrue(
+            level.isValid,
+            "Level \(level.id) has validation issues: \(level.validationIssues.map(\.message))"
+        )
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.capacity == 6 })
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.colors.maxIdenticalColorCount <= 2 })
+    }
+
+    func testGeneratedProgressionAddsCapacityAndExtraEmptyFlaskAfterLevelForty() {
+        let repository = HandcraftedLevelRepository()
+        let level = repository.level(at: 40)
+
+        XCTAssertEqual(level.id, 41)
+        XCTAssertEqual(level.flaskCapacity, Flask.maxProgressionCapacity)
+        XCTAssertEqual(level.filledFlasks.count, 8)
+        XCTAssertEqual(level.availableEmptyFlaskCount, 3)
+        XCTAssertFalse(level.revealsOnlyTopColor, "Level \(level.id) should not use mystery reveal.")
+        XCTAssertTrue(
+            level.isValid,
+            "Level \(level.id) has validation issues: \(level.validationIssues.map(\.message))"
+        )
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.capacity == Flask.maxProgressionCapacity })
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.colors.maxIdenticalColorCount <= 2 })
+    }
+
+    func testGeneratedMysteryLevelsResetShapeAndRevealOnlyTopColorAfterLevelSixty() {
+        let repository = HandcraftedLevelRepository()
+        let level = repository.level(at: 60)
+
+        XCTAssertEqual(level.id, Level.mysteryIntroductionLevelID)
+        XCTAssertEqual(level.flaskCapacity, Flask.maxCapacity)
+        XCTAssertEqual(level.filledFlasks.count, GameManager.defaultFilledFlaskCount)
+        XCTAssertEqual(level.availableEmptyFlaskCount, GameManager.startingEmptyFlaskCount)
+        XCTAssertTrue(level.hasLockedBonusFlask)
+        XCTAssertTrue(level.revealsOnlyTopColor)
+        XCTAssertTrue(level.isValid)
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.visibleColors.count == 1 })
+        XCTAssertTrue(level.filledFlasks.allSatisfy { $0.hiddenColorCount == Flask.maxCapacity - 1 })
+    }
+
+    func testMysteryFlaskRevealsNextTopColorAfterPouringVisibleLayer() {
+        var flask = Flask(
+            capacity: Flask.maxCapacity,
+            colors: [red, green, blue, yellow],
+            revealsOnlyTopColor: true
+        )
+
+        XCTAssertEqual(flask.visibleColors, [yellow])
+        XCTAssertEqual(flask.hiddenColorCount, 3)
+
+        XCTAssertEqual(flask.pop(), yellow)
+
+        XCTAssertEqual(flask.visibleColors, [blue])
+        XCTAssertEqual(flask.hiddenColorCount, 2)
+
+        flask.push(red)
+
+        XCTAssertEqual(flask.visibleColors, [blue, red])
+        XCTAssertEqual(flask.hiddenColorCount, 2)
+    }
+
     func testSolvabilityReportRejectsInvalidLevel() {
         let level = Level(
             id: 100,
@@ -513,4 +583,14 @@ private struct GeneratedFlaskSnapshot: Equatable {
     let kind: FlaskKind
     let isPlayable: Bool
     let colors: [LiquidColor]
+}
+
+private extension Array where Element == LiquidColor {
+    var maxIdenticalColorCount: Int {
+        reduce(into: [LiquidColor: Int]()) { counts, color in
+            counts[color, default: 0] += 1
+        }
+        .values
+        .max() ?? 0
+    }
 }

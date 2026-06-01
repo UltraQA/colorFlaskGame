@@ -242,7 +242,7 @@ final class HomeViewModel: ObservableObject {
             potionName: order?.potionName ?? "\(targetColor.accessibilityName.capitalized) Potion",
             targetColor: targetColor,
             progress: targetColorProgress(for: targetColor),
-            requiredSections: Flask.maxCapacity,
+            requiredSections: gameManager.level?.flaskCapacity ?? Flask.maxCapacity,
             shortCopy: order?.shortCopy ?? "Complete one \(targetColor.accessibilityName) flask"
         )
     }

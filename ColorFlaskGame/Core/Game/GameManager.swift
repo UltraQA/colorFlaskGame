@@ -14,6 +14,8 @@ enum LiquidColor: String, CaseIterable, Codable, Hashable {
     case orange
     case rose
     case aqua
+    case mint
+    case amber
 
     var accessibilityName: String {
         switch self {
@@ -41,6 +43,10 @@ enum LiquidColor: String, CaseIterable, Codable, Hashable {
             return "rose"
         case .aqua:
             return "aqua"
+        case .mint:
+            return "mint"
+        case .amber:
+            return "amber"
         }
     }
 }
@@ -52,23 +58,31 @@ enum FlaskKind: Equatable {
 
 struct Flask: Identifiable, Equatable {
     static let maxCapacity = 4
+    static let maxProgressionCapacity = 8
 
     let id: UUID
     let kind: FlaskKind
+    let capacity: Int
     private(set) var colors: [LiquidColor]
     private(set) var isUnlocked: Bool
+    private(set) var visibleColorCount: Int
 
     init(
         id: UUID = UUID(),
         kind: FlaskKind = .regular,
+        capacity: Int = Self.maxCapacity,
         colors: [LiquidColor] = [],
-        isUnlocked: Bool = true
+        isUnlocked: Bool = true,
+        revealsOnlyTopColor: Bool = false
     ) {
-        precondition(colors.count <= Self.maxCapacity, "Flask cannot exceed max capacity")
+        precondition(capacity > 0, "Flask capacity must be positive")
+        precondition(colors.count <= capacity, "Flask cannot exceed max capacity")
         self.id = id
         self.kind = kind
+        self.capacity = capacity
         self.colors = colors
         self.isUnlocked = isUnlocked
+        self.visibleColorCount = revealsOnlyTopColor ? min(colors.count, 1) : colors.count
     }
 
     var isPlayable: Bool {
@@ -84,11 +98,11 @@ struct Flask: Identifiable, Equatable {
     }
 
     var isFull: Bool {
-        colors.count == Self.maxCapacity
+        colors.count == capacity
     }
 
     var freeSpace: Int {
-        Self.maxCapacity - colors.count
+        capacity - colors.count
     }
 
     var topColor: LiquidColor? {
@@ -108,14 +122,29 @@ struct Flask: Identifiable, Equatable {
         isEmpty || (isFull && Set(colors).count == 1)
     }
 
+    var visibleColors: [LiquidColor] {
+        guard visibleColorCount < colors.count else { return colors }
+        return Array(colors.suffix(visibleColorCount))
+    }
+
+    var hiddenColorCount: Int {
+        max(0, colors.count - visibleColorCount)
+    }
+
     mutating func push(_ color: LiquidColor) {
         guard isPlayable, !isFull else { return }
         colors.append(color)
+        visibleColorCount = min(colors.count, visibleColorCount + 1)
     }
 
     mutating func pop() -> LiquidColor? {
         guard isPlayable else { return nil }
-        return colors.popLast()
+        let color = colors.popLast()
+        visibleColorCount = max(0, min(visibleColorCount - 1, colors.count))
+        if !colors.isEmpty, visibleColorCount == 0 {
+            visibleColorCount = 1
+        }
+        return color
     }
 
     mutating func unlock() {
@@ -192,6 +221,7 @@ struct LevelDifficultyMetrics: Equatable {
 
 struct Level: Identifiable, Equatable {
     static let lockedBonusIntroductionLevelID = 5
+    static let mysteryIntroductionLevelID = 61
 
     let id: Int
     let difficulty: Difficulty
@@ -199,6 +229,8 @@ struct Level: Identifiable, Equatable {
     let initialSelectedFlaskIndex: Int?
     let availableEmptyFlaskCount: Int
     let hasLockedBonusFlask: Bool
+    let flaskCapacity: Int
+    let revealsOnlyTopColor: Bool
     let objective: LevelObjective
     let customerOrder: CustomerOrder?
 
@@ -209,6 +241,8 @@ struct Level: Identifiable, Equatable {
         initialSelectedFlaskIndex: Int? = nil,
         availableEmptyFlaskCount: Int,
         hasLockedBonusFlask: Bool,
+        flaskCapacity: Int = Flask.maxCapacity,
+        revealsOnlyTopColor: Bool = false,
         objective: LevelObjective = .sortAll,
         customerOrder: CustomerOrder? = nil
     ) {
@@ -218,6 +252,8 @@ struct Level: Identifiable, Equatable {
         self.initialSelectedFlaskIndex = initialSelectedFlaskIndex
         self.availableEmptyFlaskCount = availableEmptyFlaskCount
         self.hasLockedBonusFlask = hasLockedBonusFlask
+        self.flaskCapacity = flaskCapacity
+        self.revealsOnlyTopColor = revealsOnlyTopColor
         self.objective = objective
         self.customerOrder = customerOrder
     }
@@ -238,6 +274,8 @@ struct Level: Identifiable, Equatable {
             initialSelectedFlaskIndex: nil,
             availableEmptyFlaskCount: availableEmptyFlaskCount,
             hasLockedBonusFlask: hasLockedBonusFlask,
+            flaskCapacity: Flask.maxCapacity,
+            revealsOnlyTopColor: false,
             objective: objective,
             customerOrder: customerOrder
         )
@@ -255,11 +293,11 @@ struct Level: Identifiable, Equatable {
                     )
                 )
             }
-        } else if availableEmptyFlaskCount != GameManager.startingEmptyFlaskCount {
+        } else if !allowedEmptyFlaskCounts.contains(availableEmptyFlaskCount) {
             issues.append(
                 LevelValidationIssue(
                     levelID: id,
-                    message: "Level must start with \(GameManager.startingEmptyFlaskCount) available empty flasks."
+                    message: "Level must start with \(allowedEmptyFlaskCountsDescription) available empty flasks."
                 )
             )
         }
@@ -283,11 +321,20 @@ struct Level: Identifiable, Equatable {
                 )
             }
 
-            if difficulty != .tutorial && !flask.isFull {
+            if flask.capacity != flaskCapacity {
                 issues.append(
                     LevelValidationIssue(
                         levelID: id,
-                        message: "Filled flask \(index) must contain \(Flask.maxCapacity) sections."
+                        message: "Filled flask \(index) must use level capacity \(flaskCapacity)."
+                    )
+                )
+            }
+
+            if difficulty != .tutorial && flask.colors.count != flaskCapacity {
+                issues.append(
+                    LevelValidationIssue(
+                        levelID: id,
+                        message: "Filled flask \(index) must contain \(flaskCapacity) sections."
                     )
                 )
             }
@@ -309,22 +356,22 @@ struct Level: Identifiable, Equatable {
                 counts[color, default: 0] += 1
             }
 
-        for count in colorCounts.values where count != Flask.maxCapacity {
+        for count in colorCounts.values where count != flaskCapacity {
             issues.append(
                 LevelValidationIssue(
                     levelID: id,
-                    message: "Every color must appear exactly \(Flask.maxCapacity) times."
+                    message: "Every color must appear exactly \(flaskCapacity) times."
                 )
             )
             break
         }
 
         if case let .completeColor(targetColor) = objective,
-           colorCounts[targetColor, default: 0] < Flask.maxCapacity {
+           colorCounts[targetColor, default: 0] < flaskCapacity {
             issues.append(
                 LevelValidationIssue(
                     levelID: id,
-                    message: "Order objective target color must appear at least \(Flask.maxCapacity) times."
+                    message: "Order objective target color must appear at least \(flaskCapacity) times."
                 )
             )
         }
@@ -344,6 +391,22 @@ struct Level: Identifiable, Equatable {
 
     var isValid: Bool {
         validationIssues.isEmpty
+    }
+
+    private var allowedEmptyFlaskCounts: ClosedRange<Int> {
+        if flaskCapacity >= Flask.maxProgressionCapacity {
+            return GameManager.startingEmptyFlaskCount...(GameManager.startingEmptyFlaskCount + 1)
+        }
+
+        return GameManager.startingEmptyFlaskCount...GameManager.startingEmptyFlaskCount
+    }
+
+    private var allowedEmptyFlaskCountsDescription: String {
+        guard allowedEmptyFlaskCounts.lowerBound != allowedEmptyFlaskCounts.upperBound else {
+            return "\(allowedEmptyFlaskCounts.lowerBound)"
+        }
+
+        return "\(allowedEmptyFlaskCounts.lowerBound)...\(allowedEmptyFlaskCounts.upperBound)"
     }
 
     func difficultyMetrics(
@@ -425,7 +488,7 @@ struct LevelSolvabilityValidator {
 
         let flasks = level.filledFlasks.map(\.colors)
             + Array(repeating: [], count: level.availableEmptyFlaskCount)
-        return solve(SolverState(flasks: flasks))
+        return solve(SolverState(flasks: flasks, capacity: level.flaskCapacity))
     }
 
     private func solve(_ initialState: SolverState) -> LevelSolvabilityReport {
@@ -487,7 +550,8 @@ struct SolutionHintSolver {
             .filter { $0.element.isPlayable }
 
         let originalIndices = playableFlasks.map(\.offset)
-        let initialState = SolverState(flasks: playableFlasks.map(\.element.colors))
+        let capacity = playableFlasks.map(\.element.capacity).max() ?? Flask.maxCapacity
+        let initialState = SolverState(flasks: playableFlasks.map(\.element.colors), capacity: capacity)
 
         guard !initialState.isSolved else {
             return SolutionHintReport(
@@ -550,10 +614,11 @@ private struct SolverMove {
 
 private struct SolverState: Hashable {
     var flasks: [[LiquidColor]]
+    let capacity: Int
 
     var isSolved: Bool {
         flasks.allSatisfy { flask in
-            flask.isEmpty || (flask.count == Flask.maxCapacity && Set(flask).count == 1)
+            flask.isEmpty || (flask.count == capacity && Set(flask).count == 1)
         }
     }
 
@@ -570,7 +635,7 @@ private struct SolverState: Hashable {
             Self.sortKey(for: lhs) < Self.sortKey(for: rhs)
         }
 
-        return SolverState(flasks: sortedFlasks)
+        return SolverState(flasks: sortedFlasks, capacity: capacity)
     }
 
     mutating func apply(_ move: SolverMove) {
@@ -587,7 +652,7 @@ private struct SolverState: Hashable {
         let target = flasks[targetIndex]
 
         guard let sourceTopColor = source.last,
-              target.count < Flask.maxCapacity else {
+              target.count < capacity else {
             return nil
         }
 
@@ -599,7 +664,7 @@ private struct SolverState: Hashable {
             .reversed()
             .prefix { $0 == sourceTopColor }
             .count
-        let amount = min(sourceRunCount, Flask.maxCapacity - target.count)
+        let amount = min(sourceRunCount, capacity - target.count)
 
         guard amount > 0 else { return nil }
 
@@ -779,7 +844,7 @@ struct GameState: Equatable {
             score += 12
         }
 
-        if target.colors.count + plan.amount == Flask.maxCapacity {
+        if target.colors.count + plan.amount == target.capacity {
             score += 24
         }
 
@@ -846,20 +911,22 @@ final class GameManager: ObservableObject {
         let colors = Array(levelPalette.prefix(colorCount))
         precondition(colors.count == colorCount, "Not enough colors in level palette")
 
+        let capacity = Flask.maxCapacity
         let sections = colors.flatMap { color in
-            Array(repeating: color, count: Flask.maxCapacity)
+            Array(repeating: color, count: capacity)
         }
 
         var randomNumberGenerator = SeededRandomNumberGenerator(seed: seed)
         var flasks = sections
             .shuffled(using: &randomNumberGenerator)
-            .chunked(into: Flask.maxCapacity)
-            .map { Flask(colors: $0) }
+            .chunked(into: capacity)
+            .map { Flask(capacity: capacity, colors: $0) }
 
-        flasks.append(contentsOf: (0..<startingEmptyFlaskCount).map { _ in Flask() })
+        flasks.append(contentsOf: (0..<startingEmptyFlaskCount).map { _ in Flask(capacity: capacity) })
         flasks.append(
             Flask(
                 kind: .bonus,
+                capacity: capacity,
                 colors: [],
                 isUnlocked: isBonusFlaskUnlocked
             )
@@ -870,12 +937,13 @@ final class GameManager: ObservableObject {
 
     private static func makeFlasks(from level: Level, isBonusFlaskUnlocked: Bool) -> [Flask] {
         var flasks = level.filledFlasks
-        flasks.append(contentsOf: (0..<level.availableEmptyFlaskCount).map { _ in Flask() })
+        flasks.append(contentsOf: (0..<level.availableEmptyFlaskCount).map { _ in Flask(capacity: level.flaskCapacity) })
 
         if level.hasLockedBonusFlask {
             flasks.append(
                 Flask(
                     kind: .bonus,
+                    capacity: level.flaskCapacity,
                     colors: [],
                     isUnlocked: isBonusFlaskUnlocked
                 )
@@ -1102,6 +1170,8 @@ private extension HandcraftedLevelRepository {
         difficulty: Difficulty,
         rows: [[Int]],
         availableEmptyFlaskCount: Int = GameManager.startingEmptyFlaskCount,
+        flaskCapacity: Int = Flask.maxCapacity,
+        revealsOnlyTopColor: Bool = false,
         selectedFlaskIndex: Int? = nil,
         objective: LevelObjective = .sortAll,
         customerOrder: CustomerOrder? = nil
@@ -1110,11 +1180,17 @@ private extension HandcraftedLevelRepository {
             id: id,
             difficulty: difficulty,
             filledFlasks: rows.map { row in
-                Flask(colors: row.map { palette[$0] })
+                Flask(
+                    capacity: flaskCapacity,
+                    colors: row.map { palette[$0] },
+                    revealsOnlyTopColor: revealsOnlyTopColor
+                )
             },
             initialSelectedFlaskIndex: selectedFlaskIndex,
             availableEmptyFlaskCount: availableEmptyFlaskCount,
             hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID,
+            flaskCapacity: flaskCapacity,
+            revealsOnlyTopColor: revealsOnlyTopColor,
             objective: objective,
             customerOrder: customerOrder
         )
@@ -1136,28 +1212,43 @@ private extension HandcraftedLevelRepository {
     }
 
     static func makeGeneratedLevel(id: Int) -> Level {
-        let colorCount = GameManager.defaultFilledFlaskCount
-        let colors = Array(palette.prefix(colorCount))
-        let validator = LevelSolvabilityValidator(maxVisitedStates: 75_000)
+        let configuration = GeneratedLevelConfiguration(levelID: id)
+        let colors = Array(palette.prefix(configuration.colorCount))
+        let validator = LevelSolvabilityValidator(maxVisitedStates: configuration.maxVisitedStates)
 
         for attempt in 0..<200 {
             var randomNumberGenerator = SeededRandomNumberGenerator(
                 seed: generatedSeed(levelID: id, attempt: attempt)
             )
-            let rows = colors
-                .flatMap { color in Array(repeating: color, count: Flask.maxCapacity) }
-                .shuffled(using: &randomNumberGenerator)
-                .chunked(into: Flask.maxCapacity)
+            let rows = makeConstrainedRows(
+                colors: colors.shuffled(using: &randomNumberGenerator),
+                capacity: configuration.capacity,
+                randomNumberGenerator: &randomNumberGenerator
+            )
 
-            guard rows.allSatisfy({ Set($0).count > 1 }) else { continue }
+            guard rows.allSatisfy({ row in
+                Set(row).count > 1 && row.maxIdenticalColorCount <= 2
+            }) else { continue }
 
             let level = Level(
                 id: id,
-                difficulty: .medium,
-                filledFlasks: rows.map { Flask(colors: $0) },
-                availableEmptyFlaskCount: GameManager.startingEmptyFlaskCount,
-                hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID
+                difficulty: configuration.difficulty,
+                filledFlasks: rows.map {
+                    Flask(
+                        capacity: configuration.capacity,
+                        colors: $0,
+                        revealsOnlyTopColor: configuration.revealsOnlyTopColor
+                    )
+                },
+                availableEmptyFlaskCount: configuration.emptyFlaskCount,
+                hasLockedBonusFlask: id >= Level.lockedBonusIntroductionLevelID,
+                flaskCapacity: configuration.capacity,
+                revealsOnlyTopColor: configuration.revealsOnlyTopColor
             )
+
+            if configuration.skipsSolvabilityValidation {
+                return level
+            }
 
             let report = validator.reportWithoutBonusFlask(level)
             if report.isSolvable {
@@ -1166,6 +1257,21 @@ private extension HandcraftedLevelRepository {
         }
 
         preconditionFailure("Unable to generate a solvable level for id \(id)")
+    }
+
+    static func makeConstrainedRows(
+        colors: [LiquidColor],
+        capacity: Int,
+        randomNumberGenerator: inout SeededRandomNumberGenerator
+    ) -> [[LiquidColor]] {
+        colors.indices
+            .map { rowIndex in
+                (0..<capacity).map { sectionIndex in
+                    colors[(rowIndex + sectionIndex) % colors.count]
+                }
+                .shuffled(using: &randomNumberGenerator)
+            }
+            .shuffled(using: &randomNumberGenerator)
     }
 
     static func generatedSeed(levelID: Int, attempt: Int) -> UInt64 {
@@ -1177,7 +1283,12 @@ private extension HandcraftedLevelRepository {
         .emerald,
         .honey,
         .moonBlue,
-        .violet
+        .violet,
+        .orange,
+        .rose,
+        .aqua,
+        .mint,
+        .amber
     ]
 }
 
@@ -1186,5 +1297,69 @@ private extension Array {
         stride(from: 0, to: count, by: size).map { startIndex in
             Array(self[startIndex..<Swift.min(startIndex + size, count)])
         }
+    }
+}
+
+private struct GeneratedLevelConfiguration {
+    let levelID: Int
+
+    var isMystery: Bool {
+        levelID >= Level.mysteryIntroductionLevelID
+    }
+
+    var capacity: Int {
+        guard !isMystery else { return Flask.maxCapacity }
+
+        switch levelID {
+        case 41...60:
+            return Flask.maxProgressionCapacity
+        case 21...40:
+            return 6
+        default:
+            return Flask.maxCapacity
+        }
+    }
+
+    var colorCount: Int {
+        guard !isMystery else { return GameManager.defaultFilledFlaskCount }
+
+        switch levelID {
+        case 41...60:
+            return 8
+        case 21...40:
+            return 6
+        default:
+            return GameManager.defaultFilledFlaskCount
+        }
+    }
+
+    var emptyFlaskCount: Int {
+        capacity >= Flask.maxProgressionCapacity ? 3 : GameManager.startingEmptyFlaskCount
+    }
+
+    var revealsOnlyTopColor: Bool {
+        isMystery
+    }
+
+    var difficulty: Difficulty {
+        .medium
+    }
+
+    var maxVisitedStates: Int {
+        capacity > Flask.maxCapacity ? 30_000 : 75_000
+    }
+
+    var skipsSolvabilityValidation: Bool {
+        capacity > Flask.maxCapacity
+    }
+}
+
+private extension Array where Element == LiquidColor {
+    var maxIdenticalColorCount: Int {
+        reduce(into: [LiquidColor: Int]()) { counts, color in
+            counts[color, default: 0] += 1
+        }
+        .values
+        .max() ?? 0
     }
 }

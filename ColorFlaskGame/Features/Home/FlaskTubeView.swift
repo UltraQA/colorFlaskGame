@@ -22,12 +22,24 @@ struct FlaskTubeView: View {
         GameMetric.flaskWidth * 0.92
     }
 
+    private var capacityExtraHeight: CGFloat {
+        CGFloat(max(0, flask.capacity - Flask.maxCapacity)) * 12
+    }
+
+    private var bottleImageHeight: CGFloat {
+        GameMetric.flaskHeight + capacityExtraHeight
+    }
+
+    private var flaskHitHeight: CGFloat {
+        GameMetric.flaskHitHeight + capacityExtraHeight
+    }
+
     private var liquidColumnWidth: CGFloat {
         bottleImageWidth - 18
     }
 
     private var liquidColumnHeight: CGFloat {
-        GameMetric.flaskHeight - 56
+        bottleImageHeight - 56
     }
 
     private var bottleOpacity: Double {
@@ -44,7 +56,9 @@ struct FlaskTubeView: View {
             hintHalo
 
             PotionLiquidColumnView(
-                colors: flask.colors,
+                colors: flask.visibleColors,
+                hiddenColorCount: flask.hiddenColorCount,
+                capacity: flask.capacity,
                 reduceMotion: reduceMotion,
                 isCompleted: visualState == .completed
             )
@@ -57,7 +71,7 @@ struct FlaskTubeView: View {
                 isPlayable: flask.isPlayable,
                 bottleOpacity: bottleOpacity
             )
-                .frame(width: bottleImageWidth, height: GameMetric.flaskHeight)
+                .frame(width: bottleImageWidth, height: bottleImageHeight)
 
             if !flask.isPlayable {
                 lockedOverlay
@@ -66,7 +80,7 @@ struct FlaskTubeView: View {
             stateIndicator
             hintRoleCue
         }
-        .frame(width: GameMetric.flaskWidth, height: GameMetric.flaskHeight)
+        .frame(width: GameMetric.flaskWidth, height: bottleImageHeight)
         .scaleEffect(visualState == .hintSource ? 1.04 : 1)
         .rotationEffect(visualState == .hintSource && !reduceMotion ? .degrees(-2.5) : .zero)
         .offset(y: verticalOffset)
@@ -77,7 +91,7 @@ struct FlaskTubeView: View {
             y: shadowYOffset
         )
         .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: visualState)
-        .frame(width: GameMetric.flaskHitWidth, height: GameMetric.flaskHitHeight)
+        .frame(width: GameMetric.flaskHitWidth, height: flaskHitHeight)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Flask \(flaskIndex + 1)")
         .accessibilityValue(accessibilityValue)
@@ -401,6 +415,8 @@ struct FlaskTubeView: View {
 
 private struct PotionLiquidColumnView: View {
     let colors: [LiquidColor]
+    let hiddenColorCount: Int
+    let capacity: Int
     let reduceMotion: Bool
     let isCompleted: Bool
 
@@ -409,12 +425,23 @@ private struct PotionLiquidColumnView: View {
             let size = proxy.size
 
             if size.width > 1, size.height > 1 {
-                let sectionHeight = size.height / CGFloat(Flask.maxCapacity)
-                let filledHeight = min(size.height, sectionHeight * CGFloat(colors.count))
+                let sectionHeight = size.height / CGFloat(capacity)
+                let filledCount = colors.count + hiddenColorCount
+                let filledHeight = min(size.height, sectionHeight * CGFloat(filledCount))
 
                 ZStack(alignment: .bottom) {
-                    PotionLiquidCanvas(colors: colors)
+                    PotionLiquidCanvas(colors: colors, hiddenColorCount: hiddenColorCount, capacity: capacity)
                         .frame(width: size.width, height: size.height)
+
+                    if hiddenColorCount > 0, filledHeight > 18 {
+                        Text("?")
+                            .font(.system(size: min(24, sectionHeight * 0.56), weight: .black, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.86))
+                            .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
+                            .frame(width: size.width, height: sectionHeight * CGFloat(hiddenColorCount))
+                            .frame(width: size.width, height: filledHeight, alignment: .bottom)
+                            .allowsHitTesting(false)
+                    }
 
                     if !colors.isEmpty, filledHeight > 8 {
                         PotionBubbleLayer(
@@ -438,16 +465,23 @@ private struct PotionLiquidColumnView: View {
 
 private struct PotionLiquidCanvas: View {
     let colors: [LiquidColor]
+    let hiddenColorCount: Int
+    let capacity: Int
 
     var body: some View {
         Canvas { context, size in
-            guard !colors.isEmpty, size.width > 1, size.height > 1 else { return }
+            let filledCount = colors.count + hiddenColorCount
+            guard filledCount > 0, size.width > 1, size.height > 1 else { return }
 
-            let sectionHeight = size.height / CGFloat(Flask.maxCapacity)
-            for index in colors.indices {
-                let color = colors[index]
-                let isTopSection = index == colors.count - 1
-                let softensTopEdge = index > 0 && colors[index - 1] == color
+            let sectionHeight = size.height / CGFloat(capacity)
+            for index in 0..<filledCount {
+                let isHiddenSection = index < hiddenColorCount
+                let visibleIndex = index - hiddenColorCount
+                let color = isHiddenSection ? nil : colors[visibleIndex]
+                let fillColor = color?.swiftUIColor ?? GameColor.controlMuted
+                let isTopSection = index == filledCount - 1
+                let previousColor = index > hiddenColorCount ? colors[visibleIndex - 1] : nil
+                let softensTopEdge = !isHiddenSection && previousColor == color
                 let overlap: CGFloat = index == 0 ? 0 : 0.8
                 let rect = CGRect(
                     x: 0,
@@ -463,9 +497,9 @@ private struct PotionLiquidCanvas: View {
                 )
                 context.fill(path, with: .linearGradient(
                     Gradient(colors: [
-                        color.swiftUIColor.opacity(0.86),
-                        color.swiftUIColor,
-                        color.swiftUIColor.opacity(0.92)
+                        fillColor.opacity(isHiddenSection ? 0.58 : 0.86),
+                        fillColor.opacity(isHiddenSection ? 0.76 : 1),
+                        fillColor.opacity(isHiddenSection ? 0.64 : 0.92)
                     ]),
                     startPoint: CGPoint(x: rect.minX, y: rect.midY),
                     endPoint: CGPoint(x: rect.maxX, y: rect.midY)
