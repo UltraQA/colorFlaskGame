@@ -1,9 +1,16 @@
 import SwiftUI
 
 struct AppRootView: View {
-    @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var feedbackProvider: SystemGameFeedbackProvider
+    @StateObject private var viewModel: HomeViewModel
     @State private var flow: AppFlow = .intro
     @State private var activeOrderLevelIndex: Int?
+
+    init() {
+        let feedbackProvider = SystemGameFeedbackProvider()
+        _feedbackProvider = StateObject(wrappedValue: feedbackProvider)
+        _viewModel = StateObject(wrappedValue: HomeViewModel(gameFeedbackProvider: feedbackProvider))
+    }
 
     var body: some View {
         ZStack {
@@ -25,16 +32,22 @@ struct AppRootView: View {
                     completedOrders: viewModel.currentLevelIndex,
                     rewardHerbs: HomeViewModel.herbsRewardPerCompletedOrder,
                     isCurrentOrderInProgress: activeOrderLevelIndex == viewModel.currentLevelIndex,
+                    isSoundEnabled: feedbackProvider.isSoundEnabled,
+                    isHapticsEnabled: feedbackProvider.isHapticsEnabled,
                     onStartOrder: {
+                        feedbackProvider.play(.uiTap)
                         activeOrderLevelIndex = viewModel.currentLevelIndex
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .game
                         }
                     },
                     onResetProgress: {
+                        feedbackProvider.play(.reset)
                         activeOrderLevelIndex = nil
                         viewModel.resetProgress()
-                    }
+                    },
+                    onToggleSound: feedbackProvider.toggleSound,
+                    onToggleHaptics: feedbackProvider.toggleHaptics
                 )
                 .transition(.opacity)
             case .game:
@@ -132,8 +145,12 @@ private struct MainMenuView: View {
     let completedOrders: Int
     let rewardHerbs: Int
     let isCurrentOrderInProgress: Bool
+    let isSoundEnabled: Bool
+    let isHapticsEnabled: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
+    let onToggleSound: () -> Void
+    let onToggleHaptics: () -> Void
 
     @State private var isResetConfirmationPresented = false
 
@@ -222,16 +239,34 @@ private struct MainMenuView: View {
 
             Spacer(minLength: DSSpacing.sm)
 
-            Label("\(herbsBalance)", systemImage: "leaf.fill")
-                .font(DSTypography.headline)
-                .foregroundStyle(GameColor.controlSurface)
-                .padding(.horizontal, DSSpacing.md)
-                .frame(height: 38)
-                .background(
-                    Capsule()
-                        .fill(GameColor.successAccent)
-                )
-                .accessibilityLabel("\(herbsBalance) herbs")
+            VStack(alignment: .trailing, spacing: DSSpacing.sm) {
+                Label("\(herbsBalance)", systemImage: "leaf.fill")
+                    .font(DSTypography.headline)
+                    .foregroundStyle(GameColor.controlSurface)
+                    .padding(.horizontal, DSSpacing.md)
+                    .frame(height: 38)
+                    .background(
+                        Capsule()
+                            .fill(GameColor.successAccent)
+                    )
+                    .accessibilityLabel("\(herbsBalance) herbs")
+
+                HStack(spacing: DSSpacing.xs) {
+                    MenuToggleButton(
+                        systemImage: isSoundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                        isEnabled: isSoundEnabled,
+                        accessibilityLabel: isSoundEnabled ? "Sound on" : "Sound off",
+                        action: onToggleSound
+                    )
+
+                    MenuToggleButton(
+                        systemImage: isHapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash",
+                        isEnabled: isHapticsEnabled,
+                        accessibilityLabel: isHapticsEnabled ? "Vibration on" : "Vibration off",
+                        action: onToggleHaptics
+                    )
+                }
+            }
         }
     }
 
@@ -356,6 +391,32 @@ private struct MenuStatView: View {
                         .stroke(GameColor.glassStroke.opacity(0.12), lineWidth: 1)
                 )
         )
+    }
+}
+
+private struct MenuToggleButton: View {
+    let systemImage: String
+    let isEnabled: Bool
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundStyle(isEnabled ? GameColor.controlSurface : GameColor.glassStroke.opacity(0.72))
+                .frame(width: 36, height: 36)
+                .background(
+                    Circle()
+                        .fill(isEnabled ? GameColor.controlAccent : GameColor.controlSurface.opacity(0.58))
+                        .overlay(
+                            Circle()
+                                .stroke(GameColor.glassStroke.opacity(isEnabled ? 0.18 : 0.1), lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 

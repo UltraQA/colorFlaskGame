@@ -182,6 +182,40 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks[1].colors, [red, red, red])
     }
 
+    func testValidPourEmitsFeedbackEvents() async {
+        let feedbackProvider = SpyGameFeedbackProvider()
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red, red]),
+                Flask(colors: [red])
+            ],
+            gameFeedbackProvider: feedbackProvider
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(feedbackProvider.events, [.flaskSelect, .validPour])
+    }
+
+    func testInvalidPourEmitsWarningFeedbackAndKeepsSourceSelected() {
+        let feedbackProvider = SpyGameFeedbackProvider()
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [green])
+            ],
+            gameFeedbackProvider: feedbackProvider
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+
+        XCTAssertEqual(feedbackProvider.events, [.flaskSelect, .invalidMove])
+        XCTAssertEqual(viewModel.selectedFlaskIndex, 0)
+    }
+
     func testOrderBannerStartsVisibleAndHidesAfterFirstFlaskTap() {
         let viewModel = makeViewModel(
             flasks: [
@@ -806,6 +840,7 @@ final class HomeViewModelTests: XCTestCase {
         flasks: [Flask],
         userDefaults: UserDefaults? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
+        gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
         timing: HomeViewModelTiming = .immediate,
         victoryMessageProvider: @escaping () -> String = { "Fantastic!" }
     ) -> HomeViewModel {
@@ -815,6 +850,7 @@ final class HomeViewModelTests: XCTestCase {
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
             rewardedAdProvider: rewardedAdProvider,
+            gameFeedbackProvider: gameFeedbackProvider,
             timing: timing,
             victoryMessageProvider: victoryMessageProvider
         )
@@ -857,17 +893,32 @@ private final class SpyProgressStore: ProgressStore {
     var isBonusFlaskPermanentlyUnlocked: Bool
     var herbsBalance: Int
     var hasCompletedOnboarding: Bool
+    var isSoundEnabled: Bool
+    var isHapticsEnabled: Bool
 
     init(
         currentLevelIndex: Int,
         isBonusFlaskPermanentlyUnlocked: Bool,
         herbsBalance: Int = 0,
-        hasCompletedOnboarding: Bool = false
+        hasCompletedOnboarding: Bool = false,
+        isSoundEnabled: Bool = true,
+        isHapticsEnabled: Bool = true
     ) {
         self.currentLevelIndex = currentLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
         self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.isSoundEnabled = isSoundEnabled
+        self.isHapticsEnabled = isHapticsEnabled
+    }
+}
+
+@MainActor
+private final class SpyGameFeedbackProvider: GameFeedbackProviding {
+    private(set) var events: [GameFeedbackEvent] = []
+
+    func play(_ event: GameFeedbackEvent) {
+        events.append(event)
     }
 }
 

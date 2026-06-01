@@ -135,6 +135,7 @@ final class HomeViewModel: ObservableObject {
     private let levelRepository: any LevelRepository
     private var progressStore: any ProgressStore
     private let rewardedAdProvider: any RewardedAdProviding
+    private let gameFeedbackProvider: any GameFeedbackProviding
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
@@ -152,6 +153,7 @@ final class HomeViewModel: ObservableObject {
         currentLevelIndex: Int? = nil,
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
+        gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
         timing: HomeViewModelTiming = .live,
         victoryMessageProvider: @escaping () -> String = {
             HomeViewModel.victoryMessages.randomElement() ?? "Fantastic!"
@@ -161,6 +163,7 @@ final class HomeViewModel: ObservableObject {
         let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore(userDefaults: userDefaults)
         self.progressStore = resolvedProgressStore
         self.rewardedAdProvider = rewardedAdProvider
+        self.gameFeedbackProvider = gameFeedbackProvider ?? NoOpGameFeedbackProvider()
         self.timing = timing
         self.victoryMessageProvider = victoryMessageProvider
         let resolvedLevelIndex = currentLevelIndex ?? resolvedProgressStore.currentLevelIndex
@@ -297,6 +300,7 @@ final class HomeViewModel: ObservableObject {
 
         guard flask.isPlayable else {
             if flask.isBonus {
+                gameFeedbackProvider.play(.uiTap)
                 bonusUnlockPrompt = BonusUnlockPrompt(flaskIndex: index)
             }
             return
@@ -306,11 +310,13 @@ final class HomeViewModel: ObservableObject {
 
         guard let sourceIndex = selectedFlaskIndex else {
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? nil : index
+            gameFeedbackProvider.play(selectedFlaskIndex == nil ? .uiTap : .flaskSelect)
             return
         }
 
         guard sourceIndex != index else {
             selectedFlaskIndex = nil
+            gameFeedbackProvider.play(.uiTap)
             return
         }
 
@@ -326,6 +332,7 @@ final class HomeViewModel: ObservableObject {
     func undo() {
         guard canUndo, let previousFlasks = history.popLast() else { return }
 
+        gameFeedbackProvider.play(.undo)
         selectedFlaskIndex = nil
         hintMove = nil
         invalidFlaskIndices.removeAll()
@@ -370,6 +377,7 @@ final class HomeViewModel: ObservableObject {
 
     func confirmReset() {
         resetConfirmationPrompt = nil
+        gameFeedbackProvider.play(.reset)
         startNewGame()
     }
 
@@ -427,6 +435,7 @@ final class HomeViewModel: ObservableObject {
 
     func unlockBonusFlaskForCurrentRound() {
         guard completionPhase.isPlaying else { return }
+        gameFeedbackProvider.play(.uiTap)
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
@@ -458,6 +467,7 @@ final class HomeViewModel: ObservableObject {
 
     func unlockBonusFlaskPermanently() {
         guard completionPhase.isPlaying else { return }
+        gameFeedbackProvider.play(.uiTap)
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
@@ -469,6 +479,7 @@ final class HomeViewModel: ObservableObject {
 
     private func animatePour(_ plan: PourPlan) {
         pourAnimationTask?.cancel()
+        gameFeedbackProvider.play(.validPour)
         selectedFlaskIndex = nil
         hintMove = nil
         invalidFlaskIndices.removeAll()
@@ -496,6 +507,7 @@ final class HomeViewModel: ObservableObject {
 
     private func showInvalidMoveFeedback(sourceIndex: Int, targetIndex: Int) {
         invalidFeedbackTask?.cancel()
+        gameFeedbackProvider.play(.invalidMove)
         invalidFlaskIndices = [sourceIndex, targetIndex]
         withAnimation(.linear(duration: timing.invalidFeedbackDuration)) {
             invalidMoveCount += 1
@@ -539,6 +551,7 @@ final class HomeViewModel: ObservableObject {
         hintMove = nil
         victoryMessage = completionMessage()
         lastCompletedMoveCount = moves
+        gameFeedbackProvider.play(.levelComplete)
         awardHerbsForCompletedOrder()
         completionSequenceID += 1
         let sequenceID = completionSequenceID
@@ -646,6 +659,7 @@ final class HomeViewModel: ObservableObject {
 
     private func applyHint(_ nextHint: HintMove, paymentMode: HintPaymentMode) {
         spendHintIfNeeded(paymentMode: paymentMode)
+        gameFeedbackProvider.play(.hintUsed)
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
         hintMove = nextHint
