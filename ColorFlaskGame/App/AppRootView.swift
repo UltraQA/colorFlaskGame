@@ -163,7 +163,7 @@ private struct MainMenuView: View {
     let onToggleHaptics: () -> Void
 
     @State private var isResetConfirmationPresented = false
-    @State private var testLevelText = ""
+    @State private var testLevelNumber = 1
 
     private var startOrderTitle: String {
         isCurrentOrderInProgress ? "Continue Order" : "Start Order"
@@ -367,13 +367,24 @@ private struct MainMenuView: View {
 
     private var testLevelPanel: some View {
         HStack(spacing: DSSpacing.sm) {
-            TextField("Level", text: $testLevelText)
-                .keyboardType(.numberPad)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+            Button {
+                testLevelNumber = max(1, testLevelNumber - 1)
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(GameColor.controlSurface.opacity(0.68)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Previous test level")
+
+            Text("Level \(testLevelNumber)")
                 .font(DSTypography.headline)
                 .foregroundStyle(.white)
-                .padding(.horizontal, DSSpacing.md)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(
                     Capsule()
@@ -385,12 +396,19 @@ private struct MainMenuView: View {
                 )
 
             Button {
-                guard let levelNumber = Int(testLevelText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-                    return
-                }
+                testLevelNumber = min(999, testLevelNumber + 1)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(GameColor.controlSurface.opacity(0.68)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Next test level")
 
-                onJumpToLevel(levelNumber)
-                testLevelText = ""
+            Button {
+                onJumpToLevel(testLevelNumber)
             } label: {
                 Label("Go", systemImage: "arrow.turn.down.right")
                     .font(DSTypography.headline)
