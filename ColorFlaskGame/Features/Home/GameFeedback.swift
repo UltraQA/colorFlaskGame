@@ -16,6 +16,41 @@ enum GameFeedbackEvent: Equatable {
     case toggleOff
 }
 
+enum HintAnalyticsPayment: Equatable {
+    case free
+    case herbs
+    case rewardedAd
+}
+
+enum BonusFlaskUnlockMethod: Equatable {
+    case rewardedAd
+    case permanentPurchase
+}
+
+enum GameAnalyticsEvent: Equatable {
+    case levelStarted(levelNumber: Int)
+    case levelCompleted(levelNumber: Int, moves: Int, herbsReward: Int?)
+    case hintUsed(levelNumber: Int, payment: HintAnalyticsPayment)
+    case undoUsed(levelNumber: Int)
+    case resetRequested(levelNumber: Int)
+    case resetConfirmed(levelNumber: Int)
+    case bonusFlaskPromptShown(levelNumber: Int)
+    case rewardedAdStarted(levelNumber: Int, placement: RewardedAdPlacement)
+    case rewardedAdCompleted(levelNumber: Int, placement: RewardedAdPlacement, success: Bool)
+    case bonusFlaskUnlockStarted(levelNumber: Int, method: BonusFlaskUnlockMethod)
+    case bonusFlaskUnlockCompleted(levelNumber: Int, method: BonusFlaskUnlockMethod, success: Bool)
+}
+
+@MainActor
+protocol GameAnalyticsProviding: AnyObject {
+    func track(_ event: GameAnalyticsEvent)
+}
+
+@MainActor
+final class NoOpGameAnalyticsProvider: GameAnalyticsProviding {
+    func track(_ event: GameAnalyticsEvent) {}
+}
+
 @MainActor
 protocol GameFeedbackProviding: AnyObject {
     func play(_ event: GameFeedbackEvent)

@@ -149,7 +149,7 @@ Tasks:
 - Add or expand tests for generated level solvability, bonus flask unlock lifetime, ad reward success/failure, IAP purchase/restore states, and completion transitions. **Started:** feature-flag tests now cover disabled rewarded ads and disabled permanent bonus unlock paths.
 - Decide and implement real SDK path: ads, StoreKit, analytics, crash reporting.
 - If ads/IAP are not shipping in v1, hide or feature-flag those flows. **Done:** `GameFeatureFlags` now gates rewarded-ad and permanent bonus-flask purchase UI/actions; alpha keeps rewarded-ad stubs enabled and hides the future permanent purchase by default.
-- Add dependency injection boundaries for ad provider, purchase provider, analytics, crash reporting, and remote config if used.
+- Add dependency injection boundaries for ad provider, purchase provider, analytics, crash reporting, and remote config if used. **Started:** `GameAnalyticsProviding` now captures level start/complete, move count on completion, hint use, undo, reset, bonus flask unlock, and rewarded-ad attempt/result events behind a no-op provider.
 - Prepare production configuration: bundle id, version/build numbers, signing, capabilities, privacy manifest, release scheme.
 - Ensure accessibility basics: VoiceOver labels for core actions, Dynamic Type sanity where applicable, Reduce Motion respected.
 

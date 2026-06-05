@@ -14,18 +14,21 @@ final class HomeViewModelTests: XCTestCase {
     }
 
     func testLockedBonusFlaskTapShowsUnlockPrompt() {
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
                 Flask(),
                 Flask(kind: .bonus, isUnlocked: false)
-            ]
+            ],
+            gameAnalyticsProvider: analyticsProvider
         )
 
         viewModel.handleFlaskTap(at: 2)
 
         XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 2))
         XCTAssertNil(viewModel.selectedFlaskIndex)
+        XCTAssertEqual(analyticsProvider.events, [.bonusFlaskPromptShown(levelNumber: 1)])
     }
 
     func testUnlockBonusFlaskForCurrentRoundClearsPromptAndUnlocksFlask() {
@@ -46,12 +49,14 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRewardedBonusUnlockOpensFlaskWhenRewardSucceeds() async {
         let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
                 Flask(kind: .bonus, isUnlocked: false)
             ],
-            rewardedAdProvider: rewardedAdProvider
+            rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider
         )
 
         viewModel.handleFlaskTap(at: 1)
@@ -66,16 +71,25 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
         XCTAssertEqual(rewardedAdProvider.placements, [.bonusFlask])
+        XCTAssertEqual(analyticsProvider.events, [
+            .bonusFlaskPromptShown(levelNumber: 1),
+            .bonusFlaskUnlockStarted(levelNumber: 1, method: .rewardedAd),
+            .rewardedAdStarted(levelNumber: 1, placement: .bonusFlask),
+            .rewardedAdCompleted(levelNumber: 1, placement: .bonusFlask, success: true),
+            .bonusFlaskUnlockCompleted(levelNumber: 1, method: .rewardedAd, success: true)
+        ])
     }
 
     func testRewardedBonusUnlockKeepsFlaskLockedWhenRewardFails() async {
         let rewardedAdProvider = SpyRewardedAdProvider(result: false)
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
                 Flask(kind: .bonus, isUnlocked: false)
             ],
-            rewardedAdProvider: rewardedAdProvider
+            rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider
         )
 
         viewModel.handleFlaskTap(at: 1)
@@ -87,6 +101,13 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
         XCTAssertEqual(rewardedAdProvider.placements, [.bonusFlask])
+        XCTAssertEqual(analyticsProvider.events, [
+            .bonusFlaskPromptShown(levelNumber: 1),
+            .bonusFlaskUnlockStarted(levelNumber: 1, method: .rewardedAd),
+            .rewardedAdStarted(levelNumber: 1, placement: .bonusFlask),
+            .rewardedAdCompleted(levelNumber: 1, placement: .bonusFlask, success: false),
+            .bonusFlaskUnlockCompleted(levelNumber: 1, method: .rewardedAd, success: false)
+        ])
     }
 
     func testRewardedBonusUnlockDoesNothingWhenAdsAreDisabled() async {
@@ -115,12 +136,14 @@ final class HomeViewModelTests: XCTestCase {
 
     func testUnlockBonusFlaskPermanentlyPersistsChoice() {
         let defaults = testUserDefaults
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
                 Flask(kind: .bonus, isUnlocked: false)
             ],
             userDefaults: defaults,
+            gameAnalyticsProvider: analyticsProvider,
             featureFlags: .allEnabled
         )
 
@@ -129,6 +152,10 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
         XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
+        XCTAssertEqual(analyticsProvider.events, [
+            .bonusFlaskUnlockStarted(levelNumber: 1, method: .permanentPurchase),
+            .bonusFlaskUnlockCompleted(levelNumber: 1, method: .permanentPurchase, success: true)
+        ])
     }
 
     func testPermanentBonusUnlockDoesNothingWhenPurchaseFeatureIsDisabled() {
@@ -483,6 +510,7 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             herbsBalance: 12
         )
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -492,6 +520,7 @@ final class HomeViewModelTests: XCTestCase {
             ),
             progressStore: progressStore,
             currentLevelIndex: 5,
+            gameAnalyticsProvider: analyticsProvider,
             timing: HomeViewModelTiming(
                 pourAnimationDuration: 0,
                 completionDuration: 10,
@@ -507,6 +536,13 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.lastHerbsReward, HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(viewModel.herbsBalance, 12 + HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+        XCTAssertEqual(analyticsProvider.events, [
+            .levelCompleted(
+                levelNumber: 6,
+                moves: 1,
+                herbsReward: HomeViewModel.herbsRewardPerCompletedOrder
+            )
+        ])
     }
 
     func testTrainingRoundsDoNotAwardHerbs() async {
@@ -561,11 +597,13 @@ final class HomeViewModelTests: XCTestCase {
     }
 
     func testUndoRestoresPreviousFlasksAfterValidMove() async {
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [blue]),
                 Flask(colors: [])
-            ]
+            ],
+            gameAnalyticsProvider: analyticsProvider
         )
         let initialFlasks = viewModel.gameManager.flasks
 
@@ -577,6 +615,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
         XCTAssertEqual(viewModel.moves, 0)
         XCTAssertFalse(viewModel.canUndo)
+        XCTAssertEqual(analyticsProvider.events, [.undoUsed(levelNumber: 1)])
     }
 
     func testInvalidMoveDoesNotEnterUndoHistoryAndKeepsSourceSelected() {
@@ -600,11 +639,13 @@ final class HomeViewModelTests: XCTestCase {
     }
 
     func testHintHighlightsFirstValidMoveWithoutPouring() {
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
             flasks: [
                 Flask(colors: [red]),
                 Flask(colors: [])
-            ]
+            ],
+            gameAnalyticsProvider: analyticsProvider
         )
         let initialFlasks = viewModel.gameManager.flasks
 
@@ -613,6 +654,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 1))
         XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
         XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertEqual(analyticsProvider.events, [
+            .hintUsed(levelNumber: 1, payment: .free)
+        ])
     }
 
     func testFirstHintIsFreeAndSecondHintCostsHerbs() async {
@@ -680,9 +724,11 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             herbsBalance: 0
         )
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             progressStore: progressStore,
             currentLevelIndex: 4,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -697,6 +743,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.tutorialMove)
         XCTAssertNil(viewModel.hintMove)
         XCTAssertFalse(viewModel.shouldPromptHintUse)
+        XCTAssertEqual(analyticsProvider.events, [
+            .levelStarted(levelNumber: 5)
+        ])
 
         viewModel.claimHerbsTutorialReward()
 
@@ -714,6 +763,10 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertTrue(viewModel.canInteractWithBoard)
         XCTAssertFalse(viewModel.shouldPromptHintUse)
+        XCTAssertEqual(analyticsProvider.events, [
+            .levelStarted(levelNumber: 5),
+            .hintUsed(levelNumber: 5, payment: .herbs)
+        ])
     }
 
     func testMenuRewardUsesLeafOnlyUntilFourthLevelIsCompleted() {
@@ -812,6 +865,7 @@ final class HomeViewModelTests: XCTestCase {
             herbsBalance: 0
         )
         let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -822,6 +876,7 @@ final class HomeViewModelTests: XCTestCase {
             ),
             progressStore: progressStore,
             rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -843,6 +898,12 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(progressStore.herbsBalance, 0)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
         XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
+        XCTAssertEqual(analyticsProvider.events, [
+            .hintUsed(levelNumber: 1, payment: .free),
+            .rewardedAdStarted(levelNumber: 1, placement: .extraHint),
+            .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: true),
+            .hintUsed(levelNumber: 1, payment: .rewardedAd)
+        ])
     }
 
     func testHintIsUnavailableWhenHerbsRunOutAndAdsAreDisabled() async {
@@ -880,6 +941,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRewardedAdHintDoesNotRevealHintWhenRewardFails() async {
         let rewardedAdProvider = SpyRewardedAdProvider(result: false)
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -894,6 +956,7 @@ final class HomeViewModelTests: XCTestCase {
                 herbsBalance: 0
             ),
             rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -909,6 +972,11 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.hintsUsedThisLevel, 1)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
         XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
+        XCTAssertEqual(analyticsProvider.events, [
+            .hintUsed(levelNumber: 1, payment: .free),
+            .rewardedAdStarted(levelNumber: 1, placement: .extraHint),
+            .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: false)
+        ])
     }
 
     func testStartNewGameClearsTemporaryBonusUnlockAndHistory() async {
@@ -978,11 +1046,13 @@ final class HomeViewModelTests: XCTestCase {
     }
 
     func testConfirmResetRestartsCurrentLevel() async {
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
             userDefaults: testUserDefaults,
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
         let initialFlasks = viewModel.gameManager.flasks
@@ -998,6 +1068,10 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks.map(\.colors), initialFlasks.map(\.colors))
         XCTAssertEqual(viewModel.moves, 0)
         XCTAssertFalse(viewModel.canUndo)
+        XCTAssertEqual(analyticsProvider.events, [
+            .resetRequested(levelNumber: 1),
+            .resetConfirmed(levelNumber: 1)
+        ])
     }
 
     func testResetProgressForTestingClearsPersistentProgress() {
@@ -1105,6 +1179,7 @@ final class HomeViewModelTests: XCTestCase {
         userDefaults: UserDefaults? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
+        gameAnalyticsProvider: (any GameAnalyticsProviding)? = nil,
         featureFlags: GameFeatureFlags = .alpha,
         timing: HomeViewModelTiming = .immediate,
         victoryMessageProvider: @escaping () -> String = { "Fantastic!" }
@@ -1116,6 +1191,7 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             rewardedAdProvider: rewardedAdProvider,
             gameFeedbackProvider: gameFeedbackProvider,
+            gameAnalyticsProvider: gameAnalyticsProvider,
             featureFlags: featureFlags,
             timing: timing,
             victoryMessageProvider: victoryMessageProvider
@@ -1201,6 +1277,15 @@ private final class SpyGameFeedbackProvider: GameFeedbackProviding {
     private(set) var events: [GameFeedbackEvent] = []
 
     func play(_ event: GameFeedbackEvent) {
+        events.append(event)
+    }
+}
+
+@MainActor
+private final class SpyGameAnalyticsProvider: GameAnalyticsProviding {
+    private(set) var events: [GameAnalyticsEvent] = []
+
+    func track(_ event: GameAnalyticsEvent) {
         events.append(event)
     }
 }
