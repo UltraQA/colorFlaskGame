@@ -245,7 +245,7 @@ QA priority: validate state correctness first. Cosmetic alignment bugs should no
 
 ### Analytics And Crash Reporting
 
-- Decide analytics provider. **Started:** gameplay event taxonomy exists for level start/complete, move count on completion, hint use, undo, reset, bonus flask prompt/unlock, and rewarded-ad attempt/result.
+- Decide analytics provider. **Started:** app-level and gameplay event taxonomy exists for app launch, flow changes, level start/complete, move count on completion, hint use, undo, reset, bonus flask prompt/unlock, and rewarded-ad attempt/result.
 - Minimum events: app launch, level start, level complete, move count, hint used, undo used, reset, bonus flask prompt, bonus flask unlock, ad attempt/result, IAP attempt/result if enabled.
 - Crash reporting integrated for beta or deliberate decision made to ship without it. **Started:** no-op crash boundary is wired at app root with current flow, level, and herbs context.
 - Analytics and crash SDKs reflected in privacy disclosures.

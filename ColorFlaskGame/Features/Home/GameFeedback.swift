@@ -28,6 +28,8 @@ enum BonusFlaskUnlockMethod: Equatable {
 }
 
 enum GameAnalyticsEvent: Equatable {
+    case appLaunched(initialLevelNumber: Int, herbsBalance: Int)
+    case appFlowChanged(from: String, to: String, levelNumber: Int)
     case levelStarted(levelNumber: Int)
     case levelCompleted(levelNumber: Int, moves: Int, herbsReward: Int?)
     case hintUsed(levelNumber: Int, payment: HintAnalyticsPayment)

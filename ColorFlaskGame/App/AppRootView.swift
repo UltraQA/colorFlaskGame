@@ -5,20 +5,32 @@ struct AppRootView: View {
     @StateObject private var viewModel: HomeViewModel
     @State private var flow: AppFlow = .intro
     @State private var activeOrderLevelIndex: Int?
+    @State private var hasTrackedAppLaunch = false
+    private let analyticsProvider: any GameAnalyticsProviding
     private let crashReporter: any GameCrashReportingProviding
 
     @MainActor
     init() {
-        self.init(crashReporter: NoOpGameCrashReporter())
+        self.init(
+            analyticsProvider: NoOpGameAnalyticsProvider(),
+            crashReporter: NoOpGameCrashReporter()
+        )
     }
 
     @MainActor
-    init(crashReporter: any GameCrashReportingProviding) {
+    init(
+        analyticsProvider: any GameAnalyticsProviding,
+        crashReporter: any GameCrashReportingProviding
+    ) {
         let feedbackProvider = SystemGameFeedbackProvider()
         crashReporter.configure()
+        self.analyticsProvider = analyticsProvider
         self.crashReporter = crashReporter
         _feedbackProvider = StateObject(wrappedValue: feedbackProvider)
-        _viewModel = StateObject(wrappedValue: HomeViewModel(gameFeedbackProvider: feedbackProvider))
+        _viewModel = StateObject(wrappedValue: HomeViewModel(
+            gameFeedbackProvider: feedbackProvider,
+            gameAnalyticsProvider: analyticsProvider
+        ))
     }
 
     var body: some View {
@@ -89,9 +101,15 @@ struct AppRootView: View {
         }
         .onAppear {
             updateCrashContext()
+            trackAppLaunchIfNeeded()
         }
-        .onChange(of: flow) { _, _ in
+        .onChange(of: flow) { oldFlow, newFlow in
             updateCrashContext()
+            analyticsProvider.track(.appFlowChanged(
+                from: oldFlow.analyticsName,
+                to: newFlow.analyticsName,
+                levelNumber: viewModel.currentLevelNumber
+            ))
         }
         .onChange(of: viewModel.currentLevelNumber) { _, _ in
             updateCrashContext()
@@ -105,6 +123,16 @@ struct AppRootView: View {
         crashReporter.setContextValue(flow.analyticsName, for: .currentFlow)
         crashReporter.setContextValue("\(viewModel.currentLevelNumber)", for: .currentLevel)
         crashReporter.setContextValue("\(viewModel.herbsBalance)", for: .herbsBalance)
+    }
+
+    private func trackAppLaunchIfNeeded() {
+        guard !hasTrackedAppLaunch else { return }
+
+        hasTrackedAppLaunch = true
+        analyticsProvider.track(.appLaunched(
+            initialLevelNumber: viewModel.currentLevelNumber,
+            herbsBalance: viewModel.herbsBalance
+        ))
     }
 }
 
