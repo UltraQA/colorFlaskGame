@@ -1176,11 +1176,13 @@ final class HomeViewModelTests: XCTestCase {
 
     func testConfirmResetRestartsCurrentLevel() async {
         let analyticsProvider = SpyGameAnalyticsProvider()
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
-            userDefaults: testUserDefaults,
-            currentLevelIndex: 0,
-            isBonusFlaskPermanentlyUnlocked: false,
+            progressStore: progressStore,
             gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
@@ -1197,6 +1199,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks.map(\.colors), initialFlasks.map(\.colors))
         XCTAssertEqual(viewModel.moves, 0)
         XCTAssertFalse(viewModel.canUndo)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.levelIndex, 0)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.moves, 0)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.flasks, viewModel.gameManager.flasks)
         XCTAssertEqual(analyticsProvider.events, [
             .resetRequested(levelNumber: 1),
             .resetConfirmed(levelNumber: 1)
@@ -1226,6 +1231,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(progressStore.isBonusFlaskPermanentlyUnlocked)
         XCTAssertEqual(progressStore.herbsBalance, 0)
         XCTAssertFalse(progressStore.hasCompletedOnboarding)
+        XCTAssertNil(progressStore.activeRoundSnapshot)
     }
 
     func testJumpToLevelForTestingLoadsRequestedLevelNumber() {

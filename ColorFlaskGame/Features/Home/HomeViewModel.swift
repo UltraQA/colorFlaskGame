@@ -541,6 +541,7 @@ final class HomeViewModel: ObservableObject {
 
     func startNewGame() {
         loadLevel(at: currentLevelIndex)
+        saveActiveRoundSnapshot()
     }
 
     func beginCurrentOrder() {
