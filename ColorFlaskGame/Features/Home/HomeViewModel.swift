@@ -28,6 +28,19 @@ enum PurchaseResult: Equatable {
     case failed
 }
 
+extension PurchaseResult {
+    var logName: String {
+        switch self {
+        case .purchased:
+            return "purchased"
+        case .cancelled:
+            return "cancelled"
+        case .failed:
+            return "failed"
+        }
+    }
+}
+
 protocol RewardedAdProviding {
     func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool
 }
@@ -129,6 +142,19 @@ private extension HintPaymentMode {
             return .free
         }
     }
+
+    var logName: String {
+        switch self {
+        case .free:
+            return "free"
+        case .herbs:
+            return "herbs"
+        case .rewardedAd:
+            return "rewarded_ad"
+        case .unavailable:
+            return "unavailable"
+        }
+    }
 }
 
 enum LevelCompletionPhase: Equatable {
@@ -213,6 +239,7 @@ final class HomeViewModel: ObservableObject {
     private let bonusFlaskPurchaseProvider: any BonusFlaskPurchaseProviding
     private let gameFeedbackProvider: any GameFeedbackProviding
     private let gameAnalyticsProvider: any GameAnalyticsProviding
+    private let playerActionLogger: any PlayerActionLoggingProviding
     let featureFlags: GameFeatureFlags
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
@@ -235,6 +262,7 @@ final class HomeViewModel: ObservableObject {
         bonusFlaskPurchaseProvider: any BonusFlaskPurchaseProviding = StubBonusFlaskPurchaseProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
         gameAnalyticsProvider: (any GameAnalyticsProviding)? = nil,
+        playerActionLogger: (any PlayerActionLoggingProviding)? = nil,
         featureFlags: GameFeatureFlags = .alpha,
         timing: HomeViewModelTiming = .live,
         victoryMessageProvider: @escaping () -> String = {
@@ -248,6 +276,7 @@ final class HomeViewModel: ObservableObject {
         self.bonusFlaskPurchaseProvider = bonusFlaskPurchaseProvider
         self.gameFeedbackProvider = gameFeedbackProvider ?? NoOpGameFeedbackProvider()
         self.gameAnalyticsProvider = gameAnalyticsProvider ?? NoOpGameAnalyticsProvider()
+        self.playerActionLogger = playerActionLogger ?? NoOpPlayerActionLogger()
         self.featureFlags = featureFlags
         self.timing = timing
         self.victoryMessageProvider = victoryMessageProvider
@@ -370,7 +399,7 @@ final class HomeViewModel: ObservableObject {
             && !isRewardedAdInProgress
             && herbsTutorialPrompt == nil
             && !gameManager.isRoundCompleted
-            && gameManager.firstValidMove() != nil
+            && gameManager.hasAvailableMove()
             && nextHintPaymentMode != .unavailable
     }
 
@@ -419,6 +448,7 @@ final class HomeViewModel: ObservableObject {
             if flask.isBonus {
                 gameFeedbackProvider.play(.uiTap)
                 gameAnalyticsProvider.track(.bonusFlaskPromptShown(levelNumber: currentLevelNumber))
+                playerActionLogger.log("bonus flask menu opened on level \(currentLevelNumber)")
                 bonusUnlockPrompt = BonusUnlockPrompt(flaskIndex: index)
             }
             return
@@ -429,19 +459,28 @@ final class HomeViewModel: ObservableObject {
         guard let sourceIndex = selectedFlaskIndex else {
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? nil : index
             gameFeedbackProvider.play(selectedFlaskIndex == nil ? .uiTap : .flaskSelect)
+            if selectedFlaskIndex == nil {
+                playerActionLogger.log("flask \(index + 1) tapped empty on level \(currentLevelNumber)")
+            } else {
+                playerActionLogger.log("flask \(index + 1) selected on level \(currentLevelNumber)")
+            }
             return
         }
 
         guard sourceIndex != index else {
             selectedFlaskIndex = nil
             gameFeedbackProvider.play(.uiTap)
+            playerActionLogger.log("flask \(index + 1) deselected on level \(currentLevelNumber)")
             return
         }
 
         switch gameManager.pourPlan(from: sourceIndex, to: index) {
         case let .success(plan):
             animatePour(plan)
-        case .failure:
+        case let .failure(error):
+            playerActionLogger.log(
+                "invalid pour flask \(sourceIndex + 1) to flask \(index + 1) on level \(currentLevelNumber): \(error.localizedDescription)"
+            )
             showInvalidMoveFeedback(sourceIndex: sourceIndex, targetIndex: index)
             selectedFlaskIndex = sourceIndex
         }
@@ -452,6 +491,7 @@ final class HomeViewModel: ObservableObject {
 
         gameFeedbackProvider.play(.undo)
         gameAnalyticsProvider.track(.undoUsed(levelNumber: currentLevelNumber))
+        playerActionLogger.log("undo used on level \(currentLevelNumber)")
         selectedFlaskIndex = nil
         hintMove = nil
         invalidFlaskIndices.removeAll()
@@ -473,6 +513,7 @@ final class HomeViewModel: ObservableObject {
         guard hintMove != nextHint else { return }
 
         let paymentMode = nextHintPaymentMode
+        playerActionLogger.log("hint requested on level \(currentLevelNumber) payment \(paymentMode.logName)")
         switch paymentMode {
         case .rewardedAd:
             requestRewardedHint(nextHint)
@@ -489,6 +530,7 @@ final class HomeViewModel: ObservableObject {
 
     func beginCurrentOrder() {
         gameAnalyticsProvider.track(.levelStarted(levelNumber: currentLevelNumber))
+        playerActionLogger.log("level \(currentLevelNumber) order began")
         presentHerbsTutorialIfNeeded()
     }
 
@@ -498,6 +540,7 @@ final class HomeViewModel: ObservableObject {
         dismissOrderBanner()
         dismissTutorialPromptIfNeeded()
         gameAnalyticsProvider.track(.resetRequested(levelNumber: currentLevelNumber))
+        playerActionLogger.log("reset requested on level \(currentLevelNumber)")
         guard moves > 0 || currentLevelNumber >= Level.lockedBonusIntroductionLevelID else {
             startNewGame()
             return
@@ -510,6 +553,7 @@ final class HomeViewModel: ObservableObject {
         resetConfirmationPrompt = nil
         gameFeedbackProvider.play(.reset)
         gameAnalyticsProvider.track(.resetConfirmed(levelNumber: currentLevelNumber))
+        playerActionLogger.log("reset confirmed on level \(currentLevelNumber)")
         startNewGame()
     }
 
@@ -522,6 +566,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func resetProgress() {
+        playerActionLogger.log("progress reset")
         progressStore.currentLevelIndex = 0
         progressStore.isBonusFlaskPermanentlyUnlocked = false
         progressStore.herbsBalance = 0
@@ -539,6 +584,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func jumpToLevelForTesting(_ levelNumber: Int) {
+        playerActionLogger.log("debug jump to level \(max(1, levelNumber))")
         loadLevel(at: max(1, levelNumber) - 1)
     }
 
@@ -576,6 +622,7 @@ final class HomeViewModel: ObservableObject {
     func unlockBonusFlaskForCurrentRound() {
         guard completionPhase.isPlaying else { return }
         gameFeedbackProvider.play(.uiTap)
+        playerActionLogger.log("bonus flask opened for current round on level \(currentLevelNumber)")
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
@@ -601,6 +648,7 @@ final class HomeViewModel: ObservableObject {
             levelNumber: currentLevelNumber,
             placement: .bonusFlask
         ))
+        playerActionLogger.log("rewarded ad started for bonus flask on level \(currentLevelNumber)")
 
         rewardedBonusUnlockTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -619,6 +667,9 @@ final class HomeViewModel: ObservableObject {
                 method: .rewardedAd,
                 success: didEarnReward
             ))
+            self.playerActionLogger.log(
+                "rewarded ad completed for bonus flask on level \(self.currentLevelNumber) success \(didEarnReward)"
+            )
             guard didEarnReward else { return }
 
             self.unlockBonusFlaskForCurrentRound()
@@ -644,6 +695,7 @@ final class HomeViewModel: ObservableObject {
             levelNumber: currentLevelNumber,
             product: .permanentBonusFlask
         ))
+        playerActionLogger.log("purchase started permanent bonus flask on level \(currentLevelNumber)")
 
         permanentBonusUnlockTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -662,6 +714,9 @@ final class HomeViewModel: ObservableObject {
                 method: .permanentPurchase,
                 success: result == .purchased
             ))
+            self.playerActionLogger.log(
+                "purchase completed permanent bonus flask on level \(self.currentLevelNumber) result \(result.logName)"
+            )
             guard result == .purchased else { return }
 
             self.bonusUnlockPrompt = nil
@@ -675,6 +730,9 @@ final class HomeViewModel: ObservableObject {
     private func animatePour(_ plan: PourPlan) {
         pourAnimationTask?.cancel()
         gameFeedbackProvider.play(.validPour)
+        playerActionLogger.log(
+            "flask \(plan.sourceIndex + 1) to flask \(plan.targetIndex + 1) color \(plan.color.accessibilityName) amount \(plan.amount)"
+        )
         selectedFlaskIndex = nil
         hintMove = nil
         invalidFlaskIndices.removeAll()
@@ -692,6 +750,9 @@ final class HomeViewModel: ObservableObject {
             withAnimation(.snappy(duration: 0.25)) {
                 if case .success = self.gameManager.pour(from: plan.sourceIndex, to: plan.targetIndex) {
                     self.moves += 1
+                    self.playerActionLogger.log(
+                        "pour applied move \(self.moves) on level \(self.currentLevelNumber)"
+                    )
                 }
                 self.pourAnimation = nil
             }
@@ -703,6 +764,9 @@ final class HomeViewModel: ObservableObject {
     private func showInvalidMoveFeedback(sourceIndex: Int, targetIndex: Int) {
         invalidFeedbackTask?.cancel()
         gameFeedbackProvider.play(.invalidMove)
+        playerActionLogger.log(
+            "invalid move feedback flask \(sourceIndex + 1) to flask \(targetIndex + 1) on level \(currentLevelNumber)"
+        )
         invalidFlaskIndices = [sourceIndex, targetIndex]
         withAnimation(.linear(duration: timing.invalidFeedbackDuration)) {
             invalidMoveCount += 1
@@ -748,6 +812,9 @@ final class HomeViewModel: ObservableObject {
         lastCompletedMoveCount = moves
         gameFeedbackProvider.play(.levelComplete)
         awardHerbsForCompletedOrder()
+        playerActionLogger.log(
+            "level \(currentLevelNumber) completed moves \(moves) herbs reward \(lastHerbsReward ?? 0)"
+        )
         gameAnalyticsProvider.track(.levelCompleted(
             levelNumber: currentLevelNumber,
             moves: moves,
@@ -856,6 +923,7 @@ final class HomeViewModel: ObservableObject {
             levelNumber: currentLevelNumber,
             placement: .extraHint
         ))
+        playerActionLogger.log("rewarded ad started for hint on level \(currentLevelNumber)")
 
         rewardedHintTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -869,6 +937,9 @@ final class HomeViewModel: ObservableObject {
                 placement: .extraHint,
                 success: didEarnReward
             ))
+            self.playerActionLogger.log(
+                "rewarded ad completed for hint on level \(self.currentLevelNumber) success \(didEarnReward)"
+            )
             guard didEarnReward else { return }
 
             self.applyHint(nextHint, paymentMode: .rewardedAd)
@@ -882,6 +953,9 @@ final class HomeViewModel: ObservableObject {
             levelNumber: currentLevelNumber,
             payment: paymentMode.analyticsPayment
         ))
+        playerActionLogger.log(
+            "hint shown on level \(currentLevelNumber): flask \(nextHint.sourceIndex + 1) to flask \(nextHint.targetIndex + 1) payment \(paymentMode.logName)"
+        )
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
         hintMove = nextHint
@@ -925,6 +999,7 @@ final class HomeViewModel: ObservableObject {
 
         herbsTutorialPrompt = nil
         gameFeedbackProvider.play(.hintUsed)
+        playerActionLogger.log("herbs tutorial reward claimed on level \(currentLevelNumber)")
     }
 
     var centersSparseTutorialRows: Bool {
@@ -979,6 +1054,7 @@ final class HomeViewModel: ObservableObject {
         progressStore.herbsBalance = herbsBalance
         progressStore.hasSeenHerbsTutorial = true
         herbsTutorialPrompt = HerbsTutorialPrompt(herbsAmount: missingHerbs)
+        playerActionLogger.log("herbs tutorial reward shown level 5 amount \(missingHerbs)")
     }
 
     private nonisolated static func shouldShowTutorial(

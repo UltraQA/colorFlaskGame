@@ -746,6 +746,10 @@ struct GameState: Equatable {
         solutionHintReport().firstMove ?? bestLocalMove()
     }
 
+    func hasAvailableMove() -> Bool {
+        bestLocalMove() != nil
+    }
+
     func solutionHintReport(maxVisitedStates: Int = 75_000) -> SolutionHintReport {
         SolutionHintSolver(maxVisitedStates: maxVisitedStates)
             .nextMove(for: flasks)
@@ -975,6 +979,10 @@ final class GameManager: ObservableObject {
 
     func firstValidMove() -> PourPlan? {
         state.firstValidMove()
+    }
+
+    func hasAvailableMove() -> Bool {
+        state.hasAvailableMove()
     }
 
     func solutionHintReport(maxVisitedStates: Int = 75_000) -> SolutionHintReport {

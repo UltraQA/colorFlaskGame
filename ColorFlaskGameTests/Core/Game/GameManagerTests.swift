@@ -459,6 +459,21 @@ final class GameManagerTests: XCTestCase {
         XCTAssertEqual(manager.flasks[1].colors, [red])
     }
 
+    func testAvailableMoveCheckIncludesUnlockedBonusFlask() {
+        let manager = GameManager(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, colors: [], isUnlocked: false)
+            ]
+        )
+
+        XCTAssertFalse(manager.hasAvailableMove())
+
+        manager.unlockBonusFlaskForCurrentRound()
+
+        XCTAssertTrue(manager.hasAvailableMove())
+    }
+
     func testRoundCompletionIgnoresLockedBonusFlask() {
         let manager = GameManager(
             flasks: [

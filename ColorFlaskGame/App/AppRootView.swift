@@ -8,28 +8,33 @@ struct AppRootView: View {
     @State private var hasTrackedAppLaunch = false
     private let analyticsProvider: any GameAnalyticsProviding
     private let crashReporter: any GameCrashReportingProviding
+    private let playerActionLogger: any PlayerActionLoggingProviding
 
     @MainActor
     init() {
         self.init(
             analyticsProvider: NoOpGameAnalyticsProvider(),
-            crashReporter: NoOpGameCrashReporter()
+            crashReporter: NoOpGameCrashReporter(),
+            playerActionLogger: ConsolePlayerActionLogger()
         )
     }
 
     @MainActor
     init(
         analyticsProvider: any GameAnalyticsProviding,
-        crashReporter: any GameCrashReportingProviding
+        crashReporter: any GameCrashReportingProviding,
+        playerActionLogger: any PlayerActionLoggingProviding
     ) {
         let feedbackProvider = SystemGameFeedbackProvider()
         crashReporter.configure()
         self.analyticsProvider = analyticsProvider
         self.crashReporter = crashReporter
+        self.playerActionLogger = playerActionLogger
         _feedbackProvider = StateObject(wrappedValue: feedbackProvider)
         _viewModel = StateObject(wrappedValue: HomeViewModel(
             gameFeedbackProvider: feedbackProvider,
-            gameAnalyticsProvider: analyticsProvider
+            gameAnalyticsProvider: analyticsProvider,
+            playerActionLogger: playerActionLogger
         ))
     }
 
@@ -57,6 +62,11 @@ struct AppRootView: View {
                     isHapticsEnabled: feedbackProvider.isHapticsEnabled,
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
+                        playerActionLogger.log(
+                            activeOrderLevelIndex == viewModel.currentLevelIndex
+                                ? "level \(viewModel.currentLevelNumber) continued"
+                                : "level \(viewModel.currentLevelNumber) started"
+                        )
                         activeOrderLevelIndex = viewModel.currentLevelIndex
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .game
@@ -68,21 +78,30 @@ struct AppRootView: View {
                     },
                     onResetProgress: {
                         feedbackProvider.play(.reset)
+                        playerActionLogger.log("reset progress menu opened")
                         activeOrderLevelIndex = nil
                         viewModel.resetProgress()
                     },
                     onJumpToLevel: { levelNumber in
                         feedbackProvider.play(.uiTap)
+                        playerActionLogger.log("test level jump requested level \(levelNumber)")
                         activeOrderLevelIndex = nil
                         viewModel.jumpToLevelForTesting(levelNumber)
                     },
-                    onToggleSound: feedbackProvider.toggleSound,
-                    onToggleHaptics: feedbackProvider.toggleHaptics
+                    onToggleSound: {
+                        playerActionLogger.log("sound toggled")
+                        feedbackProvider.toggleSound()
+                    },
+                    onToggleHaptics: {
+                        playerActionLogger.log("haptics toggled")
+                        feedbackProvider.toggleHaptics()
+                    }
                 )
                 .transition(.opacity)
             case .game:
                 NavigationStack {
                     HomeView(viewModel: viewModel) {
+                        playerActionLogger.log("main menu opened from level \(viewModel.currentLevelNumber)")
                         withAnimation(.easeOut(duration: 0.22)) {
                             flow = .mainMenu
                         }
@@ -102,9 +121,13 @@ struct AppRootView: View {
         .onAppear {
             updateCrashContext()
             trackAppLaunchIfNeeded()
+            playerActionLogger.log(
+                "app opened level \(viewModel.currentLevelNumber) herbs \(viewModel.herbsBalance)"
+            )
         }
         .onChange(of: flow) { oldFlow, newFlow in
             updateCrashContext()
+            playerActionLogger.log("\(newFlow.analyticsName) opened from \(oldFlow.analyticsName)")
             analyticsProvider.track(.appFlowChanged(
                 from: oldFlow.analyticsName,
                 to: newFlow.analyticsName,

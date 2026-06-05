@@ -76,6 +76,23 @@ final class NoOpGameCrashReporter: GameCrashReportingProviding {
 }
 
 @MainActor
+protocol PlayerActionLoggingProviding: AnyObject {
+    func log(_ message: String)
+}
+
+@MainActor
+final class NoOpPlayerActionLogger: PlayerActionLoggingProviding {
+    func log(_ message: String) {}
+}
+
+@MainActor
+final class ConsolePlayerActionLogger: PlayerActionLoggingProviding {
+    func log(_ message: String) {
+        print("[PlayerAction] \(message)")
+    }
+}
+
+@MainActor
 protocol GameFeedbackProviding: AnyObject {
     func play(_ event: GameFeedbackEvent)
 }
