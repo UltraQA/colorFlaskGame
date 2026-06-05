@@ -27,15 +27,19 @@ struct AppRootView: View {
     ) {
         let feedbackProvider = SystemGameFeedbackProvider()
         crashReporter.configure()
+        let homeViewModel = HomeViewModel(
+            gameFeedbackProvider: feedbackProvider,
+            gameAnalyticsProvider: analyticsProvider,
+            playerActionLogger: playerActionLogger
+        )
         self.analyticsProvider = analyticsProvider
         self.crashReporter = crashReporter
         self.playerActionLogger = playerActionLogger
         _feedbackProvider = StateObject(wrappedValue: feedbackProvider)
-        _viewModel = StateObject(wrappedValue: HomeViewModel(
-            gameFeedbackProvider: feedbackProvider,
-            gameAnalyticsProvider: analyticsProvider,
-            playerActionLogger: playerActionLogger
-        ))
+        _viewModel = StateObject(wrappedValue: homeViewModel)
+        _activeOrderLevelIndex = State(
+            initialValue: homeViewModel.hasActiveRoundInProgress ? homeViewModel.currentLevelIndex : nil
+        )
     }
 
     var body: some View {

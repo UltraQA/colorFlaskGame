@@ -327,6 +327,32 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(restoredViewModel.moves, 1)
         XCTAssertEqual(restoredViewModel.gameManager.flasks.map(\.colors), viewModel.gameManager.flasks.map(\.colors))
         XCTAssertTrue(restoredViewModel.canUndo)
+        XCTAssertTrue(restoredViewModel.hasActiveRoundInProgress)
+    }
+
+    func testBeginningOrderPersistsActiveRoundBeforeFirstMove() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 0,
+            timing: .immediate
+        )
+
+        viewModel.beginCurrentOrder()
+
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.levelIndex, 0)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.moves, 0)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.flasks, viewModel.gameManager.flasks)
+        XCTAssertTrue(viewModel.hasActiveRoundInProgress)
     }
 
     func testValidPourEmitsFeedbackEvents() async {

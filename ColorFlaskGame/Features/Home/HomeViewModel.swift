@@ -430,6 +430,10 @@ final class HomeViewModel: ObservableObject {
             && !requiresMandatoryHintBeforePlay
     }
 
+    var hasActiveRoundInProgress: Bool {
+        progressStore.activeRoundSnapshot?.levelIndex == currentLevelIndex
+    }
+
     var hintBadgeText: String {
         switch nextHintPaymentMode {
         case .free:
@@ -542,6 +546,7 @@ final class HomeViewModel: ObservableObject {
     func beginCurrentOrder() {
         gameAnalyticsProvider.track(.levelStarted(levelNumber: currentLevelNumber))
         playerActionLogger.log("level \(currentLevelNumber) order began")
+        saveActiveRoundSnapshot()
         presentHerbsTutorialIfNeeded()
     }
 
