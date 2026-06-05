@@ -89,7 +89,49 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(rewardedAdProvider.placements, [.bonusFlask])
     }
 
+    func testRewardedBonusUnlockDoesNothingWhenAdsAreDisabled() async {
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            rewardedAdProvider: rewardedAdProvider,
+            featureFlags: GameFeatureFlags(
+                rewardedAdsEnabled: false,
+                permanentBonusFlaskPurchaseEnabled: false
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 1)
+        viewModel.requestBonusFlaskUnlockForCurrentRound()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertFalse(viewModel.isRewardedBonusUnlockInProgress)
+        XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 1))
+        XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertEqual(rewardedAdProvider.showCount, 0)
+    }
+
     func testUnlockBonusFlaskPermanentlyPersistsChoice() {
+        let defaults = testUserDefaults
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            userDefaults: defaults,
+            featureFlags: .allEnabled
+        )
+
+        viewModel.unlockBonusFlaskPermanently()
+
+        XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
+    }
+
+    func testPermanentBonusUnlockDoesNothingWhenPurchaseFeatureIsDisabled() {
         let defaults = testUserDefaults
         let viewModel = makeViewModel(
             flasks: [
@@ -101,9 +143,9 @@ final class HomeViewModelTests: XCTestCase {
 
         viewModel.unlockBonusFlaskPermanently()
 
-        XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
-        XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
-        XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
+        XCTAssertFalse(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertFalse(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
     }
 
     func testProgressStoreSeedsInitialLevelAndPermanentBonusUnlock() {
@@ -117,6 +159,7 @@ final class HomeViewModelTests: XCTestCase {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
             progressStore: progressStore,
+            featureFlags: .allEnabled,
             timing: .immediate
         )
 
@@ -135,6 +178,7 @@ final class HomeViewModelTests: XCTestCase {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
             progressStore: progressStore,
+            featureFlags: .allEnabled,
             timing: .immediate
         )
 
@@ -151,6 +195,7 @@ final class HomeViewModelTests: XCTestCase {
             userDefaults: testUserDefaults,
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
+            featureFlags: .allEnabled,
             timing: .immediate
         )
 
@@ -800,6 +845,39 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
     }
 
+    func testHintIsUnavailableWhenHerbsRunOutAndAdsAreDisabled() async {
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: SpyProgressStore(
+                currentLevelIndex: 5,
+                isBonusFlaskPermanentlyUnlocked: false,
+                herbsBalance: 0
+            ),
+            rewardedAdProvider: rewardedAdProvider,
+            featureFlags: GameFeatureFlags(
+                rewardedAdsEnabled: false,
+                permanentBonusFlaskPurchaseEnabled: false
+            ),
+            timing: .immediate
+        )
+
+        XCTAssertFalse(viewModel.canShowHint)
+        XCTAssertEqual(viewModel.hintBadgeText, "")
+        viewModel.showHint()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertFalse(viewModel.isRewardedHintInProgress)
+        XCTAssertEqual(rewardedAdProvider.showCount, 0)
+    }
+
     func testRewardedAdHintDoesNotRevealHintWhenRewardFails() async {
         let rewardedAdProvider = SpyRewardedAdProvider(result: false)
         let viewModel = HomeViewModel(
@@ -1027,6 +1105,7 @@ final class HomeViewModelTests: XCTestCase {
         userDefaults: UserDefaults? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
+        featureFlags: GameFeatureFlags = .alpha,
         timing: HomeViewModelTiming = .immediate,
         victoryMessageProvider: @escaping () -> String = { "Fantastic!" }
     ) -> HomeViewModel {
@@ -1037,6 +1116,7 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             rewardedAdProvider: rewardedAdProvider,
             gameFeedbackProvider: gameFeedbackProvider,
+            featureFlags: featureFlags,
             timing: timing,
             victoryMessageProvider: victoryMessageProvider
         )

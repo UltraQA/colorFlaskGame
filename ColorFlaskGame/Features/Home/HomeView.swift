@@ -145,6 +145,8 @@ struct HomeView: View {
         .sheet(item: $viewModel.bonusUnlockPrompt) { _ in
             BonusUnlockSheet(
                 isUnlockingForRound: viewModel.isRewardedBonusUnlockInProgress,
+                isRewardedUnlockAvailable: viewModel.featureFlags.rewardedAdsEnabled,
+                isPermanentUnlockAvailable: viewModel.featureFlags.permanentBonusFlaskPurchaseEnabled,
                 onUnlockForRound: {
                     viewModel.requestBonusFlaskUnlockForCurrentRound()
                 },
@@ -1030,6 +1032,8 @@ private struct InvalidMoveShakeEffect: GeometryEffect {
 
 private struct BonusUnlockSheet: View {
     let isUnlockingForRound: Bool
+    let isRewardedUnlockAvailable: Bool
+    let isPermanentUnlockAvailable: Bool
     let onUnlockForRound: () -> Void
     let onUnlockForever: () -> Void
 
@@ -1074,23 +1078,36 @@ private struct BonusUnlockSheet: View {
 
     @ViewBuilder
     private var unlockActions: some View {
-        unlockAction(
-            systemName: "play.circle.fill",
-            title: isUnlockingForRound ? "Opening..." : "This order",
-            subtitle: "Watch ad",
-            footnote: "Temporary help",
-            isEnabled: !isUnlockingForRound,
-            action: onUnlockForRound
-        )
+        if isRewardedUnlockAvailable {
+            unlockAction(
+                systemName: "play.circle.fill",
+                title: isUnlockingForRound ? "Opening..." : "This order",
+                subtitle: "Watch ad",
+                footnote: "Temporary help",
+                isEnabled: !isUnlockingForRound,
+                action: onUnlockForRound
+            )
+        }
 
-        unlockAction(
-            systemName: "sparkles",
-            title: "Always available",
-            subtitle: "Future purchase",
-            footnote: "Design stub",
-            isEnabled: !isUnlockingForRound,
-            action: onUnlockForever
-        )
+        if isPermanentUnlockAvailable {
+            unlockAction(
+                systemName: "sparkles",
+                title: "Always available",
+                subtitle: "Purchase",
+                footnote: "Permanent unlock",
+                isEnabled: !isUnlockingForRound,
+                action: onUnlockForever
+            )
+        }
+
+        if !isRewardedUnlockAvailable && !isPermanentUnlockAvailable {
+            Text("Extra flask unlock is disabled in this build.")
+                .font(DSTypography.caption)
+                .foregroundStyle(GameColor.glassStroke.opacity(0.72))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DSSpacing.lg)
+        }
     }
 
     private func unlockAction(

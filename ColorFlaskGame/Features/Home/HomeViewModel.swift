@@ -28,6 +28,21 @@ struct StubRewardedAdProvider: RewardedAdProviding {
     }
 }
 
+struct GameFeatureFlags: Equatable {
+    let rewardedAdsEnabled: Bool
+    let permanentBonusFlaskPurchaseEnabled: Bool
+
+    static let alpha = GameFeatureFlags(
+        rewardedAdsEnabled: true,
+        permanentBonusFlaskPurchaseEnabled: false
+    )
+
+    static let allEnabled = GameFeatureFlags(
+        rewardedAdsEnabled: true,
+        permanentBonusFlaskPurchaseEnabled: true
+    )
+}
+
 struct BonusUnlockPrompt: Identifiable, Equatable {
     let flaskIndex: Int
 
@@ -71,6 +86,7 @@ private enum HintPaymentMode {
     case free
     case herbs
     case rewardedAd
+    case unavailable
 }
 
 enum LevelCompletionPhase: Equatable {
@@ -152,6 +168,7 @@ final class HomeViewModel: ObservableObject {
     private var progressStore: any ProgressStore
     private let rewardedAdProvider: any RewardedAdProviding
     private let gameFeedbackProvider: any GameFeedbackProviding
+    let featureFlags: GameFeatureFlags
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
@@ -170,6 +187,7 @@ final class HomeViewModel: ObservableObject {
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
+        featureFlags: GameFeatureFlags = .alpha,
         timing: HomeViewModelTiming = .live,
         victoryMessageProvider: @escaping () -> String = {
             HomeViewModel.victoryMessages.randomElement() ?? "Fantastic!"
@@ -180,6 +198,7 @@ final class HomeViewModel: ObservableObject {
         self.progressStore = resolvedProgressStore
         self.rewardedAdProvider = rewardedAdProvider
         self.gameFeedbackProvider = gameFeedbackProvider ?? NoOpGameFeedbackProvider()
+        self.featureFlags = featureFlags
         self.timing = timing
         self.victoryMessageProvider = victoryMessageProvider
         let resolvedLevelIndex = currentLevelIndex ?? resolvedProgressStore.currentLevelIndex
@@ -302,6 +321,7 @@ final class HomeViewModel: ObservableObject {
             && herbsTutorialPrompt == nil
             && !gameManager.isRoundCompleted
             && gameManager.firstValidMove() != nil
+            && nextHintPaymentMode != .unavailable
     }
 
     var shouldPromptHintUse: Bool {
@@ -329,6 +349,8 @@ final class HomeViewModel: ObservableObject {
             return "\(Self.extraHintHerbsCost)"
         case .rewardedAd:
             return "Ad"
+        case .unavailable:
+            return ""
         }
     }
 
@@ -402,6 +424,8 @@ final class HomeViewModel: ObservableObject {
         switch paymentMode {
         case .rewardedAd:
             requestRewardedHint(nextHint)
+        case .unavailable:
+            return
         case .free, .herbs:
             applyHint(nextHint, paymentMode: paymentMode)
         }
@@ -505,7 +529,9 @@ final class HomeViewModel: ObservableObject {
     }
 
     func requestBonusFlaskUnlockForCurrentRound() {
-        guard completionPhase.isPlaying, !isRewardedAdInProgress else { return }
+        guard featureFlags.rewardedAdsEnabled,
+              completionPhase.isPlaying,
+              !isRewardedAdInProgress else { return }
 
         rewardedBonusUnlockTask?.cancel()
         selectedFlaskIndex = nil
@@ -527,7 +553,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     func unlockBonusFlaskPermanently() {
-        guard completionPhase.isPlaying else { return }
+        guard featureFlags.permanentBonusFlaskPurchaseEnabled,
+              completionPhase.isPlaying else { return }
         gameFeedbackProvider.play(.uiTap)
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
@@ -699,6 +726,10 @@ final class HomeViewModel: ObservableObject {
 
         if herbsBalance >= Self.extraHintHerbsCost {
             return .herbs
+        }
+
+        guard featureFlags.rewardedAdsEnabled else {
+            return .unavailable
         }
 
         return .rewardedAd
