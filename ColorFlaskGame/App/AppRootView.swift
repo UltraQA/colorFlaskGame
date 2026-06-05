@@ -5,9 +5,18 @@ struct AppRootView: View {
     @StateObject private var viewModel: HomeViewModel
     @State private var flow: AppFlow = .intro
     @State private var activeOrderLevelIndex: Int?
+    private let crashReporter: any GameCrashReportingProviding
 
+    @MainActor
     init() {
+        self.init(crashReporter: NoOpGameCrashReporter())
+    }
+
+    @MainActor
+    init(crashReporter: any GameCrashReportingProviding) {
         let feedbackProvider = SystemGameFeedbackProvider()
+        crashReporter.configure()
+        self.crashReporter = crashReporter
         _feedbackProvider = StateObject(wrappedValue: feedbackProvider)
         _viewModel = StateObject(wrappedValue: HomeViewModel(gameFeedbackProvider: feedbackProvider))
     }
@@ -78,6 +87,24 @@ struct AppRootView: View {
                 flow = .mainMenu
             }
         }
+        .onAppear {
+            updateCrashContext()
+        }
+        .onChange(of: flow) { _, _ in
+            updateCrashContext()
+        }
+        .onChange(of: viewModel.currentLevelNumber) { _, _ in
+            updateCrashContext()
+        }
+        .onChange(of: viewModel.herbsBalance) { _, _ in
+            updateCrashContext()
+        }
+    }
+
+    private func updateCrashContext() {
+        crashReporter.setContextValue(flow.analyticsName, for: .currentFlow)
+        crashReporter.setContextValue("\(viewModel.currentLevelNumber)", for: .currentLevel)
+        crashReporter.setContextValue("\(viewModel.herbsBalance)", for: .herbsBalance)
     }
 }
 
@@ -85,6 +112,17 @@ private enum AppFlow {
     case intro
     case mainMenu
     case game
+
+    var analyticsName: String {
+        switch self {
+        case .intro:
+            return "intro"
+        case .mainMenu:
+            return "main_menu"
+        case .game:
+            return "game"
+        }
+    }
 }
 
 private struct IntroView: View {

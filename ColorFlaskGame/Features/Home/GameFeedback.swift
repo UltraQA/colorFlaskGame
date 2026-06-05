@@ -51,6 +51,26 @@ final class NoOpGameAnalyticsProvider: GameAnalyticsProviding {
     func track(_ event: GameAnalyticsEvent) {}
 }
 
+enum GameCrashContextKey: String {
+    case currentFlow
+    case currentLevel
+    case herbsBalance
+}
+
+@MainActor
+protocol GameCrashReportingProviding: AnyObject {
+    func configure()
+    func setContextValue(_ value: String?, for key: GameCrashContextKey)
+    func record(_ error: any Error, metadata: [String: String])
+}
+
+@MainActor
+final class NoOpGameCrashReporter: GameCrashReportingProviding {
+    func configure() {}
+    func setContextValue(_ value: String?, for key: GameCrashContextKey) {}
+    func record(_ error: any Error, metadata: [String: String] = [:]) {}
+}
+
 @MainActor
 protocol GameFeedbackProviding: AnyObject {
     func play(_ event: GameFeedbackEvent)

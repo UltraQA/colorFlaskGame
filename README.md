@@ -2,7 +2,7 @@
 
 `Color Flask Game` is a SwiftUI iOS puzzle game in the Water Sort genre with a Cozy Potion Shop theme. The player sorts magical liquids between flasks, completes potion orders, earns herbs, and progresses through handcrafted and generated levels.
 
-The project is currently an alpha-ready MVP foundation, not a release-candidate build. Core gameplay, onboarding levels, order objectives, hints, undo, reset, progress persistence, and test coverage are in place. Final art, real ads, StoreKit, analytics, crash reporting, and App Store assets are still future work.
+The project is currently an alpha-ready MVP foundation, not a release-candidate build. Core gameplay, onboarding levels, order objectives, hints, undo, reset, progress persistence, analytics/crash-reporting boundaries, and test coverage are in place. Final art, real ads, StoreKit, real analytics/crash SDKs, and App Store assets are still future work.
 
 ## Project Goals
 
@@ -218,7 +218,7 @@ Before sharing an alpha build:
 - Real rewarded ads are not integrated.
 - StoreKit purchase/restore is not implemented.
 - Permanent bonus flask purchase is hidden by default and remains a future feature.
-- Analytics and crash reporting are not integrated.
+- Real analytics and crash-reporting SDKs are not integrated; no-op protocol boundaries are in place.
 - App Store metadata, screenshots, privacy details, and final icon work are not complete.
 - Final art direction and production asset export are still in progress.
 - Device QA is focused on portrait iPhone layouts, with scaled iPad portrait support started.
@@ -273,5 +273,5 @@ The project is suitable for structured alpha testing of the core loop. The next 
 1. Verify Levels 1-10 manually on device and simulator.
 2. Decide v1 monetization path: real ads/IAP or no monetization.
 3. Expand content and difficulty pacing.
-4. Add analytics/crash reporting if moving toward beta.
+4. Choose and integrate real analytics/crash-reporting SDKs if moving toward beta.
 5. Prepare final art, icon, screenshots, and App Store compliance material.
