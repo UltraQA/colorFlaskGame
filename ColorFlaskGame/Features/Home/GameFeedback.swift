@@ -39,6 +39,8 @@ enum GameAnalyticsEvent: Equatable {
     case bonusFlaskPromptShown(levelNumber: Int)
     case rewardedAdStarted(levelNumber: Int, placement: RewardedAdPlacement)
     case rewardedAdCompleted(levelNumber: Int, placement: RewardedAdPlacement, success: Bool)
+    case purchaseStarted(levelNumber: Int, product: PurchaseProduct)
+    case purchaseCompleted(levelNumber: Int, product: PurchaseProduct, result: PurchaseResult)
     case bonusFlaskUnlockStarted(levelNumber: Int, method: BonusFlaskUnlockMethod)
     case bonusFlaskUnlockCompleted(levelNumber: Int, method: BonusFlaskUnlockMethod, success: Bool)
 }

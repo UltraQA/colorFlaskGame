@@ -145,6 +145,7 @@ struct HomeView: View {
         .sheet(item: $viewModel.bonusUnlockPrompt) { _ in
             BonusUnlockSheet(
                 isUnlockingForRound: viewModel.isRewardedBonusUnlockInProgress,
+                isUnlockingPermanently: viewModel.isPermanentBonusUnlockInProgress,
                 isRewardedUnlockAvailable: viewModel.featureFlags.rewardedAdsEnabled,
                 isPermanentUnlockAvailable: viewModel.featureFlags.permanentBonusFlaskPurchaseEnabled,
                 onUnlockForRound: {
@@ -1032,6 +1033,7 @@ private struct InvalidMoveShakeEffect: GeometryEffect {
 
 private struct BonusUnlockSheet: View {
     let isUnlockingForRound: Bool
+    let isUnlockingPermanently: Bool
     let isRewardedUnlockAvailable: Bool
     let isPermanentUnlockAvailable: Bool
     let onUnlockForRound: () -> Void
@@ -1084,7 +1086,7 @@ private struct BonusUnlockSheet: View {
                 title: isUnlockingForRound ? "Opening..." : "This order",
                 subtitle: "Watch ad",
                 footnote: "Temporary help",
-                isEnabled: !isUnlockingForRound,
+                isEnabled: !isUnlockingForRound && !isUnlockingPermanently,
                 action: onUnlockForRound
             )
         }
@@ -1092,10 +1094,10 @@ private struct BonusUnlockSheet: View {
         if isPermanentUnlockAvailable {
             unlockAction(
                 systemName: "sparkles",
-                title: "Always available",
+                title: isUnlockingPermanently ? "Purchasing..." : "Always available",
                 subtitle: "Purchase",
                 footnote: "Permanent unlock",
-                isEnabled: !isUnlockingForRound,
+                isEnabled: !isUnlockingForRound && !isUnlockingPermanently,
                 action: onUnlockForever
             )
         }

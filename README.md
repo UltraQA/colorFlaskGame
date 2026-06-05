@@ -2,7 +2,7 @@
 
 `Color Flask Game` is a SwiftUI iOS puzzle game in the Water Sort genre with a Cozy Potion Shop theme. The player sorts magical liquids between flasks, completes potion orders, earns herbs, and progresses through handcrafted and generated levels.
 
-The project is currently an alpha-ready MVP foundation, not a release-candidate build. Core gameplay, onboarding levels, order objectives, hints, undo, reset, progress persistence, analytics/crash-reporting boundaries, and test coverage are in place. Final art, real ads, StoreKit, real analytics/crash SDKs, and App Store assets are still future work.
+The project is currently an alpha-ready MVP foundation, not a release-candidate build. Core gameplay, onboarding levels, order objectives, hints, undo, reset, progress persistence, monetization/analytics/crash-reporting boundaries, and test coverage are in place. Final art, real ads, StoreKit, real analytics/crash SDKs, and App Store assets are still future work.
 
 ## Project Goals
 
@@ -216,7 +216,7 @@ Before sharing an alpha build:
 ## Known Limitations
 
 - Real rewarded ads are not integrated.
-- StoreKit purchase/restore is not implemented.
+- StoreKit purchase/restore is not implemented; a purchase-provider boundary exists for the future permanent bonus flask unlock.
 - Permanent bonus flask purchase is hidden by default and remains a future feature.
 - Real analytics and crash-reporting SDKs are not integrated; no-op protocol boundaries are in place.
 - App Store metadata, screenshots, privacy details, and final icon work are not complete.

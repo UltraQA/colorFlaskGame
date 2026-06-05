@@ -149,7 +149,7 @@ Tasks:
 - Add or expand tests for generated level solvability, bonus flask unlock lifetime, ad reward success/failure, IAP purchase/restore states, and completion transitions. **Started:** feature-flag tests now cover disabled rewarded ads and disabled permanent bonus unlock paths.
 - Decide and implement real SDK path: ads, StoreKit, analytics, crash reporting.
 - If ads/IAP are not shipping in v1, hide or feature-flag those flows. **Done:** `GameFeatureFlags` now gates rewarded-ad and permanent bonus-flask purchase UI/actions; alpha keeps rewarded-ad stubs enabled and hides the future permanent purchase by default.
-- Add dependency injection boundaries for ad provider, purchase provider, analytics, crash reporting, and remote config if used. **Started:** `GameAnalyticsProviding` now captures level start/complete, move count on completion, hint use, undo, reset, bonus flask unlock, and rewarded-ad attempt/result events behind a no-op provider. `GameCrashReportingProviding` now isolates crash SDK setup, context, and non-fatal recording behind a no-op reporter.
+- Add dependency injection boundaries for ad provider, purchase provider, analytics, crash reporting, and remote config if used. **Started:** `RewardedAdProviding` and `BonusFlaskPurchaseProviding` isolate monetization SDK calls from game state. `GameAnalyticsProviding` now captures app launch/flow, level start/complete, move count on completion, hint use, undo, reset, bonus flask unlock, rewarded-ad attempt/result, and purchase attempt/result events behind a no-op provider. `GameCrashReportingProviding` now isolates crash SDK setup, context, and non-fatal recording behind a no-op reporter.
 - Prepare production configuration: bundle id, version/build numbers, signing, capabilities, privacy manifest, release scheme.
 - Ensure accessibility basics: VoiceOver labels for core actions, Dynamic Type sanity where applicable, Reduce Motion respected.
 
@@ -246,7 +246,7 @@ QA priority: validate state correctness first. Cosmetic alignment bugs should no
 ### Analytics And Crash Reporting
 
 - Decide analytics provider. **Started:** app-level and gameplay event taxonomy exists for app launch, flow changes, level start/complete, move count on completion, hint use, undo, reset, bonus flask prompt/unlock, and rewarded-ad attempt/result.
-- Minimum events: app launch, level start, level complete, move count, hint used, undo used, reset, bonus flask prompt, bonus flask unlock, ad attempt/result, IAP attempt/result if enabled.
+- Minimum events: app launch, level start, level complete, move count, hint used, undo used, reset, bonus flask prompt, bonus flask unlock, ad attempt/result, IAP attempt/result if enabled. **Done at boundary level:** all of these are represented in `GameAnalyticsEvent`.
 - Crash reporting integrated for beta or deliberate decision made to ship without it. **Started:** no-op crash boundary is wired at app root with current flow, level, and herbs context.
 - Analytics and crash SDKs reflected in privacy disclosures.
 

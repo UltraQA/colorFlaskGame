@@ -134,7 +134,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(rewardedAdProvider.showCount, 0)
     }
 
-    func testUnlockBonusFlaskPermanentlyPersistsChoice() {
+    func testUnlockBonusFlaskPermanentlyPersistsChoice() async {
         let defaults = testUserDefaults
         let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = makeViewModel(
@@ -148,13 +148,52 @@ final class HomeViewModelTests: XCTestCase {
         )
 
         viewModel.unlockBonusFlaskPermanently()
+        XCTAssertTrue(viewModel.isPermanentBonusUnlockInProgress)
+        await waitForScheduledMainQueueWork()
 
+        XCTAssertFalse(viewModel.isPermanentBonusUnlockInProgress)
         XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
         XCTAssertTrue(viewModel.gameManager.flasks[1].isPlayable)
         XCTAssertTrue(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
         XCTAssertEqual(analyticsProvider.events, [
             .bonusFlaskUnlockStarted(levelNumber: 1, method: .permanentPurchase),
+            .purchaseStarted(levelNumber: 1, product: .permanentBonusFlask),
+            .purchaseCompleted(levelNumber: 1, product: .permanentBonusFlask, result: .purchased),
             .bonusFlaskUnlockCompleted(levelNumber: 1, method: .permanentPurchase, success: true)
+        ])
+    }
+
+    func testPermanentBonusUnlockKeepsFlaskLockedWhenPurchaseFails() async {
+        let defaults = testUserDefaults
+        let analyticsProvider = SpyGameAnalyticsProvider()
+        let purchaseProvider = SpyBonusFlaskPurchaseProvider(result: .failed)
+        let viewModel = makeViewModel(
+            flasks: [
+                Flask(colors: [red]),
+                Flask(kind: .bonus, isUnlocked: false)
+            ],
+            userDefaults: defaults,
+            bonusFlaskPurchaseProvider: purchaseProvider,
+            gameAnalyticsProvider: analyticsProvider,
+            featureFlags: .allEnabled
+        )
+
+        viewModel.handleFlaskTap(at: 1)
+        viewModel.unlockBonusFlaskPermanently()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertFalse(viewModel.isPermanentBonusUnlockInProgress)
+        XCTAssertFalse(viewModel.isBonusFlaskPermanentlyUnlocked)
+        XCTAssertFalse(viewModel.gameManager.flasks[1].isPlayable)
+        XCTAssertEqual(viewModel.bonusUnlockPrompt, BonusUnlockPrompt(flaskIndex: 1))
+        XCTAssertFalse(defaults.bool(forKey: "waterSort.bonusFlask.isPermanentlyUnlocked"))
+        XCTAssertEqual(purchaseProvider.products, [.permanentBonusFlask])
+        XCTAssertEqual(analyticsProvider.events, [
+            .bonusFlaskPromptShown(levelNumber: 1),
+            .bonusFlaskUnlockStarted(levelNumber: 1, method: .permanentPurchase),
+            .purchaseStarted(levelNumber: 1, product: .permanentBonusFlask),
+            .purchaseCompleted(levelNumber: 1, product: .permanentBonusFlask, result: .failed),
+            .bonusFlaskUnlockCompleted(levelNumber: 1, method: .permanentPurchase, success: false)
         ])
     }
 
@@ -197,7 +236,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
-    func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() {
+    func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false
@@ -211,12 +250,13 @@ final class HomeViewModelTests: XCTestCase {
 
         viewModel.advanceToNextLevel()
         viewModel.unlockBonusFlaskPermanently()
+        await waitForScheduledMainQueueWork()
 
         XCTAssertEqual(progressStore.currentLevelIndex, 1)
         XCTAssertTrue(progressStore.isBonusFlaskPermanentlyUnlocked)
     }
 
-    func testPermanentBonusUnlockCarriesIntoNextLevel() {
+    func testPermanentBonusUnlockCarriesIntoNextLevel() async {
         let viewModel = HomeViewModel(
             levelRepository: SingleLevelRepository(),
             userDefaults: testUserDefaults,
@@ -227,6 +267,7 @@ final class HomeViewModelTests: XCTestCase {
         )
 
         viewModel.unlockBonusFlaskPermanently()
+        await waitForScheduledMainQueueWork()
         viewModel.advanceToNextLevel()
 
         XCTAssertTrue(viewModel.isBonusFlaskPermanentlyUnlocked)
@@ -1178,6 +1219,7 @@ final class HomeViewModelTests: XCTestCase {
         flasks: [Flask],
         userDefaults: UserDefaults? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
+        bonusFlaskPurchaseProvider: any BonusFlaskPurchaseProviding = StubBonusFlaskPurchaseProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
         gameAnalyticsProvider: (any GameAnalyticsProviding)? = nil,
         featureFlags: GameFeatureFlags = .alpha,
@@ -1190,6 +1232,7 @@ final class HomeViewModelTests: XCTestCase {
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
             rewardedAdProvider: rewardedAdProvider,
+            bonusFlaskPurchaseProvider: bonusFlaskPurchaseProvider,
             gameFeedbackProvider: gameFeedbackProvider,
             gameAnalyticsProvider: gameAnalyticsProvider,
             featureFlags: featureFlags,
@@ -1302,6 +1345,20 @@ private final class SpyRewardedAdProvider: RewardedAdProviding {
     func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool {
         showCount += 1
         placements.append(placement)
+        return result
+    }
+}
+
+private final class SpyBonusFlaskPurchaseProvider: BonusFlaskPurchaseProviding {
+    let result: PurchaseResult
+    private(set) var products: [PurchaseProduct] = []
+
+    init(result: PurchaseResult) {
+        self.result = result
+    }
+
+    func purchase(_ product: PurchaseProduct) async -> PurchaseResult {
+        products.append(product)
         return result
     }
 }

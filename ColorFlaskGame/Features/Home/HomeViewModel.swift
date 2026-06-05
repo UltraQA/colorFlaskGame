@@ -18,13 +18,39 @@ enum RewardedAdPlacement: Equatable {
     case bonusFlask
 }
 
+enum PurchaseProduct: Equatable {
+    case permanentBonusFlask
+}
+
+enum PurchaseResult: Equatable {
+    case purchased
+    case cancelled
+    case failed
+}
+
 protocol RewardedAdProviding {
     func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool
+}
+
+protocol BonusFlaskPurchaseProviding {
+    func purchase(_ product: PurchaseProduct) async -> PurchaseResult
 }
 
 struct StubRewardedAdProvider: RewardedAdProviding {
     func showRewardedAd(for placement: RewardedAdPlacement) async -> Bool {
         true
+    }
+}
+
+struct StubBonusFlaskPurchaseProvider: BonusFlaskPurchaseProviding {
+    let result: PurchaseResult
+
+    init(result: PurchaseResult = .purchased) {
+        self.result = result
+    }
+
+    func purchase(_ product: PurchaseProduct) async -> PurchaseResult {
+        result
     }
 }
 
@@ -173,6 +199,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var hintsUsedThisLevel = 0
     @Published private(set) var isRewardedHintInProgress = false
     @Published private(set) var isRewardedBonusUnlockInProgress = false
+    @Published private(set) var isPermanentBonusUnlockInProgress = false
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
@@ -183,6 +210,7 @@ final class HomeViewModel: ObservableObject {
     private let levelRepository: any LevelRepository
     private var progressStore: any ProgressStore
     private let rewardedAdProvider: any RewardedAdProviding
+    private let bonusFlaskPurchaseProvider: any BonusFlaskPurchaseProviding
     private let gameFeedbackProvider: any GameFeedbackProviding
     private let gameAnalyticsProvider: any GameAnalyticsProviding
     let featureFlags: GameFeatureFlags
@@ -193,6 +221,7 @@ final class HomeViewModel: ObservableObject {
     private var invalidFeedbackTask: Task<Void, Never>?
     private var rewardedHintTask: Task<Void, Never>?
     private var rewardedBonusUnlockTask: Task<Void, Never>?
+    private var permanentBonusUnlockTask: Task<Void, Never>?
     private var completionTasks: [Task<Void, Never>] = []
 
     init(
@@ -203,6 +232,7 @@ final class HomeViewModel: ObservableObject {
         currentLevelIndex: Int? = nil,
         isBonusFlaskPermanentlyUnlocked: Bool? = nil,
         rewardedAdProvider: any RewardedAdProviding = StubRewardedAdProvider(),
+        bonusFlaskPurchaseProvider: any BonusFlaskPurchaseProviding = StubBonusFlaskPurchaseProvider(),
         gameFeedbackProvider: (any GameFeedbackProviding)? = nil,
         gameAnalyticsProvider: (any GameAnalyticsProviding)? = nil,
         featureFlags: GameFeatureFlags = .alpha,
@@ -215,6 +245,7 @@ final class HomeViewModel: ObservableObject {
         let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore(userDefaults: userDefaults)
         self.progressStore = resolvedProgressStore
         self.rewardedAdProvider = rewardedAdProvider
+        self.bonusFlaskPurchaseProvider = bonusFlaskPurchaseProvider
         self.gameFeedbackProvider = gameFeedbackProvider ?? NoOpGameFeedbackProvider()
         self.gameAnalyticsProvider = gameAnalyticsProvider ?? NoOpGameAnalyticsProvider()
         self.featureFlags = featureFlags
@@ -596,24 +627,49 @@ final class HomeViewModel: ObservableObject {
 
     func unlockBonusFlaskPermanently() {
         guard featureFlags.permanentBonusFlaskPurchaseEnabled,
-              completionPhase.isPlaying else { return }
+              completionPhase.isPlaying,
+              !isRewardedAdInProgress,
+              !isPermanentBonusUnlockInProgress else { return }
         gameFeedbackProvider.play(.uiTap)
+        permanentBonusUnlockTask?.cancel()
         gameAnalyticsProvider.track(.bonusFlaskUnlockStarted(
             levelNumber: currentLevelNumber,
             method: .permanentPurchase
         ))
-        bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
         hintMove = nil
-        isBonusFlaskPermanentlyUnlocked = true
-        progressStore.isBonusFlaskPermanentlyUnlocked = true
-        gameManager.unlockBonusFlaskForCurrentRound()
-        gameAnalyticsProvider.track(.bonusFlaskUnlockCompleted(
+        invalidFlaskIndices.removeAll()
+        isPermanentBonusUnlockInProgress = true
+        gameAnalyticsProvider.track(.purchaseStarted(
             levelNumber: currentLevelNumber,
-            method: .permanentPurchase,
-            success: true
+            product: .permanentBonusFlask
         ))
-        objectWillChange.send()
+
+        permanentBonusUnlockTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let result = await self.bonusFlaskPurchaseProvider.purchase(.permanentBonusFlask)
+            guard !Task.isCancelled else { return }
+
+            self.permanentBonusUnlockTask = nil
+            self.isPermanentBonusUnlockInProgress = false
+            self.gameAnalyticsProvider.track(.purchaseCompleted(
+                levelNumber: self.currentLevelNumber,
+                product: .permanentBonusFlask,
+                result: result
+            ))
+            self.gameAnalyticsProvider.track(.bonusFlaskUnlockCompleted(
+                levelNumber: self.currentLevelNumber,
+                method: .permanentPurchase,
+                success: result == .purchased
+            ))
+            guard result == .purchased else { return }
+
+            self.bonusUnlockPrompt = nil
+            self.isBonusFlaskPermanentlyUnlocked = true
+            self.progressStore.isBonusFlaskPermanentlyUnlocked = true
+            self.gameManager.unlockBonusFlaskForCurrentRound()
+            self.objectWillChange.send()
+        }
     }
 
     private func animatePour(_ plan: PourPlan) {
@@ -953,6 +1009,9 @@ final class HomeViewModel: ObservableObject {
         rewardedBonusUnlockTask?.cancel()
         rewardedBonusUnlockTask = nil
         isRewardedBonusUnlockInProgress = false
+        permanentBonusUnlockTask?.cancel()
+        permanentBonusUnlockTask = nil
+        isPermanentBonusUnlockInProgress = false
         cancelCompletionTasks()
     }
 
