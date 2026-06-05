@@ -51,12 +51,12 @@ enum LiquidColor: String, CaseIterable, Codable, Hashable {
     }
 }
 
-enum FlaskKind: Equatable {
+enum FlaskKind: Equatable, Codable {
     case regular
     case bonus
 }
 
-struct Flask: Identifiable, Equatable {
+struct Flask: Identifiable, Equatable, Codable {
     static let maxCapacity = 4
     static let maxProgressionCapacity = 8
 

@@ -1,7 +1,15 @@
 import Foundation
 
+struct ActiveRoundSnapshot: Codable, Equatable {
+    let levelIndex: Int
+    let flasks: [Flask]
+    let moves: Int
+    let history: [[Flask]]
+}
+
 protocol ProgressStore {
     var currentLevelIndex: Int { get set }
+    var activeRoundSnapshot: ActiveRoundSnapshot? { get set }
     var isBonusFlaskPermanentlyUnlocked: Bool { get set }
     var herbsBalance: Int { get set }
     var hasCompletedOnboarding: Bool { get set }
@@ -13,6 +21,7 @@ protocol ProgressStore {
 struct UserDefaultsProgressStore: ProgressStore {
     private enum Key {
         static let currentLevelIndex = "waterSort.progress.currentLevelIndex"
+        static let activeRoundSnapshot = "waterSort.progress.activeRoundSnapshot"
         static let bonusFlaskPurchase = "waterSort.bonusFlask.isPermanentlyUnlocked"
         static let herbsBalance = "waterSort.economy.herbsBalance"
         static let hasCompletedOnboarding = "waterSort.onboarding.hasCompleted"
@@ -33,6 +42,22 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.currentLevelIndex)
+        }
+    }
+
+    var activeRoundSnapshot: ActiveRoundSnapshot? {
+        get {
+            guard let data = userDefaults.data(forKey: Key.activeRoundSnapshot) else { return nil }
+            return try? JSONDecoder().decode(ActiveRoundSnapshot.self, from: data)
+        }
+        set {
+            guard let newValue else {
+                userDefaults.removeObject(forKey: Key.activeRoundSnapshot)
+                return
+            }
+
+            guard let data = try? JSONEncoder().encode(newValue) else { return }
+            userDefaults.set(data, forKey: Key.activeRoundSnapshot)
         }
     }
 

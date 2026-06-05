@@ -289,11 +289,21 @@ final class HomeViewModel: ObservableObject {
             levelNumber: resolvedLevelIndex + 1,
             hasCompletedOnboarding: resolvedProgressStore.hasCompletedOnboarding
         )
-        self.gameManager = gameManager ?? .makeInitialLevel(
-            levelIndex: resolvedLevelIndex,
-            levelRepository: levelRepository,
-            isBonusFlaskUnlocked: resolvedBonusUnlock
-        )
+        if let gameManager {
+            self.gameManager = gameManager
+        } else if let snapshot = resolvedProgressStore.activeRoundSnapshot,
+                  snapshot.levelIndex == resolvedLevelIndex {
+            let level = levelRepository.level(at: resolvedLevelIndex)
+            self.gameManager = GameManager(flasks: snapshot.flasks, level: level)
+            self.moves = snapshot.moves
+            self.history = snapshot.history
+        } else {
+            self.gameManager = .makeInitialLevel(
+                levelIndex: resolvedLevelIndex,
+                levelRepository: levelRepository,
+                isBonusFlaskUnlocked: resolvedBonusUnlock
+            )
+        }
         self.selectedFlaskIndex = self.gameManager.level?.initialSelectedFlaskIndex
         bindGameManager()
     }
@@ -497,6 +507,7 @@ final class HomeViewModel: ObservableObject {
         invalidFlaskIndices.removeAll()
         gameManager.restore(flasks: previousFlasks)
         moves = max(0, moves - 1)
+        saveActiveRoundSnapshot()
         objectWillChange.send()
     }
 
@@ -572,6 +583,7 @@ final class HomeViewModel: ObservableObject {
         progressStore.herbsBalance = 0
         progressStore.hasCompletedOnboarding = false
         progressStore.hasSeenHerbsTutorial = false
+        progressStore.activeRoundSnapshot = nil
         isBonusFlaskPermanentlyUnlocked = false
         herbsBalance = 0
         resetConfirmationPrompt = nil
@@ -580,11 +592,13 @@ final class HomeViewModel: ObservableObject {
     }
 
     func advanceToNextLevel() {
+        progressStore.activeRoundSnapshot = nil
         loadLevel(at: currentLevelIndex + 1)
     }
 
     func jumpToLevelForTesting(_ levelNumber: Int) {
         playerActionLogger.log("debug jump to level \(max(1, levelNumber))")
+        progressStore.activeRoundSnapshot = nil
         loadLevel(at: max(1, levelNumber) - 1)
     }
 
@@ -609,6 +623,7 @@ final class HomeViewModel: ObservableObject {
         moves = 0
         currentLevelIndex = levelIndex
         progressStore.currentLevelIndex = levelIndex
+        progressStore.activeRoundSnapshot = nil
         gameManager = .makeInitialLevel(
             levelIndex: levelIndex,
             levelRepository: levelRepository,
@@ -627,6 +642,7 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         hintMove = nil
         gameManager.unlockBonusFlaskForCurrentRound()
+        saveActiveRoundSnapshot()
         objectWillChange.send()
     }
 
@@ -723,6 +739,7 @@ final class HomeViewModel: ObservableObject {
             self.isBonusFlaskPermanentlyUnlocked = true
             self.progressStore.isBonusFlaskPermanentlyUnlocked = true
             self.gameManager.unlockBonusFlaskForCurrentRound()
+            self.saveActiveRoundSnapshot()
             self.objectWillChange.send()
         }
     }
@@ -750,6 +767,7 @@ final class HomeViewModel: ObservableObject {
             withAnimation(.snappy(duration: 0.25)) {
                 if case .success = self.gameManager.pour(from: plan.sourceIndex, to: plan.targetIndex) {
                     self.moves += 1
+                    self.saveActiveRoundSnapshot()
                     self.playerActionLogger.log(
                         "pour applied move \(self.moves) on level \(self.currentLevelNumber)"
                     )
@@ -812,6 +830,7 @@ final class HomeViewModel: ObservableObject {
         lastCompletedMoveCount = moves
         gameFeedbackProvider.play(.levelComplete)
         awardHerbsForCompletedOrder()
+        progressStore.activeRoundSnapshot = nil
         playerActionLogger.log(
             "level \(currentLevelNumber) completed moves \(moves) herbs reward \(lastHerbsReward ?? 0)"
         )
@@ -970,6 +989,17 @@ final class HomeViewModel: ObservableObject {
 
         herbsBalance = max(0, herbsBalance - Self.extraHintHerbsCost)
         progressStore.herbsBalance = herbsBalance
+    }
+
+    private func saveActiveRoundSnapshot() {
+        guard completionPhase.isPlaying else { return }
+
+        progressStore.activeRoundSnapshot = ActiveRoundSnapshot(
+            levelIndex: currentLevelIndex,
+            flasks: gameManager.flasks,
+            moves: moves,
+            history: history
+        )
     }
 
     private func targetColorProgress(for targetColor: LiquidColor) -> Int {

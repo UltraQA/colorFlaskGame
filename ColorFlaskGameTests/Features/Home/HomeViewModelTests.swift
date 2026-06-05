@@ -295,6 +295,40 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.gameManager.flasks[1].colors, [red, red, red])
     }
 
+    func testValidMovePersistsAndRestoresActiveRoundSnapshot() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red, red]),
+                    Flask(colors: [red])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 0,
+            timing: .immediate
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.moves, 1)
+
+        let restoredViewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(restoredViewModel.moves, 1)
+        XCTAssertEqual(restoredViewModel.gameManager.flasks.map(\.colors), viewModel.gameManager.flasks.map(\.colors))
+        XCTAssertTrue(restoredViewModel.canUndo)
+    }
+
     func testValidPourEmitsFeedbackEvents() async {
         let feedbackProvider = SpyGameFeedbackProvider()
         let viewModel = makeViewModel(
@@ -584,6 +618,34 @@ final class HomeViewModelTests: XCTestCase {
                 herbsReward: HomeViewModel.herbsRewardPerCompletedOrder
             )
         ])
+    }
+
+    func testVictoryClearsActiveRoundSnapshot() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 5,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [red, red, red])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 5,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(progressStore.activeRoundSnapshot)
     }
 
     func testTrainingRoundsDoNotAwardHerbs() async {
@@ -1289,6 +1351,7 @@ private struct SingleLevelRepository: LevelRepository {
 
 private final class SpyProgressStore: ProgressStore {
     var currentLevelIndex: Int
+    var activeRoundSnapshot: ActiveRoundSnapshot?
     var isBonusFlaskPermanentlyUnlocked: Bool
     var herbsBalance: Int
     var hasCompletedOnboarding: Bool
@@ -1306,6 +1369,7 @@ private final class SpyProgressStore: ProgressStore {
         isHapticsEnabled: Bool = true
     ) {
         self.currentLevelIndex = currentLevelIndex
+        self.activeRoundSnapshot = nil
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
         self.hasCompletedOnboarding = hasCompletedOnboarding
