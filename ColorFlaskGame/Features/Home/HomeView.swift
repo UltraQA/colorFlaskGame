@@ -1257,15 +1257,17 @@ private struct BottomControlDock<ResetButton: View>: View {
             GameIconButton(
                 systemName: "lightbulb.fill",
                 title: "Hint",
-                style: .accent,
+                style: .hint,
                 isEnabled: isHintEnabled,
                 attractsAttention: isHintAttentionActive,
                 action: onHint
             )
             .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
             .overlay(alignment: .topTrailing) {
-                HintCostBadge(text: hintBadgeText, isEnabled: isHintEnabled)
-                    .offset(x: 6, y: -2)
+                if !hintBadgeText.isEmpty {
+                    HintCostBadge(text: hintBadgeText, isEnabled: isHintEnabled)
+                        .offset(x: 6, y: -2)
+                }
             }
             .accessibilityLabel("Hint")
         }
@@ -1328,6 +1330,7 @@ private struct HintCostBadge: View {
 private struct GameIconButton: View {
     enum Style {
         case accent
+        case hint
         case muted
     }
 
@@ -1374,6 +1377,8 @@ private struct GameIconButton: View {
         switch style {
         case .accent:
             return GameColor.controlAccent
+        case .hint:
+            return GameColor.controlSurface.opacity(0.94)
         case .muted:
             return GameColor.controlSurface.opacity(0.88)
         }
@@ -1383,6 +1388,8 @@ private struct GameIconButton: View {
         switch style {
         case .accent:
             return GameColor.controlSurface
+        case .hint:
+            return GameColor.hintAccent
         case .muted:
             return GameColor.glassStroke
         }
@@ -1392,6 +1399,11 @@ private struct GameIconButton: View {
         switch style {
         case .accent:
             return attractsAttention && attentionPulse ? Color.white.opacity(0.78) : Color.white.opacity(0.38)
+        case .hint:
+            if attractsAttention && attentionPulse {
+                return GameColor.controlAccent.opacity(0.78)
+            }
+            return GameColor.hintAccent.opacity(0.38)
         case .muted:
             return Color.white.opacity(0.18)
         }
@@ -1399,7 +1411,7 @@ private struct GameIconButton: View {
 
     private var attentionShadowColor: Color {
         guard attractsAttention, isEnabled else { return .clear }
-        return GameColor.controlAccent.opacity(attentionPulse ? 0.58 : 0.14)
+        return GameColor.hintAccent.opacity(attentionPulse ? 0.46 : 0.12)
     }
 
     private var attentionShadowRadius: CGFloat {

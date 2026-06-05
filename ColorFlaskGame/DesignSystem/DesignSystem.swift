@@ -73,11 +73,12 @@ enum GameMetric {
 }
 
 enum GameColor {
-    static let potionBackground = Color(red: 0.13, green: 0.10, blue: 0.19)
+    static let potionBackground = Color(red: 0.09, green: 0.07, blue: 0.15)
     static let controlSurface = Color(red: 0.10, green: 0.08, blue: 0.15)
     static let controlMuted = Color(red: 0.28, green: 0.30, blue: 0.34)
-    static let controlAccent = Color(red: 1.00, green: 0.72, blue: 0.25)
-    static let successAccent = Color(red: 0.34, green: 0.93, blue: 0.66)
+    static let controlAccent = Color(red: 0.96, green: 0.73, blue: 0.29)
+    static let hintAccent = Color(red: 0.72, green: 0.65, blue: 0.85)
+    static let successAccent = Color(red: 0.53, green: 0.73, blue: 0.44)
     static let errorAccent = Color(red: 1.00, green: 0.25, blue: 0.22)
     static let glassFill = Color.white.opacity(0.14)
     static let glassStroke = Color(red: 0.87, green: 0.82, blue: 0.95)
@@ -104,25 +105,25 @@ extension LiquidColor {
         case .yellow:
             return .yellow
         case .ruby:
-            return Color(red: 1.00, green: 0.32, blue: 0.48)
+            return Color(red: 0.94, green: 0.31, blue: 0.45)
         case .emerald:
-            return Color(red: 0.34, green: 0.88, blue: 0.68)
+            return Color(red: 0.32, green: 0.80, blue: 0.62)
         case .honey:
-            return Color(red: 1.00, green: 0.78, blue: 0.27)
+            return Color(red: 0.96, green: 0.74, blue: 0.26)
         case .moonBlue:
-            return Color(red: 0.33, green: 0.59, blue: 1.00)
+            return Color(red: 0.35, green: 0.56, blue: 0.92)
         case .violet:
-            return Color(red: 0.72, green: 0.43, blue: 1.00)
+            return Color(red: 0.66, green: 0.40, blue: 0.92)
         case .orange:
-            return Color(red: 1.00, green: 0.52, blue: 0.25)
+            return Color(red: 0.95, green: 0.49, blue: 0.25)
         case .rose:
-            return Color(red: 1.00, green: 0.42, blue: 0.77)
+            return Color(red: 0.95, green: 0.40, blue: 0.72)
         case .aqua:
-            return Color(red: 0.29, green: 0.91, blue: 0.96)
+            return Color(red: 0.31, green: 0.82, blue: 0.86)
         case .mint:
-            return Color(red: 0.62, green: 1.00, blue: 0.58)
+            return Color(red: 0.58, green: 0.90, blue: 0.54)
         case .amber:
-            return Color(red: 1.00, green: 0.67, blue: 0.18)
+            return Color(red: 0.94, green: 0.63, blue: 0.18)
         }
     }
 }
