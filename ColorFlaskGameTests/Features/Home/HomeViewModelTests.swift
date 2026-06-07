@@ -788,7 +788,7 @@ final class HomeViewModelTests: XCTestCase {
         ])
     }
 
-    func testFirstHintIsFreeAndSecondHintCostsHerbs() async {
+    func testFirstHintIsFreeAndSecondHintCostsHerbs() async throws {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,
             isBonusFlaskPermanentlyUnlocked: false,
@@ -813,18 +813,61 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 2))
         XCTAssertEqual(viewModel.herbsBalance, 5)
         XCTAssertEqual(progressStore.herbsBalance, 5)
-        XCTAssertEqual(viewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
+        XCTAssertEqual(viewModel.hintBadgeText, "Free")
 
         viewModel.handleFlaskTap(at: 0)
         viewModel.handleFlaskTap(at: 2)
         await waitForScheduledMainQueueWork()
+        XCTAssertEqual(viewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
+
         viewModel.showHint()
+
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        XCTAssertEqual(progressStore.herbsBalance, 5)
+        let paidHint = try XCTUnwrap(viewModel.hintMove)
+        viewModel.handleFlaskTap(at: paidHint.sourceIndex)
+        viewModel.handleFlaskTap(at: paidHint.targetIndex)
+        await waitForScheduledMainQueueWork()
 
         XCTAssertEqual(viewModel.herbsBalance, 5 - HomeViewModel.extraHintHerbsCost)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
     }
 
-    func testLevelFiveFirstHintCostsHerbs() {
+    func testPaidHintDoesNotSpendHerbsWhenPlayerChoosesDifferentMove() async throws {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 5
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+
+        viewModel.showHint()
+        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 1, targetIndex: 0))
+        viewModel.handleFlaskTap(at: 2)
+        viewModel.handleFlaskTap(at: 0)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        XCTAssertEqual(progressStore.herbsBalance, 5)
+    }
+
+    func testLevelFiveFirstHintCostsHerbsWhenHintMoveIsUsed() async throws {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 4,
             isBonusFlaskPermanentlyUnlocked: false,
@@ -842,6 +885,14 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
 
         viewModel.showHint()
+
+        XCTAssertEqual(viewModel.herbsBalance, 8)
+        XCTAssertEqual(progressStore.herbsBalance, 8)
+        XCTAssertTrue(viewModel.canInteractWithBoard)
+        let hint = try XCTUnwrap(viewModel.hintMove)
+        viewModel.handleFlaskTap(at: hint.sourceIndex)
+        viewModel.handleFlaskTap(at: hint.targetIndex)
+        await waitForScheduledMainQueueWork()
 
         XCTAssertEqual(viewModel.herbsBalance, 8 - HomeViewModel.extraHintHerbsCost)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
@@ -889,7 +940,7 @@ final class HomeViewModelTests: XCTestCase {
         viewModel.showHint()
 
         XCTAssertNotNil(viewModel.hintMove)
-        XCTAssertEqual(viewModel.herbsBalance, 0)
+        XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertTrue(viewModel.canInteractWithBoard)
         XCTAssertFalse(viewModel.shouldPromptHintUse)
         XCTAssertEqual(analyticsProvider.events, [

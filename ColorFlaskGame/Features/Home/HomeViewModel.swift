@@ -244,6 +244,7 @@ final class HomeViewModel: ObservableObject {
     private let timing: HomeViewModelTiming
     private let victoryMessageProvider: () -> String
     private var completionSequenceID = 0
+    private var pendingHintPaymentMode: HintPaymentMode?
     private var pourAnimationTask: Task<Void, Never>?
     private var invalidFeedbackTask: Task<Void, Never>?
     private var rewardedHintTask: Task<Void, Never>?
@@ -468,9 +469,8 @@ final class HomeViewModel: ObservableObject {
             return
         }
 
-        hintMove = nil
-
         guard let sourceIndex = selectedFlaskIndex else {
+            clearPendingHintIfNeeded(keepingSelectionAt: index)
             selectedFlaskIndex = gameManager.flasks[index].isEmpty ? nil : index
             gameFeedbackProvider.play(selectedFlaskIndex == nil ? .uiTap : .flaskSelect)
             if selectedFlaskIndex == nil {
@@ -490,8 +490,10 @@ final class HomeViewModel: ObservableObject {
 
         switch gameManager.pourPlan(from: sourceIndex, to: index) {
         case let .success(plan):
+            commitPendingHintIfNeeded(for: plan)
             animatePour(plan)
         case let .failure(error):
+            clearPendingHint()
             playerActionLogger.log(
                 "invalid pour flask \(sourceIndex + 1) to flask \(index + 1) on level \(currentLevelNumber): \(error.localizedDescription)"
             )
@@ -507,7 +509,7 @@ final class HomeViewModel: ObservableObject {
         gameAnalyticsProvider.track(.undoUsed(levelNumber: currentLevelNumber))
         playerActionLogger.log("undo used on level \(currentLevelNumber)")
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         invalidFlaskIndices.removeAll()
         gameManager.restore(flasks: previousFlasks)
         moves = max(0, moves - 1)
@@ -612,7 +614,7 @@ final class HomeViewModel: ObservableObject {
         cancelScheduledWork()
         selectedFlaskIndex = nil
         pourAnimation = nil
-        hintMove = nil
+        clearPendingHint()
         bonusUnlockPrompt = nil
         resetConfirmationPrompt = nil
         herbsTutorialPrompt = nil
@@ -646,7 +648,7 @@ final class HomeViewModel: ObservableObject {
         playerActionLogger.log("bonus flask opened for current round on level \(currentLevelNumber)")
         bonusUnlockPrompt = nil
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         gameManager.unlockBonusFlaskForCurrentRound()
         saveActiveRoundSnapshot()
         objectWillChange.send()
@@ -659,7 +661,7 @@ final class HomeViewModel: ObservableObject {
 
         rewardedBonusUnlockTask?.cancel()
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         invalidFlaskIndices.removeAll()
         isRewardedBonusUnlockInProgress = true
         gameAnalyticsProvider.track(.bonusFlaskUnlockStarted(
@@ -710,7 +712,7 @@ final class HomeViewModel: ObservableObject {
             method: .permanentPurchase
         ))
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         invalidFlaskIndices.removeAll()
         isPermanentBonusUnlockInProgress = true
         gameAnalyticsProvider.track(.purchaseStarted(
@@ -757,7 +759,7 @@ final class HomeViewModel: ObservableObject {
             "flask \(plan.sourceIndex + 1) to flask \(plan.targetIndex + 1) color \(plan.color.accessibilityName) amount \(plan.amount)"
         )
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         invalidFlaskIndices.removeAll()
         history.append(gameManager.flasks)
         pourAnimation = PourAnimation(
@@ -831,7 +833,7 @@ final class HomeViewModel: ObservableObject {
         guard gameManager.isRoundCompleted, completionPhase.isPlaying else { return }
 
         selectedFlaskIndex = nil
-        hintMove = nil
+        clearPendingHint()
         victoryMessage = completionMessage()
         lastCompletedMoveCount = moves
         gameFeedbackProvider.play(.levelComplete)
@@ -972,7 +974,6 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func applyHint(_ nextHint: HintMove, paymentMode: HintPaymentMode) {
-        spendHintIfNeeded(paymentMode: paymentMode)
         gameFeedbackProvider.play(.hintUsed)
         gameAnalyticsProvider.track(.hintUsed(
             levelNumber: currentLevelNumber,
@@ -984,6 +985,31 @@ final class HomeViewModel: ObservableObject {
         selectedFlaskIndex = nil
         invalidFlaskIndices.removeAll()
         hintMove = nextHint
+        pendingHintPaymentMode = paymentMode
+    }
+
+    private func clearPendingHintIfNeeded(keepingSelectionAt index: Int) {
+        guard let hintMove else { return }
+        guard index == hintMove.sourceIndex else {
+            clearPendingHint()
+            return
+        }
+    }
+
+    private func commitPendingHintIfNeeded(for plan: PourPlan) {
+        guard let pendingHintPaymentMode else { return }
+        guard hintMove == HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex) else {
+            clearPendingHint()
+            return
+        }
+
+        spendHintIfNeeded(paymentMode: pendingHintPaymentMode)
+        self.pendingHintPaymentMode = nil
+    }
+
+    private func clearPendingHint() {
+        hintMove = nil
+        pendingHintPaymentMode = nil
     }
 
     private func spendHintIfNeeded(paymentMode: HintPaymentMode) {
@@ -1061,6 +1087,7 @@ final class HomeViewModel: ObservableObject {
         currentLevelNumber == 5
             && progressStore.hasSeenHerbsTutorial
             && hintsUsedThisLevel == 0
+            && hintMove == nil
     }
 
     private func updateTutorialVisibility(for levelIndex: Int) {
