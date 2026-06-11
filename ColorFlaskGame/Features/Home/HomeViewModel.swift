@@ -132,6 +132,7 @@ struct OrderObjectiveSummary: Equatable {
 private enum HintPaymentMode {
     case free
     case herbs
+    case rewardedCredit
     case rewardedAd
     case unavailable
 }
@@ -143,7 +144,7 @@ private extension HintPaymentMode {
             return .free
         case .herbs:
             return .herbs
-        case .rewardedAd:
+        case .rewardedCredit, .rewardedAd:
             return .rewardedAd
         case .unavailable:
             assertionFailure("Unavailable hint payment should not be tracked as a used hint.")
@@ -157,6 +158,8 @@ private extension HintPaymentMode {
             return "free"
         case .herbs:
             return "herbs"
+        case .rewardedCredit:
+            return "rewarded_credit"
         case .rewardedAd:
             return "rewarded_ad"
         case .unavailable:
@@ -231,6 +234,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var lastHerbsReward: Int?
     @Published private(set) var lastCompletedMoveCount: Int?
     @Published private(set) var hintsUsedThisLevel = 0
+    @Published private(set) var rewardedHintCredits = 0
     @Published private(set) var isRewardedHintInProgress = false
     @Published private(set) var isRewardedBonusUnlockInProgress = false
     @Published private(set) var isPermanentBonusUnlockInProgress = false
@@ -308,6 +312,7 @@ final class HomeViewModel: ObservableObject {
             self.moves = snapshot.moves
             self.history = snapshot.history
             self.hintsUsedThisLevel = snapshot.hintsUsedThisLevel
+            self.rewardedHintCredits = snapshot.rewardedHintCredits
         } else {
             self.gameManager = .makeInitialLevel(
                 levelIndex: resolvedLevelIndex,
@@ -453,6 +458,8 @@ final class HomeViewModel: ObservableObject {
             return "1"
         case .herbs:
             return "\(Self.extraHintHerbsCost)"
+        case .rewardedCredit:
+            return "Ready"
         case .rewardedAd:
             return "Ad"
         case .unavailable:
@@ -556,7 +563,7 @@ final class HomeViewModel: ObservableObject {
         switch paymentMode {
         case .unavailable:
             return
-        case .free:
+        case .free, .rewardedCredit:
             applyHint(nextHint, paymentMode: paymentMode)
         case .herbs, .rewardedAd:
             hintPurchasePrompt = HintPurchasePrompt(hintMove: nextHint)
@@ -670,6 +677,7 @@ final class HomeViewModel: ObservableObject {
         lastHerbsReward = nil
         lastCompletedMoveCount = nil
         hintsUsedThisLevel = 0
+        rewardedHintCredits = 0
         isOrderBannerVisible = true
         updateTutorialVisibility(for: levelIndex)
         completionSequenceID += 1
@@ -983,6 +991,10 @@ final class HomeViewModel: ObservableObject {
             return .free
         }
 
+        if rewardedHintCredits > 0 {
+            return .rewardedCredit
+        }
+
         if herbsBalance >= Self.extraHintHerbsCost {
             return .herbs
         }
@@ -1025,7 +1037,9 @@ final class HomeViewModel: ObservableObject {
                 return
             }
 
-            self.applyHint(nextHint, paymentMode: .rewardedAd)
+            self.rewardedHintCredits += 1
+            self.applyHint(nextHint, paymentMode: .rewardedCredit)
+            self.saveActiveRoundSnapshot()
         }
     }
 
@@ -1076,10 +1090,15 @@ final class HomeViewModel: ObservableObject {
             hintsUsedThisLevel += 1
         }
 
-        guard paymentMode == .herbs else { return }
-
-        herbsBalance = max(0, herbsBalance - Self.extraHintHerbsCost)
-        progressStore.herbsBalance = herbsBalance
+        switch paymentMode {
+        case .herbs:
+            herbsBalance = max(0, herbsBalance - Self.extraHintHerbsCost)
+            progressStore.herbsBalance = herbsBalance
+        case .rewardedCredit:
+            rewardedHintCredits = max(0, rewardedHintCredits - 1)
+        case .free, .rewardedAd, .unavailable:
+            break
+        }
     }
 
     private func saveActiveRoundSnapshot() {
@@ -1090,7 +1109,8 @@ final class HomeViewModel: ObservableObject {
             flasks: gameManager.flasks,
             moves: moves,
             history: history,
-            hintsUsedThisLevel: hintsUsedThisLevel
+            hintsUsedThisLevel: hintsUsedThisLevel,
+            rewardedHintCredits: rewardedHintCredits
         )
     }
 

@@ -6,19 +6,22 @@ struct ActiveRoundSnapshot: Codable, Equatable {
     let moves: Int
     let history: [[Flask]]
     let hintsUsedThisLevel: Int
+    let rewardedHintCredits: Int
 
     init(
         levelIndex: Int,
         flasks: [Flask],
         moves: Int,
         history: [[Flask]],
-        hintsUsedThisLevel: Int = 0
+        hintsUsedThisLevel: Int = 0,
+        rewardedHintCredits: Int = 0
     ) {
         self.levelIndex = levelIndex
         self.flasks = flasks
         self.moves = moves
         self.history = history
         self.hintsUsedThisLevel = hintsUsedThisLevel
+        self.rewardedHintCredits = rewardedHintCredits
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -27,6 +30,7 @@ struct ActiveRoundSnapshot: Codable, Equatable {
         case moves
         case history
         case hintsUsedThisLevel
+        case rewardedHintCredits
     }
 
     init(from decoder: Decoder) throws {
@@ -38,6 +42,10 @@ struct ActiveRoundSnapshot: Codable, Equatable {
         hintsUsedThisLevel = try container.decodeIfPresent(
             Int.self,
             forKey: .hintsUsedThisLevel
+        ) ?? 0
+        rewardedHintCredits = try container.decodeIfPresent(
+            Int.self,
+            forKey: .rewardedHintCredits
         ) ?? 0
     }
 }

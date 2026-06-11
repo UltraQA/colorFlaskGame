@@ -1439,7 +1439,7 @@ private struct HintCostBadge: View {
         switch text {
         case "Free":
             return "sparkles"
-        case "Ad":
+        case "Ad", "Ready":
             return "play.rectangle.fill"
         default:
             return "leaf.fill"

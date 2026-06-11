@@ -411,6 +411,7 @@ final class HomeViewModelTests: XCTestCase {
         )
 
         XCTAssertEqual(decodedSnapshot.hintsUsedThisLevel, 0)
+        XCTAssertEqual(decodedSnapshot.rewardedHintCredits, 0)
     }
 
     func testValidPourEmitsFeedbackEvents() async {
@@ -1151,6 +1152,8 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isRewardedHintInProgress)
         XCTAssertEqual(viewModel.herbsBalance, 0)
         XCTAssertEqual(progressStore.herbsBalance, 0)
+        XCTAssertEqual(viewModel.rewardedHintCredits, 1)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.rewardedHintCredits, 1)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
         XCTAssertEqual(rewardedAdProvider.placements, [.extraHint])
         XCTAssertEqual(analyticsProvider.events, [
@@ -1159,6 +1162,69 @@ final class HomeViewModelTests: XCTestCase {
             .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: true),
             .hintUsed(levelNumber: 1, payment: .rewardedAd)
         ])
+    }
+
+    func testEarnedRewardedHintSurvivesAnotherMoveAndRoundRestore() async throws {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 0
+        )
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            rewardedAdProvider: rewardedAdProvider,
+            timing: .immediate
+        )
+
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+
+        viewModel.showHint()
+        viewModel.purchaseHintWithRewardedAd()
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(viewModel.rewardedHintCredits, 1)
+        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 1, targetIndex: 0))
+
+        viewModel.handleFlaskTap(at: 2)
+        viewModel.handleFlaskTap(at: 0)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertEqual(viewModel.rewardedHintCredits, 1)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.rewardedHintCredits, 1)
+
+        let restoredViewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            rewardedAdProvider: rewardedAdProvider,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(restoredViewModel.rewardedHintCredits, 1)
+        XCTAssertEqual(restoredViewModel.hintBadgeText, "Ready")
+        restoredViewModel.showHint()
+        let earnedHint = try XCTUnwrap(restoredViewModel.hintMove)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
+
+        restoredViewModel.handleFlaskTap(at: earnedHint.sourceIndex)
+        restoredViewModel.handleFlaskTap(at: earnedHint.targetIndex)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(restoredViewModel.rewardedHintCredits, 0)
+        XCTAssertEqual(restoredViewModel.hintsUsedThisLevel, 2)
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.rewardedHintCredits, 0)
+        XCTAssertEqual(rewardedAdProvider.showCount, 1)
     }
 
     func testHintIsUnavailableWhenHerbsRunOutAndAdsAreDisabled() async {
