@@ -55,6 +55,7 @@ protocol ProgressStore {
     var activeRoundSnapshot: ActiveRoundSnapshot? { get set }
     var isBonusFlaskPermanentlyUnlocked: Bool { get set }
     var herbsBalance: Int { get set }
+    var hasSeenIntro: Bool { get set }
     var hasCompletedOnboarding: Bool { get set }
     var hasSeenHerbsTutorial: Bool { get set }
     var isSoundEnabled: Bool { get set }
@@ -67,6 +68,7 @@ struct UserDefaultsProgressStore: ProgressStore {
         static let activeRoundSnapshot = "waterSort.progress.activeRoundSnapshot"
         static let bonusFlaskPurchase = "waterSort.bonusFlask.isPermanentlyUnlocked"
         static let herbsBalance = "waterSort.economy.herbsBalance"
+        static let hasSeenIntro = "waterSort.onboarding.hasSeenIntro"
         static let hasCompletedOnboarding = "waterSort.onboarding.hasCompleted"
         static let hasSeenHerbsTutorial = "waterSort.onboarding.hasSeenHerbsTutorial"
         static let isSoundEnabled = "waterSort.settings.isSoundEnabled"
@@ -128,6 +130,15 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.hasCompletedOnboarding)
+        }
+    }
+
+    var hasSeenIntro: Bool {
+        get {
+            userDefaults.bool(forKey: Key.hasSeenIntro)
+        }
+        set {
+            userDefaults.set(newValue, forKey: Key.hasSeenIntro)
         }
     }
 

@@ -236,6 +236,33 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.gameManager.flasks.last?.isPlayable == true)
     }
 
+    func testIntroSeenStatePersistsWithoutCompletingGameplayOnboarding() {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertFalse(viewModel.hasSeenIntro)
+        XCTAssertTrue(viewModel.isTutorialPromptVisible)
+
+        viewModel.markIntroSeen()
+
+        XCTAssertTrue(viewModel.hasSeenIntro)
+        XCTAssertTrue(progressStore.hasSeenIntro)
+        XCTAssertFalse(progressStore.hasCompletedOnboarding)
+        XCTAssertTrue(viewModel.isTutorialPromptVisible)
+    }
+
+    func testAppFlowStartsAtMainMenuAfterIntroWasSeen() {
+        XCTAssertEqual(AppFlow.initial(hasSeenIntro: false), .intro)
+        XCTAssertEqual(AppFlow.initial(hasSeenIntro: true), .mainMenu)
+    }
+
     func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,
@@ -1484,6 +1511,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(progressStore.currentLevelIndex, 0)
         XCTAssertFalse(progressStore.isBonusFlaskPermanentlyUnlocked)
         XCTAssertEqual(progressStore.herbsBalance, 0)
+        XCTAssertFalse(progressStore.hasSeenIntro)
         XCTAssertFalse(progressStore.hasCompletedOnboarding)
         XCTAssertNil(progressStore.activeRoundSnapshot)
     }
@@ -1685,6 +1713,7 @@ private final class SpyProgressStore: ProgressStore {
     var activeRoundSnapshot: ActiveRoundSnapshot?
     var isBonusFlaskPermanentlyUnlocked: Bool
     var herbsBalance: Int
+    var hasSeenIntro: Bool
     var hasCompletedOnboarding: Bool
     var hasSeenHerbsTutorial: Bool
     var isSoundEnabled: Bool
@@ -1694,6 +1723,7 @@ private final class SpyProgressStore: ProgressStore {
         currentLevelIndex: Int,
         isBonusFlaskPermanentlyUnlocked: Bool,
         herbsBalance: Int = 0,
+        hasSeenIntro: Bool = false,
         hasCompletedOnboarding: Bool = false,
         hasSeenHerbsTutorial: Bool = false,
         isSoundEnabled: Bool = true,
@@ -1703,6 +1733,7 @@ private final class SpyProgressStore: ProgressStore {
         self.activeRoundSnapshot = nil
         self.isBonusFlaskPermanentlyUnlocked = isBonusFlaskPermanentlyUnlocked
         self.herbsBalance = herbsBalance
+        self.hasSeenIntro = hasSeenIntro
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.hasSeenHerbsTutorial = hasSeenHerbsTutorial
         self.isSoundEnabled = isSoundEnabled

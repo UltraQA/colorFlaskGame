@@ -452,6 +452,10 @@ final class HomeViewModel: ObservableObject {
         progressStore.activeRoundSnapshot?.levelIndex == currentLevelIndex
     }
 
+    var hasSeenIntro: Bool {
+        progressStore.hasSeenIntro
+    }
+
     var hintBadgeText: String {
         switch nextHintPaymentMode {
         case .free:
@@ -640,6 +644,7 @@ final class HomeViewModel: ObservableObject {
         progressStore.currentLevelIndex = 0
         progressStore.isBonusFlaskPermanentlyUnlocked = false
         progressStore.herbsBalance = 0
+        progressStore.hasSeenIntro = false
         progressStore.hasCompletedOnboarding = false
         progressStore.hasSeenHerbsTutorial = false
         progressStore.activeRoundSnapshot = nil
@@ -660,6 +665,13 @@ final class HomeViewModel: ObservableObject {
         playerActionLogger.log("debug jump to level \(max(1, levelNumber))")
         progressStore.activeRoundSnapshot = nil
         loadLevel(at: max(1, levelNumber) - 1)
+    }
+
+    func markIntroSeen() {
+        guard !progressStore.hasSeenIntro else { return }
+
+        progressStore.hasSeenIntro = true
+        playerActionLogger.log("intro completed")
     }
 
     private func loadLevel(at levelIndex: Int) {

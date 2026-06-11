@@ -3,7 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     @StateObject private var feedbackProvider: SystemGameFeedbackProvider
     @StateObject private var viewModel: HomeViewModel
-    @State private var flow: AppFlow = .intro
+    @State private var flow: AppFlow
     @State private var activeOrderLevelIndex: Int?
     @State private var hasTrackedAppLaunch = false
     private let analyticsProvider: any GameAnalyticsProviding
@@ -23,11 +23,14 @@ struct AppRootView: View {
     init(
         analyticsProvider: any GameAnalyticsProviding,
         crashReporter: any GameCrashReportingProviding,
-        playerActionLogger: any PlayerActionLoggingProviding
+        playerActionLogger: any PlayerActionLoggingProviding,
+        progressStore: (any ProgressStore)? = nil
     ) {
-        let feedbackProvider = SystemGameFeedbackProvider()
+        let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore()
+        let feedbackProvider = SystemGameFeedbackProvider(progressStore: resolvedProgressStore)
         crashReporter.configure()
         let homeViewModel = HomeViewModel(
+            progressStore: resolvedProgressStore,
             gameFeedbackProvider: feedbackProvider,
             gameAnalyticsProvider: analyticsProvider,
             playerActionLogger: playerActionLogger
@@ -40,6 +43,7 @@ struct AppRootView: View {
         _activeOrderLevelIndex = State(
             initialValue: homeViewModel.hasActiveRoundInProgress ? homeViewModel.currentLevelIndex : nil
         )
+        _flow = State(initialValue: AppFlow.initial(hasSeenIntro: homeViewModel.hasSeenIntro))
     }
 
     var body: some View {
@@ -47,6 +51,7 @@ struct AppRootView: View {
             switch flow {
             case .intro:
                 IntroView {
+                    viewModel.markIntroSeen()
                     withAnimation(.easeOut(duration: 0.28)) {
                         flow = .mainMenu
                     }
@@ -163,10 +168,14 @@ struct AppRootView: View {
     }
 }
 
-private enum AppFlow {
+enum AppFlow: Equatable {
     case intro
     case mainMenu
     case game
+
+    static func initial(hasSeenIntro: Bool) -> AppFlow {
+        hasSeenIntro ? .mainMenu : .intro
+    }
 
     var analyticsName: String {
         switch self {
