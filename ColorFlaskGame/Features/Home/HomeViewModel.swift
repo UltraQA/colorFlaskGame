@@ -512,8 +512,8 @@ final class HomeViewModel: ObservableObject {
 
         switch gameManager.pourPlan(from: sourceIndex, to: index) {
         case let .success(plan):
-            commitPendingHintIfNeeded(for: plan)
-            animatePour(plan)
+            let hintPaymentMode = consumePendingHintPayment(for: plan)
+            animatePour(plan, hintPaymentMode: hintPaymentMode)
         case let .failure(error):
             clearPendingHint()
             playerActionLogger.log(
@@ -798,7 +798,10 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    private func animatePour(_ plan: PourPlan) {
+    private func animatePour(
+        _ plan: PourPlan,
+        hintPaymentMode: HintPaymentMode? = nil
+    ) {
         pourAnimationTask?.cancel()
         gameFeedbackProvider.play(.validPour)
         playerActionLogger.log(
@@ -820,6 +823,9 @@ final class HomeViewModel: ObservableObject {
 
             withAnimation(.snappy(duration: 0.25)) {
                 if case .success = self.gameManager.pour(from: plan.sourceIndex, to: plan.targetIndex) {
+                    if let hintPaymentMode {
+                        self.spendHintIfNeeded(paymentMode: hintPaymentMode)
+                    }
                     self.moves += 1
                     self.saveActiveRoundSnapshot()
                     self.playerActionLogger.log(
@@ -1046,15 +1052,18 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    private func commitPendingHintIfNeeded(for plan: PourPlan) {
-        guard let pendingHintPaymentMode else { return }
+    private func consumePendingHintPayment(for plan: PourPlan) -> HintPaymentMode? {
+        guard let pendingHintPaymentMode else {
+            clearPendingHint()
+            return nil
+        }
         guard hintMove == HintMove(sourceIndex: plan.sourceIndex, targetIndex: plan.targetIndex) else {
             clearPendingHint()
-            return
+            return nil
         }
 
-        spendHintIfNeeded(paymentMode: pendingHintPaymentMode)
-        self.pendingHintPaymentMode = nil
+        clearPendingHint()
+        return pendingHintPaymentMode
     }
 
     private func clearPendingHint() {

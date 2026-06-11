@@ -1417,6 +1417,51 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.moves, 0)
     }
 
+    func testCancellingHintedPourBeforeCompletionDoesNotSpendHerbs() async throws {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 5
+        )
+        progressStore.activeRoundSnapshot = ActiveRoundSnapshot(
+            levelIndex: 0,
+            flasks: [
+                Flask(colors: [red]),
+                Flask(colors: [green]),
+                Flask()
+            ],
+            moves: 0,
+            history: [],
+            hintsUsedThisLevel: 1
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0.25,
+                completionDuration: 0,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.showHint()
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        viewModel.purchaseHintWithHerbs()
+        let hint = try XCTUnwrap(viewModel.hintMove)
+        viewModel.handleFlaskTap(at: hint.sourceIndex)
+        viewModel.handleFlaskTap(at: hint.targetIndex)
+
+        XCTAssertNotNil(viewModel.pourAnimation)
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        viewModel.startNewGame()
+        await waitForScheduledMainQueueWork(nanoseconds: 350_000_000)
+
+        XCTAssertEqual(viewModel.herbsBalance, 5)
+        XCTAssertEqual(progressStore.herbsBalance, 5)
+        XCTAssertEqual(viewModel.moves, 0)
+        XCTAssertEqual(viewModel.hintsUsedThisLevel, 0)
+    }
+
     func testStartNewGameCancelsPendingCompletionAdvance() async {
         let viewModel = makeViewModel(
             flasks: [
