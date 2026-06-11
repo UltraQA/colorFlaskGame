@@ -307,6 +307,7 @@ final class HomeViewModel: ObservableObject {
             self.gameManager = GameManager(flasks: snapshot.flasks, level: level)
             self.moves = snapshot.moves
             self.history = snapshot.history
+            self.hintsUsedThisLevel = snapshot.hintsUsedThisLevel
         } else {
             self.gameManager = .makeInitialLevel(
                 levelIndex: resolvedLevelIndex,
@@ -1079,7 +1080,8 @@ final class HomeViewModel: ObservableObject {
             levelIndex: currentLevelIndex,
             flasks: gameManager.flasks,
             moves: moves,
-            history: history
+            history: history,
+            hintsUsedThisLevel: hintsUsedThisLevel
         )
     }
 

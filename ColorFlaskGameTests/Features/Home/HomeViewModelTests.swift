@@ -355,6 +355,64 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.hasActiveRoundInProgress)
     }
 
+    func testUsedFreeHintRemainsConsumedAfterRestoringRound() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 5
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [green]),
+                    Flask()
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 0,
+            timing: .immediate
+        )
+
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertEqual(progressStore.activeRoundSnapshot?.hintsUsedThisLevel, 1)
+
+        let restoredViewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(restoredViewModel.hintsUsedThisLevel, 1)
+        XCTAssertEqual(restoredViewModel.hintBadgeText, "\(HomeViewModel.extraHintHerbsCost)")
+    }
+
+    func testLegacyActiveRoundSnapshotDefaultsHintUsageToZero() throws {
+        let snapshot = ActiveRoundSnapshot(
+            levelIndex: 0,
+            flasks: [Flask(colors: [red]), Flask()],
+            moves: 0,
+            history: []
+        )
+        let encodedData = try JSONEncoder().encode(snapshot)
+        var json = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encodedData) as? [String: Any]
+        )
+        json.removeValue(forKey: "hintsUsedThisLevel")
+        let legacyData = try JSONSerialization.data(withJSONObject: json)
+
+        let decodedSnapshot = try JSONDecoder().decode(
+            ActiveRoundSnapshot.self,
+            from: legacyData
+        )
+
+        XCTAssertEqual(decodedSnapshot.hintsUsedThisLevel, 0)
+    }
+
     func testValidPourEmitsFeedbackEvents() async {
         let feedbackProvider = SpyGameFeedbackProvider()
         let viewModel = makeViewModel(

@@ -5,6 +5,41 @@ struct ActiveRoundSnapshot: Codable, Equatable {
     let flasks: [Flask]
     let moves: Int
     let history: [[Flask]]
+    let hintsUsedThisLevel: Int
+
+    init(
+        levelIndex: Int,
+        flasks: [Flask],
+        moves: Int,
+        history: [[Flask]],
+        hintsUsedThisLevel: Int = 0
+    ) {
+        self.levelIndex = levelIndex
+        self.flasks = flasks
+        self.moves = moves
+        self.history = history
+        self.hintsUsedThisLevel = hintsUsedThisLevel
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case levelIndex
+        case flasks
+        case moves
+        case history
+        case hintsUsedThisLevel
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        levelIndex = try container.decode(Int.self, forKey: .levelIndex)
+        flasks = try container.decode([Flask].self, forKey: .flasks)
+        moves = try container.decode(Int.self, forKey: .moves)
+        history = try container.decode([[Flask]].self, forKey: .history)
+        hintsUsedThisLevel = try container.decodeIfPresent(
+            Int.self,
+            forKey: .hintsUsedThisLevel
+        ) ?? 0
+    }
 }
 
 protocol ProgressStore {
