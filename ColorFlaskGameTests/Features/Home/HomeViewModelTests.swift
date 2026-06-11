@@ -696,6 +696,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.lastHerbsReward, HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(viewModel.herbsBalance, 12 + HomeViewModel.herbsRewardPerCompletedOrder)
         XCTAssertEqual(progressStore.herbsBalance, viewModel.herbsBalance)
+        XCTAssertEqual(progressStore.currentLevelIndex, 6)
         XCTAssertEqual(analyticsProvider.events, [
             .levelCompleted(
                 levelNumber: 6,
@@ -731,6 +732,50 @@ final class HomeViewModelTests: XCTestCase {
         await waitForScheduledMainQueueWork()
 
         XCTAssertNil(progressStore.activeRoundSnapshot)
+    }
+
+    func testRelaunchDuringCelebrationStartsNextLevelWithoutRepeatingReward() async {
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 5,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 12
+        )
+        let viewModel = HomeViewModel(
+            gameManager: GameManager(
+                flasks: [
+                    Flask(colors: [red]),
+                    Flask(colors: [red, red, red])
+                ]
+            ),
+            progressStore: progressStore,
+            currentLevelIndex: 5,
+            timing: HomeViewModelTiming(
+                pourAnimationDuration: 0,
+                completionDuration: 10,
+                invalidFeedbackDuration: 0
+            )
+        )
+
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 1)
+        await waitForScheduledMainQueueWork()
+
+        let rewardedBalance = 12 + HomeViewModel.herbsRewardPerCompletedOrder
+        XCTAssertEqual(viewModel.completionPhase, .resolvingWin)
+        XCTAssertEqual(progressStore.currentLevelIndex, 6)
+        XCTAssertEqual(progressStore.herbsBalance, rewardedBalance)
+
+        let relaunchedViewModel = HomeViewModel(
+            levelRepository: HandcraftedLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        XCTAssertEqual(relaunchedViewModel.currentLevelIndex, 6)
+        XCTAssertEqual(relaunchedViewModel.currentLevelNumber, 7)
+        XCTAssertEqual(relaunchedViewModel.herbsBalance, rewardedBalance)
+        XCTAssertEqual(relaunchedViewModel.completionPhase, .playing)
+        XCTAssertFalse(relaunchedViewModel.hasActiveRoundInProgress)
     }
 
     func testTrainingRoundsDoNotAwardHerbs() async {
@@ -842,9 +887,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 1))
         XCTAssertEqual(viewModel.gameManager.flasks, initialFlasks)
         XCTAssertEqual(viewModel.moves, 0)
-        XCTAssertEqual(analyticsProvider.events, [
-            .hintUsed(levelNumber: 1, payment: .free)
-        ])
+        XCTAssertTrue(analyticsProvider.events.isEmpty)
     }
 
     func testFirstHintIsFreeAndSecondHintCostsHerbs() async throws {
@@ -901,6 +944,7 @@ final class HomeViewModelTests: XCTestCase {
             isBonusFlaskPermanentlyUnlocked: false,
             herbsBalance: 5
         )
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -910,6 +954,7 @@ final class HomeViewModelTests: XCTestCase {
                 ]
             ),
             progressStore: progressStore,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -931,6 +976,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.hintMove)
         XCTAssertEqual(viewModel.herbsBalance, 5)
         XCTAssertEqual(progressStore.herbsBalance, 5)
+        XCTAssertEqual(analyticsProvider.events, [
+            .hintUsed(levelNumber: 1, payment: .free)
+        ])
     }
 
     func testLevelFiveFirstHintCostsHerbsWhenHintMoveIsUsed() async throws {
@@ -1017,8 +1065,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.canInteractWithBoard)
         XCTAssertFalse(viewModel.shouldPromptHintUse)
         XCTAssertEqual(analyticsProvider.events, [
-            .levelStarted(levelNumber: 5),
-            .hintUsed(levelNumber: 5, payment: .herbs)
+            .levelStarted(levelNumber: 5)
         ])
     }
 
@@ -1159,8 +1206,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(analyticsProvider.events, [
             .hintUsed(levelNumber: 1, payment: .free),
             .rewardedAdStarted(levelNumber: 1, placement: .extraHint),
-            .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: true),
-            .hintUsed(levelNumber: 1, payment: .rewardedAd)
+            .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: true)
         ])
     }
 
@@ -1171,6 +1217,7 @@ final class HomeViewModelTests: XCTestCase {
             herbsBalance: 0
         )
         let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let analyticsProvider = SpyGameAnalyticsProvider()
         let viewModel = HomeViewModel(
             gameManager: GameManager(
                 flasks: [
@@ -1181,6 +1228,7 @@ final class HomeViewModelTests: XCTestCase {
             ),
             progressStore: progressStore,
             rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -1208,6 +1256,7 @@ final class HomeViewModelTests: XCTestCase {
             levelRepository: SingleLevelRepository(),
             progressStore: progressStore,
             rewardedAdProvider: rewardedAdProvider,
+            gameAnalyticsProvider: analyticsProvider,
             timing: .immediate
         )
 
@@ -1225,6 +1274,12 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(restoredViewModel.hintsUsedThisLevel, 2)
         XCTAssertEqual(progressStore.activeRoundSnapshot?.rewardedHintCredits, 0)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
+        XCTAssertEqual(analyticsProvider.events, [
+            .hintUsed(levelNumber: 1, payment: .free),
+            .rewardedAdStarted(levelNumber: 1, placement: .extraHint),
+            .rewardedAdCompleted(levelNumber: 1, placement: .extraHint, success: true),
+            .hintUsed(levelNumber: 1, payment: .rewardedAd)
+        ])
     }
 
     func testHintIsUnavailableWhenHerbsRunOutAndAdsAreDisabled() async {

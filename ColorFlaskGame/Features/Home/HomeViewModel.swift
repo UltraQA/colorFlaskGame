@@ -899,6 +899,7 @@ final class HomeViewModel: ObservableObject {
         lastCompletedMoveCount = moves
         gameFeedbackProvider.play(.levelComplete)
         awardHerbsForCompletedOrder()
+        persistCompletedLevel()
         progressStore.activeRoundSnapshot = nil
         playerActionLogger.log(
             "level \(currentLevelNumber) completed moves \(moves) herbs reward \(lastHerbsReward ?? 0)"
@@ -978,6 +979,13 @@ final class HomeViewModel: ObservableObject {
         progressStore.herbsBalance = herbsBalance
     }
 
+    private func persistCompletedLevel() {
+        progressStore.currentLevelIndex = max(
+            progressStore.currentLevelIndex,
+            currentLevelIndex + 1
+        )
+    }
+
     private var isNextHintFree: Bool {
         currentLevelNumber != 5 && hintsUsedThisLevel == 0
     }
@@ -1045,10 +1053,6 @@ final class HomeViewModel: ObservableObject {
 
     private func applyHint(_ nextHint: HintMove, paymentMode: HintPaymentMode) {
         gameFeedbackProvider.play(.hintUsed)
-        gameAnalyticsProvider.track(.hintUsed(
-            levelNumber: currentLevelNumber,
-            payment: paymentMode.analyticsPayment
-        ))
         playerActionLogger.log(
             "hint shown on level \(currentLevelNumber): flask \(nextHint.sourceIndex + 1) to flask \(nextHint.targetIndex + 1) payment \(paymentMode.logName)"
         )
@@ -1086,6 +1090,14 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func spendHintIfNeeded(paymentMode: HintPaymentMode) {
+        gameAnalyticsProvider.track(.hintUsed(
+            levelNumber: currentLevelNumber,
+            payment: paymentMode.analyticsPayment
+        ))
+        playerActionLogger.log(
+            "hint used on level \(currentLevelNumber) payment \(paymentMode.logName)"
+        )
+
         defer {
             hintsUsedThisLevel += 1
         }
