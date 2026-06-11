@@ -71,33 +71,39 @@ struct GameFeatureFlags: Equatable {
     let rewardedAdsEnabled: Bool
     let permanentBonusFlaskPurchaseEnabled: Bool
     let debugLevelJumpEnabled: Bool
+    let debugResetProgressEnabled: Bool
 
     init(
         rewardedAdsEnabled: Bool,
         permanentBonusFlaskPurchaseEnabled: Bool,
-        debugLevelJumpEnabled: Bool = true
+        debugLevelJumpEnabled: Bool = true,
+        debugResetProgressEnabled: Bool = true
     ) {
         self.rewardedAdsEnabled = rewardedAdsEnabled
         self.permanentBonusFlaskPurchaseEnabled = permanentBonusFlaskPurchaseEnabled
         self.debugLevelJumpEnabled = debugLevelJumpEnabled
+        self.debugResetProgressEnabled = debugResetProgressEnabled
     }
 
     static let alpha = GameFeatureFlags(
         rewardedAdsEnabled: true,
         permanentBonusFlaskPurchaseEnabled: false,
-        debugLevelJumpEnabled: true
+        debugLevelJumpEnabled: true,
+        debugResetProgressEnabled: true
     )
 
     static let allEnabled = GameFeatureFlags(
         rewardedAdsEnabled: true,
         permanentBonusFlaskPurchaseEnabled: true,
-        debugLevelJumpEnabled: true
+        debugLevelJumpEnabled: true,
+        debugResetProgressEnabled: true
     )
 
     static let production = GameFeatureFlags(
         rewardedAdsEnabled: false,
         permanentBonusFlaskPurchaseEnabled: false,
-        debugLevelJumpEnabled: false
+        debugLevelJumpEnabled: false,
+        debugResetProgressEnabled: false
     )
 }
 

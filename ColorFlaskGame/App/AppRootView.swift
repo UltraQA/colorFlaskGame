@@ -72,6 +72,7 @@ struct AppRootView: View {
                     isSoundEnabled: feedbackProvider.isSoundEnabled,
                     isHapticsEnabled: feedbackProvider.isHapticsEnabled,
                     isDebugLevelJumpEnabled: viewModel.featureFlags.debugLevelJumpEnabled,
+                    isDebugResetProgressEnabled: viewModel.featureFlags.debugResetProgressEnabled,
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
                         playerActionLogger.log(
@@ -262,6 +263,7 @@ private struct MainMenuView: View {
     let isSoundEnabled: Bool
     let isHapticsEnabled: Bool
     let isDebugLevelJumpEnabled: Bool
+    let isDebugResetProgressEnabled: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
     let onJumpToLevel: (Int) -> Void
@@ -311,22 +313,24 @@ private struct MainMenuView: View {
 
                 Spacer(minLength: DSSpacing.md)
 
-                Button("Reset Progress") {
-                    isResetConfirmationPresented = true
+                if isDebugResetProgressEnabled {
+                    Button("Reset Progress") {
+                        isResetConfirmationPresented = true
+                    }
+                    .font(DSTypography.headline)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(
+                        Capsule()
+                            .fill(GameColor.controlSurface.opacity(0.64))
+                            .overlay(
+                                Capsule()
+                                    .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                            )
+                    )
+                    .buttonStyle(.plain)
                 }
-                .font(DSTypography.headline)
-                .foregroundStyle(GameColor.glassStroke.opacity(0.82))
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(
-                    Capsule()
-                        .fill(GameColor.controlSurface.opacity(0.64))
-                        .overlay(
-                            Capsule()
-                                .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
-                        )
-                )
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, DSSpacing.xl)
             .padding(.top, DSSpacing.xxl)
