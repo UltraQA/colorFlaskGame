@@ -99,6 +99,14 @@ struct HerbsTutorialPrompt: Identifiable, Equatable {
     let herbsAmount: Int
 }
 
+struct HintPurchasePrompt: Identifiable, Equatable {
+    let hintMove: HintMove
+
+    var id: String {
+        "\(hintMove.sourceIndex)-\(hintMove.targetIndex)"
+    }
+}
+
 enum TutorialMarkerKind: Equatable {
     case correctTarget
     case blockedTarget
@@ -230,6 +238,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
     @Published var herbsTutorialPrompt: HerbsTutorialPrompt?
+    @Published var hintPurchasePrompt: HintPurchasePrompt?
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
@@ -409,6 +418,7 @@ final class HomeViewModel: ObservableObject {
             && pourAnimation == nil
             && !isRewardedAdInProgress
             && herbsTutorialPrompt == nil
+            && hintPurchasePrompt == nil
             && !gameManager.isRoundCompleted
             && gameManager.hasAvailableMove()
             && nextHintPaymentMode != .unavailable
@@ -428,6 +438,7 @@ final class HomeViewModel: ObservableObject {
         completionPhase.isPlaying
             && pourAnimation == nil
             && !isRewardedAdInProgress
+            && hintPurchasePrompt == nil
             && !requiresMandatoryHintBeforePlay
     }
 
@@ -438,7 +449,7 @@ final class HomeViewModel: ObservableObject {
     var hintBadgeText: String {
         switch nextHintPaymentMode {
         case .free:
-            return "Free"
+            return "1"
         case .herbs:
             return "\(Self.extraHintHerbsCost)"
         case .rewardedAd:
@@ -450,6 +461,16 @@ final class HomeViewModel: ObservableObject {
 
     var menuRewardText: String {
         currentLevelNumber <= 4 ? "" : "+\(Self.herbsRewardPerCompletedOrder)"
+    }
+
+    var canPurchaseHintWithHerbs: Bool {
+        herbsBalance >= Self.extraHintHerbsCost
+    }
+
+    var canPurchaseHintWithRewardedAd: Bool {
+        currentLevelNumber != 5
+            && featureFlags.rewardedAdsEnabled
+            && !isRewardedAdInProgress
     }
 
     func handleFlaskTap(at index: Int) {
@@ -532,13 +553,35 @@ final class HomeViewModel: ObservableObject {
         let paymentMode = nextHintPaymentMode
         playerActionLogger.log("hint requested on level \(currentLevelNumber) payment \(paymentMode.logName)")
         switch paymentMode {
-        case .rewardedAd:
-            requestRewardedHint(nextHint)
         case .unavailable:
             return
-        case .free, .herbs:
+        case .free:
             applyHint(nextHint, paymentMode: paymentMode)
+        case .herbs, .rewardedAd:
+            hintPurchasePrompt = HintPurchasePrompt(hintMove: nextHint)
         }
+    }
+
+    func purchaseHintWithHerbs() {
+        guard let prompt = hintPurchasePrompt,
+              herbsBalance >= Self.extraHintHerbsCost else { return }
+
+        hintPurchasePrompt = nil
+        playerActionLogger.log("hint purchase confirmed with herbs on level \(currentLevelNumber)")
+        applyHint(prompt.hintMove, paymentMode: .herbs)
+    }
+
+    func purchaseHintWithRewardedAd() {
+        guard canPurchaseHintWithRewardedAd,
+              let prompt = hintPurchasePrompt else { return }
+
+        hintPurchasePrompt = nil
+        playerActionLogger.log("hint purchase confirmed with rewarded ad on level \(currentLevelNumber)")
+        requestRewardedHint(prompt.hintMove)
+    }
+
+    func dismissHintPurchasePrompt() {
+        hintPurchasePrompt = nil
     }
 
     func startNewGame() {
@@ -596,6 +639,7 @@ final class HomeViewModel: ObservableObject {
         herbsBalance = 0
         resetConfirmationPrompt = nil
         herbsTutorialPrompt = nil
+        hintPurchasePrompt = nil
         loadLevel(at: 0)
     }
 
@@ -618,6 +662,7 @@ final class HomeViewModel: ObservableObject {
         bonusUnlockPrompt = nil
         resetConfirmationPrompt = nil
         herbsTutorialPrompt = nil
+        hintPurchasePrompt = nil
         invalidFlaskIndices.removeAll()
         completionPhase = .playing
         victoryMessage = nil
@@ -834,6 +879,7 @@ final class HomeViewModel: ObservableObject {
 
         selectedFlaskIndex = nil
         clearPendingHint()
+        hintPurchasePrompt = nil
         victoryMessage = completionMessage()
         lastCompletedMoveCount = moves
         gameFeedbackProvider.play(.levelComplete)
@@ -918,7 +964,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private var isNextHintFree: Bool {
-        currentLevelNumber <= 4 && hintsUsedThisLevel == 0
+        currentLevelNumber != 5 && hintsUsedThisLevel == 0
     }
 
     private var isRewardedAdInProgress: Bool {
@@ -967,7 +1013,10 @@ final class HomeViewModel: ObservableObject {
             self.playerActionLogger.log(
                 "rewarded ad completed for hint on level \(self.currentLevelNumber) success \(didEarnReward)"
             )
-            guard didEarnReward else { return }
+            guard didEarnReward else {
+                self.hintPurchasePrompt = HintPurchasePrompt(hintMove: nextHint)
+                return
+            }
 
             self.applyHint(nextHint, paymentMode: .rewardedAd)
         }

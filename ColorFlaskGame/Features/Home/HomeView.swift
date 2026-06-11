@@ -118,6 +118,21 @@ struct HomeView: View {
                     .zIndex(GameLayer.controls + 4)
                 }
 
+                if viewModel.hintPurchasePrompt != nil, viewModel.completionPhase.isPlaying {
+                    HintPurchaseOverlay(
+                        herbsBalance: viewModel.herbsBalance,
+                        herbsCost: HomeViewModel.extraHintHerbsCost,
+                        canUseHerbs: viewModel.canPurchaseHintWithHerbs,
+                        canWatchAd: viewModel.canPurchaseHintWithRewardedAd,
+                        reduceMotion: reduceMotion,
+                        onUseHerbs: viewModel.purchaseHintWithHerbs,
+                        onWatchAd: viewModel.purchaseHintWithRewardedAd,
+                        onCancel: viewModel.dismissHintPurchasePrompt
+                    )
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94)))
+                    .zIndex(GameLayer.controls + 4)
+                }
+
                 if viewModel.completionPhase.showsSparkles {
                     WinCelebrationView(reduceMotion: reduceMotion)
                         .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
@@ -1012,6 +1027,109 @@ private struct HerbsTutorialOverlay: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Received \(herbsAmount) herbs. Use herbs to reveal a hint.")
+    }
+}
+
+private struct HintPurchaseOverlay: View {
+    let herbsBalance: Int
+    let herbsCost: Int
+    let canUseHerbs: Bool
+    let canWatchAd: Bool
+    let reduceMotion: Bool
+    let onUseHerbs: () -> Void
+    let onWatchAd: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            GameColor.controlSurface
+                .opacity(0.34)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onCancel)
+
+            VStack(spacing: DSSpacing.md) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlSurface)
+                    .frame(width: 60, height: 60)
+                    .background(
+                        Circle()
+                            .fill(GameColor.controlAccent)
+                            .shadow(color: GameColor.controlAccent.opacity(0.3), radius: 16, x: 0, y: 8)
+                    )
+
+                VStack(spacing: DSSpacing.xs) {
+                    Text("Get another hint?")
+                        .font(DSTypography.title)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+
+                    Label("\(herbsBalance) herbs available", systemImage: "leaf.fill")
+                        .font(DSTypography.caption)
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                }
+
+                VStack(spacing: DSSpacing.sm) {
+                    hintAction(
+                        title: "Use \(herbsCost) herbs",
+                        systemName: "leaf.fill",
+                        isEnabled: canUseHerbs,
+                        action: onUseHerbs
+                    )
+
+                    if canWatchAd {
+                        hintAction(
+                            title: "Watch ad",
+                            systemName: "play.rectangle.fill",
+                            isEnabled: true,
+                            action: onWatchAd
+                        )
+                    }
+                }
+
+                Button("Not now", action: onCancel)
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.7))
+                    .buttonStyle(.plain)
+            }
+            .padding(.horizontal, DSSpacing.lg)
+            .padding(.vertical, DSSpacing.lg)
+            .frame(width: 304)
+            .background(
+                RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                    .fill(GameColor.controlSurface.opacity(0.94))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                            .stroke(GameColor.controlAccent.opacity(0.42), lineWidth: 2)
+                    )
+            )
+            .shadow(color: .black.opacity(0.36), radius: 24, x: 0, y: 16)
+            .scaleEffect(reduceMotion ? 1 : 1.02)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Get another hint")
+    }
+
+    private func hintAction(
+        title: String,
+        systemName: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemName)
+                .font(DSTypography.headline)
+                .foregroundStyle(isEnabled ? GameColor.controlSurface : GameColor.glassStroke.opacity(0.5))
+                .frame(maxWidth: .infinity)
+                .frame(height: 46)
+                .background(
+                    Capsule()
+                        .fill(isEnabled ? GameColor.controlAccent : GameColor.controlMuted.opacity(0.5))
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
     }
 }
 

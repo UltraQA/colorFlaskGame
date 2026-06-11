@@ -806,14 +806,14 @@ final class HomeViewModelTests: XCTestCase {
             timing: .immediate
         )
 
-        XCTAssertEqual(viewModel.hintBadgeText, "Free")
+        XCTAssertEqual(viewModel.hintBadgeText, "1")
 
         viewModel.showHint()
 
         XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 0, targetIndex: 2))
         XCTAssertEqual(viewModel.herbsBalance, 5)
         XCTAssertEqual(progressStore.herbsBalance, 5)
-        XCTAssertEqual(viewModel.hintBadgeText, "Free")
+        XCTAssertEqual(viewModel.hintBadgeText, "1")
 
         viewModel.handleFlaskTap(at: 0)
         viewModel.handleFlaskTap(at: 2)
@@ -824,6 +824,9 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.herbsBalance, 5)
         XCTAssertEqual(progressStore.herbsBalance, 5)
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
+        viewModel.purchaseHintWithHerbs()
         let paidHint = try XCTUnwrap(viewModel.hintMove)
         viewModel.handleFlaskTap(at: paidHint.sourceIndex)
         viewModel.handleFlaskTap(at: paidHint.targetIndex)
@@ -857,7 +860,11 @@ final class HomeViewModelTests: XCTestCase {
         await waitForScheduledMainQueueWork()
 
         viewModel.showHint()
-        XCTAssertEqual(viewModel.hintMove, HintMove(sourceIndex: 1, targetIndex: 0))
+        XCTAssertEqual(
+            viewModel.hintPurchasePrompt?.hintMove,
+            HintMove(sourceIndex: 1, targetIndex: 0)
+        )
+        viewModel.purchaseHintWithHerbs()
         viewModel.handleFlaskTap(at: 2)
         viewModel.handleFlaskTap(at: 0)
         await waitForScheduledMainQueueWork()
@@ -888,6 +895,9 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.herbsBalance, 8)
         XCTAssertEqual(progressStore.herbsBalance, 8)
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
+        viewModel.purchaseHintWithHerbs()
         XCTAssertTrue(viewModel.canInteractWithBoard)
         let hint = try XCTUnwrap(viewModel.hintMove)
         viewModel.handleFlaskTap(at: hint.sourceIndex)
@@ -939,6 +949,10 @@ final class HomeViewModelTests: XCTestCase {
 
         viewModel.showHint()
 
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        XCTAssertNil(viewModel.hintMove)
+        XCTAssertFalse(viewModel.canInteractWithBoard)
+        viewModel.purchaseHintWithHerbs()
         XCTAssertNotNil(viewModel.hintMove)
         XCTAssertEqual(viewModel.herbsBalance, HomeViewModel.extraHintHerbsCost)
         XCTAssertTrue(viewModel.canInteractWithBoard)
@@ -1069,6 +1083,9 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.canShowHint)
         XCTAssertEqual(viewModel.hintBadgeText, "Ad")
         viewModel.showHint()
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        XCTAssertFalse(viewModel.isRewardedHintInProgress)
+        viewModel.purchaseHintWithRewardedAd()
         XCTAssertTrue(viewModel.isRewardedHintInProgress)
         await waitForScheduledMainQueueWork()
 
@@ -1109,12 +1126,16 @@ final class HomeViewModelTests: XCTestCase {
             timing: .immediate
         )
 
+        viewModel.showHint()
+        viewModel.handleFlaskTap(at: 0)
+        viewModel.handleFlaskTap(at: 2)
+        await waitForScheduledMainQueueWork()
+
         XCTAssertFalse(viewModel.canShowHint)
         XCTAssertEqual(viewModel.hintBadgeText, "")
         viewModel.showHint()
-        await waitForScheduledMainQueueWork()
-
         XCTAssertNil(viewModel.hintMove)
+        XCTAssertNil(viewModel.hintPurchasePrompt)
         XCTAssertFalse(viewModel.isRewardedHintInProgress)
         XCTAssertEqual(rewardedAdProvider.showCount, 0)
     }
@@ -1145,9 +1166,12 @@ final class HomeViewModelTests: XCTestCase {
         viewModel.handleFlaskTap(at: 2)
         await waitForScheduledMainQueueWork()
         viewModel.showHint()
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
+        viewModel.purchaseHintWithRewardedAd()
         await waitForScheduledMainQueueWork()
 
         XCTAssertNil(viewModel.hintMove)
+        XCTAssertNotNil(viewModel.hintPurchasePrompt)
         XCTAssertFalse(viewModel.isRewardedHintInProgress)
         XCTAssertEqual(viewModel.hintsUsedThisLevel, 1)
         XCTAssertEqual(rewardedAdProvider.showCount, 1)
