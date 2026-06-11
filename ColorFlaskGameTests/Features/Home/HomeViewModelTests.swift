@@ -263,6 +263,12 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(AppFlow.initial(hasSeenIntro: true), .mainMenu)
     }
 
+    func testProductionFeatureFlagsHideDebugLevelJump() {
+        XCTAssertTrue(GameFeatureFlags.alpha.debugLevelJumpEnabled)
+        XCTAssertTrue(GameFeatureFlags.allEnabled.debugLevelJumpEnabled)
+        XCTAssertFalse(GameFeatureFlags.production.debugLevelJumpEnabled)
+    }
+
     func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,

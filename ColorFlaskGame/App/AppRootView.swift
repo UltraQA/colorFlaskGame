@@ -24,7 +24,8 @@ struct AppRootView: View {
         analyticsProvider: any GameAnalyticsProviding,
         crashReporter: any GameCrashReportingProviding,
         playerActionLogger: any PlayerActionLoggingProviding,
-        progressStore: (any ProgressStore)? = nil
+        progressStore: (any ProgressStore)? = nil,
+        featureFlags: GameFeatureFlags = .alpha
     ) {
         let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore()
         let feedbackProvider = SystemGameFeedbackProvider(progressStore: resolvedProgressStore)
@@ -33,7 +34,8 @@ struct AppRootView: View {
             progressStore: resolvedProgressStore,
             gameFeedbackProvider: feedbackProvider,
             gameAnalyticsProvider: analyticsProvider,
-            playerActionLogger: playerActionLogger
+            playerActionLogger: playerActionLogger,
+            featureFlags: featureFlags
         )
         self.analyticsProvider = analyticsProvider
         self.crashReporter = crashReporter
@@ -69,6 +71,7 @@ struct AppRootView: View {
                     isCurrentOrderInProgress: activeOrderLevelIndex == viewModel.currentLevelIndex,
                     isSoundEnabled: feedbackProvider.isSoundEnabled,
                     isHapticsEnabled: feedbackProvider.isHapticsEnabled,
+                    isDebugLevelJumpEnabled: viewModel.featureFlags.debugLevelJumpEnabled,
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
                         playerActionLogger.log(
@@ -258,6 +261,7 @@ private struct MainMenuView: View {
     let isCurrentOrderInProgress: Bool
     let isSoundEnabled: Bool
     let isHapticsEnabled: Bool
+    let isDebugLevelJumpEnabled: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
     let onJumpToLevel: (Int) -> Void
@@ -301,7 +305,9 @@ private struct MainMenuView: View {
 
                 statsPanel
 
-                testLevelPanel
+                if isDebugLevelJumpEnabled {
+                    testLevelPanel
+                }
 
                 Spacer(minLength: DSSpacing.md)
 
