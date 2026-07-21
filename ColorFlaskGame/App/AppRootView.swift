@@ -25,7 +25,7 @@ struct AppRootView: View {
         crashReporter: any GameCrashReportingProviding,
         playerActionLogger: any PlayerActionLoggingProviding,
         progressStore: (any ProgressStore)? = nil,
-        featureFlags: GameFeatureFlags = .alpha
+        featureFlags: GameFeatureFlags = .appDefault
     ) {
         let resolvedProgressStore = progressStore ?? UserDefaultsProgressStore()
         let feedbackProvider = SystemGameFeedbackProvider(progressStore: resolvedProgressStore)

@@ -130,7 +130,7 @@ Current status: not release-candidate ready.
 
 ### Technical/Product Operations
 
-- Need production build configuration review.
+- Production build configuration sanity check is in place. **Done:** `GameFeatureFlags.appDefault` selects alpha flags for Debug and production flags for Release; `scripts/release_check.sh` builds the Release configuration on the target simulator.
 - Need analytics and crash reporting decision.
 - Need privacy review before adding ads, analytics, or attribution SDKs.
 - Need App Store assets and metadata workflow.
@@ -150,7 +150,7 @@ Tasks:
 - Decide and implement real SDK path: ads, StoreKit, analytics, crash reporting.
 - If ads/IAP are not shipping in v1, hide or feature-flag those flows. **Done:** `GameFeatureFlags` now gates rewarded-ad and permanent bonus-flask purchase UI/actions; alpha keeps rewarded-ad stubs enabled and hides the future permanent purchase by default.
 - Add dependency injection boundaries for ad provider, purchase provider, analytics, crash reporting, and remote config if used. **Started:** `RewardedAdProviding` and `BonusFlaskPurchaseProviding` isolate monetization SDK calls from game state. `GameAnalyticsProviding` now captures app launch/flow, level start/complete, move count on completion, hint use, undo, reset, bonus flask unlock, rewarded-ad attempt/result, and purchase attempt/result events behind a no-op provider. `GameCrashReportingProviding` now isolates crash SDK setup, context, and non-fatal recording behind a no-op reporter.
-- Prepare production configuration: bundle id, version/build numbers, signing, capabilities, privacy manifest, release scheme.
+- Prepare production configuration: bundle id, version/build numbers, signing, capabilities, privacy manifest, release scheme. **Started:** Release simulator build passes through `scripts/release_check.sh`; App Store signing and metadata are still pending.
 - Ensure accessibility basics: VoiceOver labels for core actions, Dynamic Type sanity where applicable, Reduce Motion respected.
 
 Architectural note: keep game rules in value-type core models and service dependencies behind protocols. Avoid leaking SDK-specific code into SwiftUI views or the game engine.
@@ -289,7 +289,7 @@ QA priority: validate state correctness first. Cosmetic alignment bugs should no
 
 Goal: make the existing loop reliable enough for structured testing.
 
-1. Run alpha check and fix blockers.
+1. Run alpha check and fix blockers. **Done:** `scripts/alpha_check.sh` passes on the target simulator.
 2. Verify Levels 1-10, undo, hint, reset, bonus flask, progress save, and win transition.
 3. Add missing tests around state transitions and service stubs.
 4. Prepare TestFlight/local tester instructions from `docs/alpha-test-notes.md`.

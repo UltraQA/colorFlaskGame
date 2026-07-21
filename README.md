@@ -147,10 +147,18 @@ Important production rule: SDK-specific code should stay behind protocols and mu
 
 ## Feature Flags
 
-`GameFeatureFlags.alpha` is the default configuration:
+`GameFeatureFlags.appDefault` selects configuration by build:
+
+- DEBUG builds use `GameFeatureFlags.alpha`;
+- release builds use `GameFeatureFlags.production`.
+
+`GameFeatureFlags.alpha` is the local alpha configuration:
 
 - rewarded-ad stubs enabled;
-- permanent bonus flask purchase hidden and disabled.
+- permanent bonus flask purchase hidden and disabled;
+- debug jump-to-level and reset-progress tools enabled.
+
+`GameFeatureFlags.production` hides debug tools and disables monetization stubs until real SDKs are selected.
 
 `GameFeatureFlags.allEnabled` exists for tests and future StoreKit work.
 
@@ -211,6 +219,7 @@ Before sharing an alpha build:
 
 ```bash
 ./scripts/alpha_check.sh
+./scripts/release_check.sh
 ```
 
 ## Known Limitations
@@ -241,6 +250,12 @@ Run alpha tests:
 
 ```bash
 ./scripts/alpha_check.sh
+```
+
+Run a Release configuration sanity build:
+
+```bash
+./scripts/release_check.sh
 ```
 
 Inspect changed files:

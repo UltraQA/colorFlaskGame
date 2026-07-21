@@ -272,6 +272,14 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertFalse(GameFeatureFlags.production.debugResetProgressEnabled)
     }
 
+    func testDebugAppDefaultUsesAlphaFeatureFlags() {
+        #if DEBUG
+        XCTAssertEqual(GameFeatureFlags.appDefault, .alpha)
+        #else
+        XCTAssertEqual(GameFeatureFlags.appDefault, .production)
+        #endif
+    }
+
     func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,

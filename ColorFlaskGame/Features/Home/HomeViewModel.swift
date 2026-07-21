@@ -105,6 +105,14 @@ struct GameFeatureFlags: Equatable {
         debugLevelJumpEnabled: false,
         debugResetProgressEnabled: false
     )
+
+    static var appDefault: GameFeatureFlags {
+        #if DEBUG
+        .alpha
+        #else
+        .production
+        #endif
+    }
 }
 
 struct BonusUnlockPrompt: Identifiable, Equatable {
