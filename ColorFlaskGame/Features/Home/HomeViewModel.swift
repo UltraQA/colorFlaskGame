@@ -13,9 +13,18 @@ struct HintMove: Equatable {
     let targetIndex: Int
 }
 
+struct ThemePurchasePrompt: Identifiable, Equatable {
+    let themeID: String
+
+    var id: String {
+        themeID
+    }
+}
+
 enum RewardedAdPlacement: Equatable {
     case extraHint
     case bonusFlask
+    case themeUnlock
 }
 
 enum PurchaseProduct: Equatable {
@@ -270,12 +279,16 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var rewardedHintCredits = 0
     @Published private(set) var isRewardedHintInProgress = false
     @Published private(set) var isRewardedBonusUnlockInProgress = false
+    @Published private(set) var isRewardedThemeUnlockInProgress = false
     @Published private(set) var isPermanentBonusUnlockInProgress = false
+    @Published private(set) var selectedThemeID: String
+    @Published private(set) var ownedThemeIDs: Set<String>
     @Published private(set) var isOrderBannerVisible = true
     @Published private(set) var isTutorialPromptVisible: Bool
     @Published var resetConfirmationPrompt: ResetConfirmationPrompt?
     @Published var herbsTutorialPrompt: HerbsTutorialPrompt?
     @Published var hintPurchasePrompt: HintPurchasePrompt?
+    @Published var themePurchasePrompt: ThemePurchasePrompt?
 
     private var cancellables: Set<AnyCancellable> = []
     private var history: [[Flask]] = []
@@ -295,6 +308,7 @@ final class HomeViewModel: ObservableObject {
     private var invalidFeedbackTask: Task<Void, Never>?
     private var rewardedHintTask: Task<Void, Never>?
     private var rewardedBonusUnlockTask: Task<Void, Never>?
+    private var rewardedThemeUnlockTask: Task<Void, Never>?
     private var permanentBonusUnlockTask: Task<Void, Never>?
     private var completionTasks: [Task<Void, Never>] = []
 
@@ -329,9 +343,15 @@ final class HomeViewModel: ObservableObject {
         self.victoryMessageProvider = victoryMessageProvider
         let resolvedLevelIndex = currentLevelIndex ?? resolvedProgressStore.currentLevelIndex
         let resolvedBonusUnlock = isBonusFlaskPermanentlyUnlocked ?? resolvedProgressStore.isBonusFlaskPermanentlyUnlocked
+        let resolvedOwnedThemes = resolvedProgressStore.ownedThemeIDs.union([GameThemeCatalog.base.id])
+        let resolvedSelectedThemeID = resolvedOwnedThemes.contains(resolvedProgressStore.selectedThemeID)
+            ? resolvedProgressStore.selectedThemeID
+            : GameThemeCatalog.base.id
         self.currentLevelIndex = resolvedLevelIndex
         self.isBonusFlaskPermanentlyUnlocked = resolvedBonusUnlock
         self.herbsBalance = resolvedProgressStore.herbsBalance
+        self.selectedThemeID = resolvedSelectedThemeID
+        self.ownedThemeIDs = resolvedOwnedThemes
         self.isTutorialPromptVisible = Self.shouldShowTutorial(
             levelNumber: resolvedLevelIndex + 1,
             hasCompletedOnboarding: resolvedProgressStore.hasCompletedOnboarding
@@ -681,12 +701,102 @@ final class HomeViewModel: ObservableObject {
         progressStore.hasCompletedOnboarding = false
         progressStore.hasSeenHerbsTutorial = false
         progressStore.activeRoundSnapshot = nil
+        progressStore.selectedThemeID = GameThemeCatalog.base.id
+        progressStore.ownedThemeIDs = [GameThemeCatalog.base.id]
         isBonusFlaskPermanentlyUnlocked = false
         herbsBalance = 0
+        selectedThemeID = GameThemeCatalog.base.id
+        ownedThemeIDs = [GameThemeCatalog.base.id]
         resetConfirmationPrompt = nil
         herbsTutorialPrompt = nil
         hintPurchasePrompt = nil
+        themePurchasePrompt = nil
         loadLevel(at: 0)
+    }
+
+    func handleThemeTap(themeID: String) {
+        guard let theme = GameThemeCatalog.theme(id: themeID) else { return }
+        gameFeedbackProvider.play(.uiTap)
+
+        if ownedThemeIDs.contains(theme.id) {
+            selectTheme(theme.id)
+            return
+        }
+
+        themePurchasePrompt = ThemePurchasePrompt(themeID: theme.id)
+        playerActionLogger.log("theme purchase opened \(theme.id)")
+    }
+
+    func dismissThemePurchasePrompt() {
+        gameFeedbackProvider.play(.uiTap)
+        themePurchasePrompt = nil
+        playerActionLogger.log("theme purchase dismissed")
+    }
+
+    func purchaseThemeWithHerbs(themeID: String) {
+        guard let theme = GameThemeCatalog.theme(id: themeID),
+              case let .shop(herbsCost, _) = theme.commerceState,
+              herbsBalance >= herbsCost,
+              !ownedThemeIDs.contains(themeID),
+              !isRewardedAdInProgress else { return }
+
+        gameFeedbackProvider.play(.uiTap)
+        herbsBalance -= herbsCost
+        progressStore.herbsBalance = herbsBalance
+        unlockTheme(themeID, logReason: "herbs \(herbsCost)")
+    }
+
+    func unlockThemeWithRewardedAd(themeID: String) {
+        guard featureFlags.rewardedAdsEnabled,
+              let theme = GameThemeCatalog.theme(id: themeID),
+              case let .shop(_, adPreviewAvailable) = theme.commerceState,
+              adPreviewAvailable,
+              !ownedThemeIDs.contains(themeID),
+              !isRewardedAdInProgress else { return }
+
+        gameFeedbackProvider.play(.uiTap)
+        rewardedThemeUnlockTask?.cancel()
+        isRewardedThemeUnlockInProgress = true
+        gameAnalyticsProvider.track(.rewardedAdStarted(
+            levelNumber: currentLevelNumber,
+            placement: .themeUnlock
+        ))
+        playerActionLogger.log("rewarded ad started for theme \(themeID)")
+
+        rewardedThemeUnlockTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let didEarnReward = await self.rewardedAdProvider.showRewardedAd(for: .themeUnlock)
+            guard !Task.isCancelled else { return }
+
+            self.rewardedThemeUnlockTask = nil
+            self.isRewardedThemeUnlockInProgress = false
+            self.gameAnalyticsProvider.track(.rewardedAdCompleted(
+                levelNumber: self.currentLevelNumber,
+                placement: .themeUnlock,
+                success: didEarnReward
+            ))
+            self.playerActionLogger.log("rewarded ad completed for theme \(themeID) success \(didEarnReward)")
+            guard didEarnReward else { return }
+
+            self.unlockTheme(themeID, logReason: "rewarded ad")
+        }
+    }
+
+    private func selectTheme(_ themeID: String) {
+        guard selectedThemeID != themeID else { return }
+        selectedThemeID = themeID
+        progressStore.selectedThemeID = themeID
+        playerActionLogger.log("theme selected \(themeID)")
+    }
+
+    private func unlockTheme(_ themeID: String, logReason: String) {
+        ownedThemeIDs.insert(themeID)
+        progressStore.ownedThemeIDs = ownedThemeIDs
+        selectedThemeID = themeID
+        progressStore.selectedThemeID = themeID
+        themePurchasePrompt = nil
+        playerActionLogger.log("theme unlocked \(themeID) via \(logReason)")
+        objectWillChange.send()
     }
 
     func advanceToNextLevel() {
@@ -1036,7 +1146,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private var isRewardedAdInProgress: Bool {
-        isRewardedHintInProgress || isRewardedBonusUnlockInProgress
+        isRewardedHintInProgress || isRewardedBonusUnlockInProgress || isRewardedThemeUnlockInProgress
     }
 
     private var nextHintPaymentMode: HintPaymentMode {
@@ -1285,6 +1395,9 @@ final class HomeViewModel: ObservableObject {
         rewardedBonusUnlockTask?.cancel()
         rewardedBonusUnlockTask = nil
         isRewardedBonusUnlockInProgress = false
+        rewardedThemeUnlockTask?.cancel()
+        rewardedThemeUnlockTask = nil
+        isRewardedThemeUnlockInProgress = false
         permanentBonusUnlockTask?.cancel()
         permanentBonusUnlockTask = nil
         isPermanentBonusUnlockInProgress = false

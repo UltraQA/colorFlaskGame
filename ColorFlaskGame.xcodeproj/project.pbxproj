@@ -21,6 +21,7 @@
 		C37D5E8F0A6B4C219D3E4F50 /* HomeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46E6F901B7C4D32AE4F5061 /* HomeLayout.swift */; };
 		C3BF2019A3244B09BD333608 /* PourStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAF72C8CFA93441BBAFD08A5 /* PourStreamView.swift */; };
 		C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */; };
+		C9A7F41D3B024A779C4F1A28 /* UnlockOfferSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA67493FD6141F9BB4126B8 /* UnlockOfferSheet.swift */; };
 		D0E4A31C4F7B4F7C8C15A581 /* ProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B927B194A19464F8A46BE91 /* ProgressStore.swift */; };
 		D85F9A1CB3E44281A1C7D933 /* GameFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C2F7E64D3A4CF58C1B4E22 /* GameFeedback.swift */; };
 		EBFBEA59C0424B3C976B90B6 /* FlaskTubeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F79A20F278C4A0F95ECBDA1 /* FlaskTubeView.swift */; };
@@ -57,6 +58,7 @@
 		A95EC223B46D40169C8DAFF2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B28E4C7D9F5A42318B0C2D3E /* HomeLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLayoutTests.swift; sourceTree = "<group>"; };
 		BB23CC45DD67EE89FF01AA23 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
+		DAA67493FD6141F9BB4126B8 /* UnlockOfferSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockOfferSheet.swift; sourceTree = "<group>"; };
 		D46E6F901B7C4D32AE4F5061 /* HomeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLayout.swift; sourceTree = "<group>"; };
 		FAF72C8CFA93441BBAFD08A5 /* PourStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PourStreamView.swift; sourceTree = "<group>"; };
 		FD005B111BF2456AA02DC68F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				751D852F7EE64F49B6CA4828 /* FlaskProgressView.swift */,
 				9F79A20F278C4A0F95ECBDA1 /* FlaskTubeView.swift */,
 				FAF72C8CFA93441BBAFD08A5 /* PourStreamView.swift */,
+				DAA67493FD6141F9BB4126B8 /* UnlockOfferSheet.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -341,6 +344,7 @@
 				C71C5AAF553940318162A2E6 /* FlaskProgressView.swift in Sources */,
 				EBFBEA59C0424B3C976B90B6 /* FlaskTubeView.swift in Sources */,
 				C3BF2019A3244B09BD333608 /* PourStreamView.swift in Sources */,
+				C9A7F41D3B024A779C4F1A28 /* UnlockOfferSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

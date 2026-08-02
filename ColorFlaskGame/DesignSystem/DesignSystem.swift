@@ -188,6 +188,10 @@ enum GameThemeCatalog {
     ]
 
     static let allThemes = [base] + shopThemes
+
+    static func theme(id: String) -> GameTheme? {
+        allThemes.first { $0.id == id }
+    }
 }
 
 extension Color {

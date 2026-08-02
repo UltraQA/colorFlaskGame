@@ -295,6 +295,79 @@ final class HomeViewModelTests: XCTestCase {
         })
     }
 
+    func testThemePurchaseWithHerbsUnlocksSelectsAndPersistsTheme() {
+        let theme = GameThemeCatalog.shopThemes[0]
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            herbsBalance: 140
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.handleThemeTap(themeID: theme.id)
+        viewModel.purchaseThemeWithHerbs(themeID: theme.id)
+
+        XCTAssertNil(viewModel.themePurchasePrompt)
+        XCTAssertEqual(viewModel.herbsBalance, 20)
+        XCTAssertEqual(progressStore.herbsBalance, 20)
+        XCTAssertEqual(viewModel.selectedThemeID, theme.id)
+        XCTAssertTrue(viewModel.ownedThemeIDs.contains(theme.id))
+        XCTAssertEqual(progressStore.selectedThemeID, theme.id)
+        XCTAssertTrue(progressStore.ownedThemeIDs.contains(theme.id))
+    }
+
+    func testOwnedThemeTapSelectsWithoutPurchasePrompt() {
+        let theme = GameThemeCatalog.shopThemes[1]
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false,
+            selectedThemeID: GameThemeCatalog.base.id,
+            ownedThemeIDs: [GameThemeCatalog.base.id, theme.id]
+        )
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            timing: .immediate
+        )
+
+        viewModel.handleThemeTap(themeID: theme.id)
+
+        XCTAssertNil(viewModel.themePurchasePrompt)
+        XCTAssertEqual(viewModel.selectedThemeID, theme.id)
+        XCTAssertEqual(progressStore.selectedThemeID, theme.id)
+    }
+
+    func testRewardedAdThemeUnlockSelectsAndPersistsTheme() async {
+        let theme = GameThemeCatalog.shopThemes[0]
+        let progressStore = SpyProgressStore(
+            currentLevelIndex: 0,
+            isBonusFlaskPermanentlyUnlocked: false
+        )
+        let rewardedAdProvider = SpyRewardedAdProvider(result: true)
+        let viewModel = HomeViewModel(
+            levelRepository: SingleLevelRepository(),
+            progressStore: progressStore,
+            rewardedAdProvider: rewardedAdProvider,
+            featureFlags: .allEnabled,
+            timing: .immediate
+        )
+
+        viewModel.handleThemeTap(themeID: theme.id)
+        viewModel.unlockThemeWithRewardedAd(themeID: theme.id)
+        await waitForScheduledMainQueueWork()
+
+        XCTAssertNil(viewModel.themePurchasePrompt)
+        XCTAssertEqual(viewModel.selectedThemeID, theme.id)
+        XCTAssertTrue(viewModel.ownedThemeIDs.contains(theme.id))
+        XCTAssertEqual(rewardedAdProvider.placements, [.themeUnlock])
+        XCTAssertEqual(progressStore.selectedThemeID, theme.id)
+        XCTAssertTrue(progressStore.ownedThemeIDs.contains(theme.id))
+    }
+
     func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,
@@ -1750,6 +1823,8 @@ private final class SpyProgressStore: ProgressStore {
     var hasSeenHerbsTutorial: Bool
     var isSoundEnabled: Bool
     var isHapticsEnabled: Bool
+    var selectedThemeID: String
+    var ownedThemeIDs: Set<String>
 
     init(
         currentLevelIndex: Int,
@@ -1759,7 +1834,9 @@ private final class SpyProgressStore: ProgressStore {
         hasCompletedOnboarding: Bool = false,
         hasSeenHerbsTutorial: Bool = false,
         isSoundEnabled: Bool = true,
-        isHapticsEnabled: Bool = true
+        isHapticsEnabled: Bool = true,
+        selectedThemeID: String = GameThemeCatalog.base.id,
+        ownedThemeIDs: Set<String> = [GameThemeCatalog.base.id]
     ) {
         self.currentLevelIndex = currentLevelIndex
         self.activeRoundSnapshot = nil
@@ -1770,6 +1847,8 @@ private final class SpyProgressStore: ProgressStore {
         self.hasSeenHerbsTutorial = hasSeenHerbsTutorial
         self.isSoundEnabled = isSoundEnabled
         self.isHapticsEnabled = isHapticsEnabled
+        self.selectedThemeID = selectedThemeID
+        self.ownedThemeIDs = ownedThemeIDs
     }
 }
 

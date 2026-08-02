@@ -60,6 +60,8 @@ protocol ProgressStore {
     var hasSeenHerbsTutorial: Bool { get set }
     var isSoundEnabled: Bool { get set }
     var isHapticsEnabled: Bool { get set }
+    var selectedThemeID: String { get set }
+    var ownedThemeIDs: Set<String> { get set }
 }
 
 struct UserDefaultsProgressStore: ProgressStore {
@@ -73,6 +75,8 @@ struct UserDefaultsProgressStore: ProgressStore {
         static let hasSeenHerbsTutorial = "waterSort.onboarding.hasSeenHerbsTutorial"
         static let isSoundEnabled = "waterSort.settings.isSoundEnabled"
         static let isHapticsEnabled = "waterSort.settings.isHapticsEnabled"
+        static let selectedThemeID = "waterSort.cosmetics.selectedThemeID"
+        static let ownedThemeIDs = "waterSort.cosmetics.ownedThemeIDs"
     }
 
     private let userDefaults: UserDefaults
@@ -166,6 +170,24 @@ struct UserDefaultsProgressStore: ProgressStore {
         }
         set {
             userDefaults.set(newValue, forKey: Key.isHapticsEnabled)
+        }
+    }
+
+    var selectedThemeID: String {
+        get {
+            userDefaults.string(forKey: Key.selectedThemeID) ?? GameThemeCatalog.base.id
+        }
+        set {
+            userDefaults.set(newValue, forKey: Key.selectedThemeID)
+        }
+    }
+
+    var ownedThemeIDs: Set<String> {
+        get {
+            Set(userDefaults.stringArray(forKey: Key.ownedThemeIDs) ?? []).union([GameThemeCatalog.base.id])
+        }
+        set {
+            userDefaults.set(Array(newValue.union([GameThemeCatalog.base.id])).sorted(), forKey: Key.ownedThemeIDs)
         }
     }
 }

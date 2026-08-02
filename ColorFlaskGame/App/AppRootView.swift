@@ -73,6 +73,10 @@ struct AppRootView: View {
                     isHapticsEnabled: feedbackProvider.isHapticsEnabled,
                     isDebugLevelJumpEnabled: viewModel.featureFlags.debugLevelJumpEnabled,
                     isDebugResetProgressEnabled: viewModel.featureFlags.debugResetProgressEnabled,
+                    selectedThemeID: viewModel.selectedThemeID,
+                    ownedThemeIDs: viewModel.ownedThemeIDs,
+                    themePurchasePrompt: viewModel.themePurchasePrompt,
+                    isThemeUnlockingWithAd: viewModel.isRewardedThemeUnlockInProgress,
                     onStartOrder: {
                         feedbackProvider.play(.uiTap)
                         playerActionLogger.log(
@@ -108,7 +112,11 @@ struct AppRootView: View {
                     onToggleHaptics: {
                         playerActionLogger.log("haptics toggled")
                         feedbackProvider.toggleHaptics()
-                    }
+                    },
+                    onThemeTap: viewModel.handleThemeTap,
+                    onDismissThemePurchase: viewModel.dismissThemePurchasePrompt,
+                    onPurchaseThemeWithHerbs: viewModel.purchaseThemeWithHerbs,
+                    onUnlockThemeWithAd: viewModel.unlockThemeWithRewardedAd
                 )
                 .transition(.opacity)
             case .game:
@@ -264,11 +272,19 @@ private struct MainMenuView: View {
     let isHapticsEnabled: Bool
     let isDebugLevelJumpEnabled: Bool
     let isDebugResetProgressEnabled: Bool
+    let selectedThemeID: String
+    let ownedThemeIDs: Set<String>
+    let themePurchasePrompt: ThemePurchasePrompt?
+    let isThemeUnlockingWithAd: Bool
     let onStartOrder: () -> Void
     let onResetProgress: () -> Void
     let onJumpToLevel: (Int) -> Void
     let onToggleSound: () -> Void
     let onToggleHaptics: () -> Void
+    let onThemeTap: (String) -> Void
+    let onDismissThemePurchase: () -> Void
+    let onPurchaseThemeWithHerbs: (String) -> Void
+    let onUnlockThemeWithAd: (String) -> Void
 
     @State private var isResetConfirmationPresented = false
     @State private var isThemeShopPresented = false
@@ -280,6 +296,10 @@ private struct MainMenuView: View {
 
     private var startOrderIconName: String {
         isCurrentOrderInProgress ? "arrow.right.circle.fill" : "play.fill"
+    }
+
+    private var selectedThemeName: String {
+        GameThemeCatalog.theme(id: selectedThemeID)?.name ?? GameThemeCatalog.base.name
     }
 
     var body: some View {
@@ -334,7 +354,17 @@ private struct MainMenuView: View {
             Text("This will clear levels, herbs, and completed orders.")
         }
         .fullScreenCover(isPresented: $isThemeShopPresented) {
-            ThemeShopView(herbsBalance: herbsBalance) {
+            ThemeShopView(
+                herbsBalance: herbsBalance,
+                selectedThemeID: selectedThemeID,
+                ownedThemeIDs: ownedThemeIDs,
+                themePurchasePrompt: themePurchasePrompt,
+                isUnlockingWithAd: isThemeUnlockingWithAd,
+                onThemeTap: onThemeTap,
+                onDismissPurchase: onDismissThemePurchase,
+                onPurchaseWithHerbs: onPurchaseThemeWithHerbs,
+                onUnlockWithAd: onUnlockThemeWithAd
+            ) {
                 isThemeShopPresented = false
             }
         }
@@ -488,7 +518,7 @@ private struct MainMenuView: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    Text("Base Shop active")
+                    Text("\(selectedThemeName) active")
                         .font(DSTypography.caption)
                         .foregroundStyle(GameColor.glassStroke.opacity(0.76))
                         .lineLimit(1)
@@ -683,6 +713,14 @@ private struct MenuToggleButton: View {
 
 private struct ThemeShopView: View {
     let herbsBalance: Int
+    let selectedThemeID: String
+    let ownedThemeIDs: Set<String>
+    let themePurchasePrompt: ThemePurchasePrompt?
+    let isUnlockingWithAd: Bool
+    let onThemeTap: (String) -> Void
+    let onDismissPurchase: () -> Void
+    let onPurchaseWithHerbs: (String) -> Void
+    let onUnlockWithAd: (String) -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -693,7 +731,7 @@ private struct ThemeShopView: View {
                 VStack(alignment: .leading, spacing: DSSpacing.lg) {
                     header
 
-                    ThemeShopCard(theme: GameThemeCatalog.base, isActive: true)
+                    themeButton(for: GameThemeCatalog.base)
 
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         Text("New Looks")
@@ -701,7 +739,7 @@ private struct ThemeShopView: View {
                             .foregroundStyle(.white)
 
                         ForEach(GameThemeCatalog.shopThemes) { theme in
-                            ThemeShopCard(theme: theme, isActive: false)
+                            themeButton(for: theme)
                         }
                     }
                 }
@@ -710,6 +748,50 @@ private struct ThemeShopView: View {
                 .padding(.bottom, DSSpacing.xxl)
             }
         }
+        .sheet(item: themePurchaseBinding) { prompt in
+            if let theme = GameThemeCatalog.theme(id: prompt.themeID) {
+                ThemePurchaseSheet(
+                    theme: theme,
+                    herbsBalance: herbsBalance,
+                    isUnlockingWithAd: isUnlockingWithAd,
+                    onPurchaseWithHerbs: {
+                        onPurchaseWithHerbs(theme.id)
+                    },
+                    onUnlockWithAd: {
+                        onUnlockWithAd(theme.id)
+                    }
+                )
+                .presentationDetents([.height(330)])
+                .presentationDragIndicator(.visible)
+            }
+        }
+    }
+
+    private var themePurchaseBinding: Binding<ThemePurchasePrompt?> {
+        Binding(
+            get: {
+                themePurchasePrompt
+            },
+            set: { newValue in
+                if newValue == nil {
+                    onDismissPurchase()
+                }
+            }
+        )
+    }
+
+    private func themeButton(for theme: GameTheme) -> some View {
+        Button {
+            onThemeTap(theme.id)
+        } label: {
+            ThemeShopCard(
+                theme: theme,
+                isOwned: ownedThemeIDs.contains(theme.id),
+                isActive: selectedThemeID == theme.id
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isUnlockingWithAd)
     }
 
     private var header: some View {
@@ -754,8 +836,123 @@ private struct ThemeShopView: View {
     }
 }
 
+private struct ThemePurchaseSheet: View {
+    let theme: GameTheme
+    let herbsBalance: Int
+    let isUnlockingWithAd: Bool
+    let onPurchaseWithHerbs: () -> Void
+    let onUnlockWithAd: () -> Void
+
+    private var herbsCost: Int {
+        if case let .shop(herbsCost, _) = theme.commerceState {
+            return herbsCost
+        }
+
+        return 0
+    }
+
+    private var canWatchAd: Bool {
+        if case let .shop(_, adPreviewAvailable) = theme.commerceState {
+            return adPreviewAvailable
+        }
+
+        return false
+    }
+
+    var body: some View {
+        UnlockOfferSheet(
+            title: "Unlock theme",
+            subtitle: theme.name
+        ) {
+            ThemePreview(theme: theme)
+        } actions: {
+            UnlockOfferAction(
+                systemName: "leaf.fill",
+                title: "\(herbsCost) herbs",
+                subtitle: herbsBalance >= herbsCost ? "Unlock now" : "Need \(herbsCost - herbsBalance)",
+                footnote: "Permanent theme",
+                isEnabled: herbsBalance >= herbsCost && !isUnlockingWithAd,
+                action: onPurchaseWithHerbs
+            )
+
+            if canWatchAd {
+                UnlockOfferAction(
+                    systemName: "play.circle.fill",
+                    title: isUnlockingWithAd ? "Opening..." : "Free",
+                    subtitle: "Watch ad",
+                    footnote: "Permanent theme",
+                    isEnabled: !isUnlockingWithAd,
+                    action: onUnlockWithAd
+                )
+            }
+        }
+    }
+}
+
+private struct ThemePreview: View {
+    let theme: GameTheme
+
+    var body: some View {
+        VStack(spacing: DSSpacing.sm) {
+            HStack(spacing: DSSpacing.xs) {
+                ForEach(theme.paletteHexCodes, id: \.self) { hexCode in
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(color(for: hexCode))
+                        .frame(width: 38, height: 54)
+                }
+            }
+
+            Text(theme.subtitle)
+                .font(DSTypography.caption)
+                .foregroundStyle(GameColor.glassStroke.opacity(0.74))
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, DSSpacing.lg)
+        .padding(.vertical, DSSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                .fill(theme.tokens.surface.opacity(0.56))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DSCornerRadius.lg)
+                        .stroke(theme.tokens.primaryAccent.opacity(0.68), lineWidth: 1.5)
+                )
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(theme.name) theme preview")
+    }
+
+    private func color(for hexCode: String) -> Color {
+        switch hexCode.uppercased() {
+        case "#F6F7C5":
+            return Color(hex: 0xF6F7C5)
+        case "#F6A78B":
+            return Color(hex: 0xF6A78B)
+        case "#E7C4F0":
+            return Color(hex: 0xE7C4F0)
+        case "#A5C50B":
+            return Color(hex: 0xA5C50B)
+        case "#E79494":
+            return Color(hex: 0xE79494)
+        case "#4F386D":
+            return Color(hex: 0x4F386D)
+        case "#FFD966":
+            return Color(hex: 0xFFD966)
+        case "#D6C9D8":
+            return Color(hex: 0xD6C9D8)
+        case "#160723":
+            return Color(hex: 0x160723)
+        case "#EEEEEE":
+            return Color(hex: 0xEEEEEE)
+        default:
+            return GameColor.glassStroke
+        }
+    }
+}
+
 private struct ThemeShopCard: View {
     let theme: GameTheme
+    let isOwned: Bool
     let isActive: Bool
 
     var body: some View {
@@ -814,11 +1011,17 @@ private struct ThemeShopCard: View {
 
     private var commerceBadge: some View {
         HStack(spacing: 4) {
-            switch theme.commerceState {
-            case .owned:
+            if isActive {
                 Image(systemName: "checkmark")
                     .accessibilityHidden(true)
-            case let .shop(_, adPreviewAvailable):
+                Text("Selected")
+                    .lineLimit(1)
+            } else if isOwned {
+                Image(systemName: "checkmark")
+                    .accessibilityHidden(true)
+                Text("Owned")
+                    .lineLimit(1)
+            } else if case let .shop(_, adPreviewAvailable) = theme.commerceState {
                 Image(systemName: "leaf.fill")
                     .accessibilityHidden(true)
 
@@ -826,10 +1029,10 @@ private struct ThemeShopCard: View {
                     Image(systemName: "play.rectangle.fill")
                         .accessibilityHidden(true)
                 }
-            }
 
-            Text(theme.commerceState.title)
-                .lineLimit(1)
+                Text(theme.commerceState.title)
+                    .lineLimit(1)
+            }
         }
         .font(.system(size: 11, weight: .black, design: .rounded))
         .foregroundStyle(theme.tokens.textOnAccent)
@@ -842,13 +1045,20 @@ private struct ThemeShopCard: View {
     }
 
     private var accessibilityLabel: String {
-        switch theme.commerceState {
-        case .owned:
+        if isActive {
+            return "\(theme.name), selected theme"
+        }
+
+        if isOwned {
             return "\(theme.name), owned theme"
-        case let .shop(herbsCost, adPreviewAvailable):
+        }
+
+        if case let .shop(herbsCost, adPreviewAvailable) = theme.commerceState {
             return "\(theme.name), shop theme, costs \(herbsCost) herbs"
                 + (adPreviewAvailable ? ", ad preview available" : "")
         }
+
+        return "\(theme.name), theme"
     }
 
     private func color(for hexCode: String) -> Color {
