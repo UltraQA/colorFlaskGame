@@ -43,7 +43,7 @@ struct HomeView: View {
                             width: GameMetric.flaskHitWidth * layoutScale,
                             height: flaskHitHeight * layoutScale
                         )
-                        .rotationEffect(pourPose.rotation, anchor: .top)
+                        .rotationEffect(pourPose.rotation, anchor: pourPose.rotationAnchor)
                         .scaleEffect(pourPose.scale)
                     }
                     .buttonStyle(.plain)
@@ -64,6 +64,18 @@ struct HomeView: View {
                         value: viewModel.pourAnimation
                     )
                     .zIndex(pourPose.zIndex)
+                }
+
+                if let pourStream = pourStream(in: proxy.size, scale: layoutScale) {
+                    PourStreamView(
+                        from: pourStream.from,
+                        to: pourStream.to,
+                        color: pourStream.color,
+                        scale: layoutScale,
+                        reduceMotion: reduceMotion
+                    )
+                    .id(pourStream.id)
+                    .zIndex(GameLayer.animation)
                 }
 
                 ForEach(viewModel.tutorialMarkers, id: \.flaskIndex) { marker in
@@ -232,40 +244,95 @@ struct HomeView: View {
         guard let animation = viewModel.pourAnimation,
               animation.sourceIndex == index,
               !reduceMotion else {
-            return FlaskPourPose(center: restingCenter, rotation: .zero, scale: 1, zIndex: GameLayer.board)
+            return FlaskPourPose(
+                center: restingCenter,
+                rotation: .zero,
+                rotationAnchor: .center,
+                scale: 1,
+                zIndex: GameLayer.board
+            )
         }
 
         let targetCenter = flaskCenter(for: animation.targetIndex, in: size, scale: scale)
+        let sourceFlask = viewModel.gameManager.flasks[index]
         let direction: CGFloat = targetCenter.x >= restingCenter.x ? 1 : -1
         let mouthPoint = pouringMouthPoint(
             sourceCenter: restingCenter,
             targetCenter: targetCenter,
+            targetFlask: viewModel.gameManager.flasks[animation.targetIndex],
             scale: scale
         )
+        let anchorY = pouringRotationAnchorY(for: sourceFlask)
+        let sourceHeight = flaskHitHeight(for: sourceFlask) * scale
         let liftedCenter = CGPoint(
             x: mouthPoint.x,
-            y: mouthPoint.y + GameMetric.flaskHitHeight * scale / 2
+            y: mouthPoint.y - (anchorY - 0.5) * sourceHeight
         )
 
         return FlaskPourPose(
             center: liftedCenter,
-            rotation: .degrees(direction > 0 ? 62 : -62),
+            rotation: .degrees(direction > 0 ? 72 : -72),
+            rotationAnchor: UnitPoint(x: 0.5, y: anchorY),
             scale: 1.04,
             zIndex: GameLayer.animation + 1
         )
     }
 
-    private func pouringMouthPoint(sourceCenter: CGPoint, targetCenter: CGPoint, scale: CGFloat) -> CGPoint {
-        let direction: CGFloat = targetCenter.x >= sourceCenter.x ? 1 : -1
-        let targetOpening = CGPoint(
-            x: targetCenter.x,
-            y: targetCenter.y - 92 * scale
+    private func pourStream(in size: CGSize, scale: CGFloat) -> PourStream? {
+        guard let animation = viewModel.pourAnimation,
+              viewModel.gameManager.flasks.indices.contains(animation.sourceIndex),
+              viewModel.gameManager.flasks.indices.contains(animation.targetIndex) else {
+            return nil
+        }
+
+        let sourceCenter = flaskCenter(for: animation.sourceIndex, in: size, scale: scale)
+        let targetCenter = flaskCenter(for: animation.targetIndex, in: size, scale: scale)
+        let targetFlask = viewModel.gameManager.flasks[animation.targetIndex]
+        let targetOpening = flaskOpeningPoint(center: targetCenter, flask: targetFlask, scale: scale)
+        let sourceMouth = pouringMouthPoint(
+            sourceCenter: sourceCenter,
+            targetCenter: targetCenter,
+            targetFlask: targetFlask,
+            scale: scale
         )
 
-        return CGPoint(
-            x: targetOpening.x - direction * 46 * scale,
-            y: targetOpening.y - 16 * scale
+        return PourStream(
+            id: animation.id,
+            from: sourceMouth,
+            to: CGPoint(x: targetOpening.x, y: targetOpening.y + 18 * scale),
+            color: animation.color.swiftUIColor
         )
+    }
+
+    private func pouringMouthPoint(
+        sourceCenter: CGPoint,
+        targetCenter: CGPoint,
+        targetFlask: Flask,
+        scale: CGFloat
+    ) -> CGPoint {
+        let direction: CGFloat = targetCenter.x >= sourceCenter.x ? 1 : -1
+        let targetOpening = flaskOpeningPoint(center: targetCenter, flask: targetFlask, scale: scale)
+
+        return CGPoint(
+            x: targetOpening.x - direction * 24 * scale,
+            y: targetOpening.y - 14 * scale
+        )
+    }
+
+    private func flaskOpeningPoint(center: CGPoint, flask: Flask, scale: CGFloat) -> CGPoint {
+        CGPoint(
+            x: center.x,
+            y: center.y - flaskHitHeight(for: flask) * scale * 0.44
+        )
+    }
+
+    private func pouringRotationAnchorY(for flask: Flask) -> CGFloat {
+        let hitHeight = flaskHitHeight(for: flask)
+        let bottleHeight = GameMetric.flaskHeight + CGFloat(max(0, flask.capacity - Flask.maxCapacity)) * 12
+        let topPadding = max(0, (hitHeight - bottleHeight) / 2)
+        let mouthInset: CGFloat = 6
+
+        return min(0.14, max(0.06, (topPadding + mouthInset) / hitHeight))
     }
 
     private func gameBackground(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
@@ -475,8 +542,16 @@ struct HomeView: View {
 private struct FlaskPourPose {
     let center: CGPoint
     let rotation: Angle
+    let rotationAnchor: UnitPoint
     let scale: CGFloat
     let zIndex: Double
+}
+
+private struct PourStream {
+    let id: UUID
+    let from: CGPoint
+    let to: CGPoint
+    let color: Color
 }
 
 private struct LevelBadge: View {

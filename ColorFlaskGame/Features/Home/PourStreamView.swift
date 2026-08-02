@@ -63,13 +63,18 @@ struct PourStreamView: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
-        .onAppear {
+        .task {
+            progress = 0
+
             guard !reduceMotion else {
                 progress = 1
                 return
             }
 
-            withAnimation(.easeInOut(duration: 0.48)) {
+            try? await Task.sleep(nanoseconds: 160_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.34)) {
                 progress = 1
             }
         }
@@ -84,11 +89,11 @@ struct PourStreamView: View {
     }
 
     private var firstControl: CGPoint {
-        CGPoint(x: from.x + controlOffset * direction, y: from.y - 54 * scale)
+        CGPoint(x: from.x + controlOffset * direction, y: from.y - 8 * scale)
     }
 
     private var secondControl: CGPoint {
-        CGPoint(x: to.x - controlOffset * direction, y: to.y - 44 * scale)
+        CGPoint(x: to.x - controlOffset * direction * 0.2, y: to.y - 18 * scale)
     }
 
     private var pourPath: Path {
