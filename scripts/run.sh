@@ -4,8 +4,8 @@ set -euo pipefail
 PROJECT="ColorFlaskGame.xcodeproj"
 SCHEME="ColorFlaskGame"
 CONFIGURATION="Debug"
-SIMULATOR_NAME="iPhone 15"
-SIMULATOR_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-15"
+SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17}"
+SIMULATOR_DEVICE_TYPE="${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17}"
 DERIVED_DATA_PATH="build/DerivedData"
 BUNDLE_ID="com.fantasma.ColorFlaskGame"
 FRESH_INSTALL=false
@@ -41,7 +41,7 @@ if ! command -v xcrun >/dev/null 2>&1; then
   exit 1
 fi
 
-DEVICE_ID="$(xcrun simctl list devices available "$SIMULATOR_NAME" | awk -F '[()]' '/'"$SIMULATOR_NAME"'/ { print $2; exit }')"
+DEVICE_ID="$(xcrun simctl list devices available "$SIMULATOR_NAME" | awk -F '[()]' -v name="$SIMULATOR_NAME" '$1 ~ "^[[:space:]]*" name "[[:space:]]*$" { print $2; exit }')"
 
 if [[ -z "${DEVICE_ID}" ]]; then
   RUNTIME_ID="$(xcrun simctl list runtimes available | awk '/iOS/ { runtime = $NF } END { print runtime }')"

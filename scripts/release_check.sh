@@ -4,8 +4,8 @@ set -euo pipefail
 PROJECT="ColorFlaskGame.xcodeproj"
 SCHEME="ColorFlaskGame"
 CONFIGURATION="Release"
-SIMULATOR_NAME="iPhone 15"
-SIMULATOR_OS="17.4"
+SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17}"
+SIMULATOR_OS="${SIMULATOR_OS:-26.0.1}"
 DERIVED_DATA_PATH="build/DerivedDataRelease"
 
 cd "$(dirname "$0")/.."
@@ -16,6 +16,7 @@ if ! command -v xcodebuild >/dev/null 2>&1; then
 fi
 
 echo "Running release sanity build for $SCHEME..."
+echo "Target simulator: $SIMULATOR_NAME / iOS $SIMULATOR_OS"
 
 xcodebuild \
   -project "$PROJECT" \

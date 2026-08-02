@@ -271,6 +271,7 @@ private struct MainMenuView: View {
     let onToggleHaptics: () -> Void
 
     @State private var isResetConfirmationPresented = false
+    @State private var isThemeShopPresented = false
     @State private var testLevelNumber = 1
 
     private var startOrderTitle: String {
@@ -285,56 +286,43 @@ private struct MainMenuView: View {
         ZStack {
             MenuBackgroundView()
 
-            VStack(alignment: .leading, spacing: DSSpacing.lg) {
-                header
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: DSSpacing.lg) {
+                    header
 
-                nextOrderPanel
+                    nextOrderPanel
 
-                Button(action: onStartOrder) {
-                    Label(startOrderTitle, systemImage: startOrderIconName)
-                        .font(.system(size: 20, weight: .black, design: .rounded))
-                        .foregroundStyle(GameColor.controlSurface)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .background(
-                            Capsule()
-                                .fill(GameColor.controlAccent)
-                                .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 16, x: 0, y: 10)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the current potion order.")
-
-                statsPanel
-
-                if isDebugLevelJumpEnabled {
-                    testLevelPanel
-                }
-
-                Spacer(minLength: DSSpacing.md)
-
-                if isDebugResetProgressEnabled {
-                    Button("Reset Progress") {
-                        isResetConfirmationPresented = true
-                    }
-                    .font(DSTypography.headline)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.82))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(
-                        Capsule()
-                            .fill(GameColor.controlSurface.opacity(0.64))
-                            .overlay(
+                    Button(action: onStartOrder) {
+                        Label(startOrderTitle, systemImage: startOrderIconName)
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundStyle(GameColor.controlSurface)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 58)
+                            .background(
                                 Capsule()
-                                    .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                                    .fill(GameColor.controlAccent)
+                                    .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 16, x: 0, y: 10)
                             )
-                    )
+                    }
                     .buttonStyle(.plain)
+                    .accessibilityHint("Opens the current potion order.")
+
+                    statsPanel
+
+                    themeShopButton
+
+                    if isDebugLevelJumpEnabled {
+                        testLevelPanel
+                    }
+
+                    if isDebugResetProgressEnabled {
+                        resetProgressButton
+                    }
                 }
+                .padding(.horizontal, DSSpacing.xl)
+                .padding(.top, DSSpacing.xxl)
+                .padding(.bottom, DSSpacing.xxl)
             }
-            .padding(.horizontal, DSSpacing.xl)
-            .padding(.top, DSSpacing.xxl)
-            .padding(.bottom, DSSpacing.xl)
         }
         .alert("Reset progress?", isPresented: $isResetConfirmationPresented) {
             Button("Cancel", role: .cancel) {}
@@ -344,6 +332,11 @@ private struct MainMenuView: View {
             }
         } message: {
             Text("This will clear levels, herbs, and completed orders.")
+        }
+        .fullScreenCover(isPresented: $isThemeShopPresented) {
+            ThemeShopView(herbsBalance: herbsBalance) {
+                isThemeShopPresented = false
+            }
         }
     }
 
@@ -477,6 +470,52 @@ private struct MainMenuView: View {
         }
     }
 
+    private var themeShopButton: some View {
+        Button {
+            isThemeShopPresented = true
+        } label: {
+            HStack(spacing: DSSpacing.md) {
+                Image(systemName: "paintpalette.fill")
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.controlSurface)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(GameColor.controlAccent))
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Theme Shop")
+                        .font(DSTypography.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("Base Shop active")
+                        .font(DSTypography.caption)
+                        .foregroundStyle(GameColor.glassStroke.opacity(0.76))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: DSSpacing.sm)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                    .accessibilityHidden(true)
+            }
+            .padding(DSSpacing.md)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                    .fill(GameColor.controlSurface.opacity(0.64))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                            .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open theme shop")
+    }
+
     private var testLevelPanel: some View {
         HStack(spacing: DSSpacing.sm) {
             Button {
@@ -535,6 +574,25 @@ private struct MainMenuView: View {
             .buttonStyle(.plain)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var resetProgressButton: some View {
+        Button("Reset Progress") {
+            isResetConfirmationPresented = true
+        }
+        .font(DSTypography.headline)
+        .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
+        .background(
+            Capsule()
+                .fill(GameColor.controlSurface.opacity(0.64))
+                .overlay(
+                    Capsule()
+                        .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                )
+        )
+        .buttonStyle(.plain)
     }
 }
 
@@ -620,6 +678,204 @@ private struct MenuToggleButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+private struct ThemeShopView: View {
+    let herbsBalance: Int
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack {
+            MenuBackgroundView()
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: DSSpacing.lg) {
+                    header
+
+                    ThemeShopCard(theme: GameThemeCatalog.base, isActive: true)
+
+                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                        Text("New Looks")
+                            .font(DSTypography.headline)
+                            .foregroundStyle(.white)
+
+                        ForEach(GameThemeCatalog.shopThemes) { theme in
+                            ThemeShopCard(theme: theme, isActive: false)
+                        }
+                    }
+                }
+                .padding(.horizontal, DSSpacing.xl)
+                .padding(.top, DSSpacing.xxl)
+                .padding(.bottom, DSSpacing.xxl)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: DSSpacing.md) {
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(Circle().fill(GameColor.controlSurface.opacity(0.7)))
+                    .overlay(
+                        Circle()
+                            .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close theme shop")
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Theme Shop")
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Text("Potion room styles")
+                    .font(DSTypography.body)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: DSSpacing.sm)
+
+            Label("\(herbsBalance)", systemImage: "leaf.fill")
+                .font(DSTypography.headline)
+                .foregroundStyle(GameColor.controlSurface)
+                .padding(.horizontal, DSSpacing.md)
+                .frame(height: 38)
+                .background(Capsule().fill(GameColor.successAccent))
+                .accessibilityLabel("\(herbsBalance) herbs")
+        }
+    }
+}
+
+private struct ThemeShopCard: View {
+    let theme: GameTheme
+    let isActive: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: DSSpacing.md) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                HStack(spacing: DSSpacing.xs) {
+                    ForEach(theme.paletteHexCodes, id: \.self) { hexCode in
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(color(for: hexCode))
+                            .frame(width: 28, height: 34)
+                    }
+                }
+                .accessibilityHidden(true)
+
+                Text(theme.name)
+                    .font(DSTypography.headline)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+
+                Text(theme.subtitle)
+                    .font(DSTypography.caption)
+                    .foregroundStyle(GameColor.glassStroke.opacity(0.72))
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: DSSpacing.sm)
+
+            VStack(alignment: .trailing, spacing: DSSpacing.sm) {
+                commerceBadge
+
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundStyle(GameColor.successAccent)
+                        .accessibilityLabel("Active")
+                }
+            }
+        }
+        .padding(DSSpacing.md)
+        .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                .fill(theme.tokens.surface.opacity(isActive ? 0.82 : 0.58))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DSCornerRadius.md)
+                        .stroke(
+                            isActive ? theme.tokens.primaryAccent : GameColor.glassStroke.opacity(0.16),
+                            lineWidth: isActive ? 2 : 1
+                        )
+                )
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var commerceBadge: some View {
+        HStack(spacing: 4) {
+            switch theme.commerceState {
+            case .owned:
+                Image(systemName: "checkmark")
+                    .accessibilityHidden(true)
+            case let .shop(_, adPreviewAvailable):
+                Image(systemName: "leaf.fill")
+                    .accessibilityHidden(true)
+
+                if adPreviewAvailable {
+                    Image(systemName: "play.rectangle.fill")
+                        .accessibilityHidden(true)
+                }
+            }
+
+            Text(theme.commerceState.title)
+                .lineLimit(1)
+        }
+        .font(.system(size: 11, weight: .black, design: .rounded))
+        .foregroundStyle(theme.tokens.textOnAccent)
+        .padding(.horizontal, DSSpacing.xs)
+        .frame(height: 24)
+        .background(
+            Capsule()
+                .fill(theme.tokens.primaryAccent)
+        )
+    }
+
+    private var accessibilityLabel: String {
+        switch theme.commerceState {
+        case .owned:
+            return "\(theme.name), owned theme"
+        case let .shop(herbsCost, adPreviewAvailable):
+            return "\(theme.name), shop theme, costs \(herbsCost) herbs"
+                + (adPreviewAvailable ? ", ad preview available" : "")
+        }
+    }
+
+    private func color(for hexCode: String) -> Color {
+        switch hexCode.uppercased() {
+        case "#F6F7C5":
+            return Color(hex: 0xF6F7C5)
+        case "#F6A78B":
+            return Color(hex: 0xF6A78B)
+        case "#E7C4F0":
+            return Color(hex: 0xE7C4F0)
+        case "#A5C50B":
+            return Color(hex: 0xA5C50B)
+        case "#E79494":
+            return Color(hex: 0xE79494)
+        case "#4F386D":
+            return Color(hex: 0x4F386D)
+        case "#FFD966":
+            return Color(hex: 0xFFD966)
+        case "#D6C9D8":
+            return Color(hex: 0xD6C9D8)
+        case "#160723":
+            return Color(hex: 0x160723)
+        case "#EEEEEE":
+            return Color(hex: 0xEEEEEE)
+        default:
+            return GameColor.glassStroke
+        }
     }
 }
 

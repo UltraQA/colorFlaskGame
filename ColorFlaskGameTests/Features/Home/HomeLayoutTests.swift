@@ -20,6 +20,13 @@ final class HomeLayoutTests: XCTestCase {
         )
     }
 
+    func testBoardLayoutFitsIPhone17Portrait() {
+        assertBoardFits(
+            size: CGSize(width: 430, height: 932),
+            safeAreaInsets: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)
+        )
+    }
+
     func testBoardLayoutScalesOnPortraitIPadWithoutExceedingMaximumScale() {
         let size = CGSize(width: 834, height: 1194)
         let scale = layout.scale(in: size)

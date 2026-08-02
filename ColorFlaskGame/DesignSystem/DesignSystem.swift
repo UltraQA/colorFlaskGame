@@ -93,6 +93,113 @@ enum GameColor {
     static let invalid = Color(red: 1.00, green: 0.30, blue: 0.38)
 }
 
+struct ThemeTokenSet {
+    let backgroundPrimary: Color
+    let surface: Color
+    let primaryAccent: Color
+    let secondaryAccent: Color
+    let softAccent: Color
+    let textPrimary: Color
+    let textOnAccent: Color
+    let success: Color
+    let danger: Color
+}
+
+enum ThemeCommerceState: Equatable {
+    case owned
+    case shop(herbsCost: Int, adPreviewAvailable: Bool)
+
+    var title: String {
+        switch self {
+        case .owned:
+            return "Owned"
+        case let .shop(herbsCost, _):
+            return "\(herbsCost)"
+        }
+    }
+}
+
+struct GameTheme: Identifiable {
+    let id: String
+    let name: String
+    let subtitle: String
+    let paletteHexCodes: [String]
+    let tokens: ThemeTokenSet
+    let commerceState: ThemeCommerceState
+}
+
+enum GameThemeCatalog {
+    static let base = GameTheme(
+        id: "base-shop",
+        name: "Base Shop",
+        subtitle: "Current cozy potion room",
+        paletteHexCodes: ["#170F26", "#1A1426", "#F5BA4A", "#87BA70", "#DED1F2"],
+        tokens: ThemeTokenSet(
+            backgroundPrimary: GameColor.potionBackground,
+            surface: GameColor.controlSurface,
+            primaryAccent: GameColor.controlAccent,
+            secondaryAccent: GameColor.hintAccent,
+            softAccent: GameColor.glassStroke,
+            textPrimary: .white,
+            textOnAccent: GameColor.controlSurface,
+            success: GameColor.successAccent,
+            danger: GameColor.errorAccent
+        ),
+        commerceState: .owned
+    )
+
+    static let shopThemes: [GameTheme] = [
+        GameTheme(
+            id: "spring-herb-basket",
+            name: "Spring Herb Basket",
+            subtitle: "Soft pastels and fresh herb light",
+            paletteHexCodes: ["#F6F7C5", "#F6A78B", "#E7C4F0", "#A5C50B", "#E79494"],
+            tokens: ThemeTokenSet(
+                backgroundPrimary: Color(hex: 0xF6F7C5),
+                surface: Color(hex: 0xE7C4F0),
+                primaryAccent: Color(hex: 0xF6A78B),
+                secondaryAccent: Color(hex: 0xE79494),
+                softAccent: Color(hex: 0xF7EED8),
+                textPrimary: Color(hex: 0x2F2638),
+                textOnAccent: Color(hex: 0x2F2638),
+                success: Color(hex: 0xA5C50B),
+                danger: Color(hex: 0xD84F65)
+            ),
+            commerceState: .shop(herbsCost: 120, adPreviewAvailable: true)
+        ),
+        GameTheme(
+            id: "moonlit-elixir",
+            name: "Moonlit Elixir",
+            subtitle: "Deep violet shelves with golden magic",
+            paletteHexCodes: ["#4F386D", "#FFD966", "#D6C9D8", "#160723", "#EEEEEE"],
+            tokens: ThemeTokenSet(
+                backgroundPrimary: Color(hex: 0x160723),
+                surface: Color(hex: 0x4F386D),
+                primaryAccent: Color(hex: 0xFFD966),
+                secondaryAccent: Color(hex: 0xD6C9D8),
+                softAccent: Color(hex: 0xD6C9D8),
+                textPrimary: Color(hex: 0xEEEEEE),
+                textOnAccent: Color(hex: 0x160723),
+                success: Color(hex: 0x63E6A2),
+                danger: Color(hex: 0xFF5A6F)
+            ),
+            commerceState: .shop(herbsCost: 220, adPreviewAvailable: true)
+        )
+    ]
+
+    static let allThemes = [base] + shopThemes
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(
+            red: Double((hex >> 16) & 0xFF) / 255.0,
+            green: Double((hex >> 8) & 0xFF) / 255.0,
+            blue: Double(hex & 0xFF) / 255.0
+        )
+    }
+}
+
 extension LiquidColor {
     var swiftUIColor: Color {
         switch self {

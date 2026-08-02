@@ -177,7 +177,7 @@ Possible cadence:
 
 Unlockable categories:
 - background scenes, for example a simple starter shop, a warmer apothecary room, a moonlit shelf, a greenhouse corner, or a festival shop;
-- color schemes for UI controls, highlights, glass glow, and celebration effects;
+- color schemes for UI controls, highlights, glass glow, and celebration effects. **Started:** the current in-game look is now treated as the owned `Base Shop` theme, while additional palettes are listed as shop cosmetics;
 - flask variants, such as different silhouettes, caps, labels, wraps, corks, ribbons, or small charms;
 - potion shelf or shop decorations as a future meta layer.
 
@@ -533,7 +533,7 @@ Atmosphere:
 
 Game background:
 - vertical mobile;
-- iPhone 15 ratio;
+- iPhone 17 ratio;
 - must work under UI and flasks;
 - center should stay low-noise;
 - edges can contain shop elements: shelves, herbs, candles, books;
@@ -825,7 +825,7 @@ For this game, MVP means:
 - the first levels teach the core Water Sort loop without external explanation;
 - pouring, undo, reset, hint, win flow, level advance, herbs reward, and persistence work reliably;
 - locked bonus flask and rewarded-ad stubs are understandable as optional help, not required progression;
-- UI text fits inside badges and does not cover flasks on iPhone 15;
+- UI text fits inside badges and does not cover flasks on iPhone 17;
 - the game has enough Cozy Potion Shop identity to communicate the direction, even if final art is not ready;
 - known unfinished systems are explicit: real ads, IAP, shop meta, achievements, final asset polish, and broad device QA.
 
@@ -865,7 +865,7 @@ Scope:
 - daily herbs gift;
 - potion shelf collection;
 - unlockable backgrounds, color palettes, and flask skins over level milestones;
-- herb-based cosmetic purchases for flask styles, backgrounds, color palettes, or shop decorations;
+- herb-based cosmetic purchases for flask styles, backgrounds, color palettes, or shop decorations. **Started:** `Spring Herb Basket` and `Moonlit Elixir` are modeled as theme-shop items using Color-Hex palettes;
 - main menu settings for sound, haptics, and customization collections;
 - outro progress toward the next cosmetic or herbs reward;
 - future shop meta with customers who request special nectars, tinctures, potions, and other cozy potion orders;

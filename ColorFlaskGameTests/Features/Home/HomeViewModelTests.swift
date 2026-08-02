@@ -280,6 +280,21 @@ final class HomeViewModelTests: XCTestCase {
         #endif
     }
 
+    func testThemeCatalogKeepsCurrentThemeAsBaseAndPutsNewPalettesInShop() {
+        XCTAssertEqual(GameThemeCatalog.base.id, "base-shop")
+        XCTAssertEqual(GameThemeCatalog.base.commerceState, .owned)
+        XCTAssertEqual(GameThemeCatalog.shopThemes.map(\.id), [
+            "spring-herb-basket",
+            "moonlit-elixir"
+        ])
+        XCTAssertTrue(GameThemeCatalog.shopThemes.allSatisfy { theme in
+            if case .shop = theme.commerceState {
+                return true
+            }
+            return false
+        })
+    }
+
     func testProgressStorePersistsLevelAdvanceAndPermanentBonusUnlock() async {
         let progressStore = SpyProgressStore(
             currentLevelIndex: 0,

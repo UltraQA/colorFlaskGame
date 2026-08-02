@@ -53,7 +53,7 @@ Minimum target is configured for iOS 17.0.
 xcode-select -p
 ```
 
-The helper scripts expect an iPhone 15 simulator. `scripts/run.sh` can create one if needed. `scripts/alpha_check.sh` currently targets iPhone 15 / iOS 17.4.
+The helper scripts expect an iPhone 17 simulator. `scripts/run.sh` can create one if needed. `scripts/alpha_check.sh` currently targets iPhone 17 / iOS 26.0.1 by default.
 
 ## Getting Started
 
@@ -71,7 +71,7 @@ For a clean first-run install:
 
 This script:
 
-- finds or creates an iPhone 15 simulator;
+- finds or creates an iPhone 17 simulator;
 - boots the simulator;
 - builds the `ColorFlaskGame` scheme;
 - installs the app;
@@ -85,7 +85,7 @@ Use the alpha readiness script:
 ./scripts/alpha_check.sh
 ```
 
-This runs the test suite through `xcodebuild` on iPhone 15 / iOS 17.4.
+This runs the test suite through `xcodebuild` on iPhone 17 / iOS 26.0.1.
 
 Manual equivalent:
 
@@ -94,7 +94,7 @@ xcodebuild \
   -project ColorFlaskGame.xcodeproj \
   -scheme ColorFlaskGame \
   -configuration Debug \
-  -destination "platform=iOS Simulator,name=iPhone 15,OS=17.4" \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=26.0.1" \
   -derivedDataPath build/DerivedData \
   test
 ```
