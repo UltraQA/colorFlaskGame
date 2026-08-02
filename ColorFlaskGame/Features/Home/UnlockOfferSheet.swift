@@ -1,27 +1,31 @@
 import SwiftUI
 
 struct UnlockOfferSheet<Preview: View, Actions: View>: View {
+    @Environment(\.gameTheme) private var theme
     let title: String
     let subtitle: String
     @ViewBuilder let preview: () -> Preview
     @ViewBuilder let actions: () -> Actions
 
     var body: some View {
-        VStack(spacing: DSSpacing.lg) {
+        VStack(spacing: DSSpacing.md) {
             Capsule()
-                .fill(GameColor.controlAccent.opacity(0.26))
+                .fill(theme.primaryAccent.opacity(0.26))
                 .frame(width: 64, height: 6)
+                .padding(.bottom, DSSpacing.xs)
 
             VStack(spacing: DSSpacing.xs) {
                 Text(title)
-                    .font(DSTypography.title)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(theme.textPrimary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.76)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(subtitle)
                     .font(DSTypography.caption)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .foregroundStyle(theme.textPrimary.opacity(0.72))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
@@ -39,14 +43,15 @@ struct UnlockOfferSheet<Preview: View, Actions: View>: View {
             }
         }
         .padding(.horizontal, DSSpacing.xl)
-        .padding(.top, DSSpacing.lg)
+        .padding(.top, DSSpacing.xl)
         .padding(.bottom, DSSpacing.xl)
         .frame(maxWidth: .infinity)
-        .background(GameColor.potionBackground)
+        .background(theme.backgroundPrimary)
     }
 }
 
 struct UnlockOfferAction: View {
+    @Environment(\.gameTheme) private var theme
     let systemName: String
     let title: String
     let subtitle: String
@@ -59,29 +64,29 @@ struct UnlockOfferAction: View {
             VStack(spacing: DSSpacing.sm) {
                 Image(systemName: systemName)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textOnAccent)
                     .frame(width: GameMetric.iconButtonSize, height: GameMetric.iconButtonSize)
                     .background(
                         Circle()
-                            .fill(GameColor.controlAccent)
+                            .fill(theme.primaryAccent)
                     )
 
                 VStack(spacing: DSSpacing.xxs) {
                     Text(title)
                         .font(DSTypography.headline)
-                        .foregroundStyle(GameColor.glassStroke)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.76)
 
                     Text(subtitle)
                         .font(DSTypography.caption)
-                        .foregroundStyle(GameColor.glassStroke.opacity(0.68))
+                        .foregroundStyle(theme.textPrimary.opacity(0.68))
                         .lineLimit(1)
                         .minimumScaleFactor(0.76)
 
                     Text(footnote)
                         .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundStyle(GameColor.glassStroke.opacity(0.48))
+                        .foregroundStyle(theme.textPrimary.opacity(0.48))
                         .lineLimit(1)
                         .minimumScaleFactor(0.76)
                 }
@@ -91,11 +96,11 @@ struct UnlockOfferAction: View {
             .padding(.vertical, DSSpacing.md)
             .background(
                 RoundedRectangle(cornerRadius: DSCornerRadius.lg)
-                    .fill(GameColor.controlSurface.opacity(0.74))
+                    .fill(theme.surface.opacity(0.74))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DSCornerRadius.lg)
-                    .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                    .stroke(theme.softAccent.opacity(0.14), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

@@ -126,6 +126,10 @@ struct GameTheme: Identifiable {
     let paletteHexCodes: [String]
     let tokens: ThemeTokenSet
     let commerceState: ThemeCommerceState
+
+    var paletteColors: [Color] {
+        paletteHexCodes.map { Color(hexCode: $0) ?? tokens.softAccent }
+    }
 }
 
 enum GameThemeCatalog {
@@ -201,6 +205,30 @@ extension Color {
             green: Double((hex >> 8) & 0xFF) / 255.0,
             blue: Double(hex & 0xFF) / 255.0
         )
+    }
+
+    init?(hexCode: String) {
+        let cleanedHex = hexCode
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+
+        guard cleanedHex.count == 6,
+              let value = UInt32(cleanedHex, radix: 16) else {
+            return nil
+        }
+
+        self.init(hex: value)
+    }
+}
+
+private struct GameThemeEnvironmentKey: EnvironmentKey {
+    static let defaultValue = GameThemeCatalog.base.tokens
+}
+
+extension EnvironmentValues {
+    var gameTheme: ThemeTokenSet {
+        get { self[GameThemeEnvironmentKey.self] }
+        set { self[GameThemeEnvironmentKey.self] = newValue }
     }
 }
 

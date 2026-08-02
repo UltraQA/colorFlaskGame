@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.gameTheme) private var theme
     @ObservedObject private var viewModel: HomeViewModel
     @State private var bonusSheetHeight: CGFloat = 260
     private let onReturnToMenu: () -> Void
@@ -337,7 +338,7 @@ struct HomeView: View {
 
     private func gameBackground(in size: CGSize, safeAreaInsets: EdgeInsets) -> some View {
         return ZStack {
-            GameColor.potionBackground
+            theme.backgroundPrimary
                 .ignoresSafeArea()
 
             Image("GameBackground")
@@ -348,6 +349,10 @@ struct HomeView: View {
                 .opacity(0.34)
 
             CozyPotionShopBackgroundView()
+
+            theme.surface
+                .opacity(0.12)
+                .ignoresSafeArea()
         }
         .frame(
             width: max(1, size.width + safeAreaInsets.leading + safeAreaInsets.trailing),

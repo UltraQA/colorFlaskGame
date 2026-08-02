@@ -131,7 +131,8 @@ struct AppRootView: View {
                 .transition(.opacity)
             }
         }
-        .tint(DSColor.brand)
+        .tint(selectedTheme.tokens.primaryAccent)
+        .environment(\.gameTheme, selectedTheme.tokens)
         .onChange(of: viewModel.currentLevelIndex) { _, _ in
             guard flow == .game else { return }
             activeOrderLevelIndex = nil
@@ -161,6 +162,10 @@ struct AppRootView: View {
         .onChange(of: viewModel.herbsBalance) { _, _ in
             updateCrashContext()
         }
+    }
+
+    private var selectedTheme: GameTheme {
+        GameThemeCatalog.theme(id: viewModel.selectedThemeID) ?? GameThemeCatalog.base
     }
 
     private func updateCrashContext() {
@@ -202,6 +207,7 @@ enum AppFlow: Equatable {
 }
 
 private struct IntroView: View {
+    @Environment(\.gameTheme) private var theme
     let onFinish: () -> Void
     @State private var hasFinished = false
 
@@ -214,20 +220,20 @@ private struct IntroView: View {
 
                 Image(systemName: "flask.fill")
                     .font(.system(size: 78, weight: .black, design: .rounded))
-                    .foregroundStyle(GameColor.controlAccent)
-                    .shadow(color: GameColor.controlAccent.opacity(0.28), radius: 14, x: 0, y: 8)
+                    .foregroundStyle(theme.primaryAccent)
+                    .shadow(color: theme.primaryAccent.opacity(0.28), radius: 14, x: 0, y: 8)
                     .accessibilityHidden(true)
 
                 VStack(spacing: DSSpacing.xs) {
                     Text("Color Flask")
                         .font(.system(size: 42, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
 
                     Text("Brew cozy potions. Sort the magic.")
                         .font(DSTypography.headline)
-                        .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                        .foregroundStyle(theme.textPrimary.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
@@ -260,6 +266,7 @@ private struct IntroView: View {
 }
 
 private struct MainMenuView: View {
+    @Environment(\.gameTheme) private var theme
     let herbsBalance: Int
     let levelNumber: Int
     let orderTitle: String
@@ -315,13 +322,13 @@ private struct MainMenuView: View {
                     Button(action: onStartOrder) {
                         Label(startOrderTitle, systemImage: startOrderIconName)
                             .font(.system(size: 20, weight: .black, design: .rounded))
-                            .foregroundStyle(GameColor.controlSurface)
+                            .foregroundStyle(theme.textOnAccent)
                             .frame(maxWidth: .infinity)
                             .frame(height: 58)
                             .background(
                                 Capsule()
-                                    .fill(GameColor.controlAccent)
-                                    .shadow(color: GameColor.controlAccent.opacity(0.24), radius: 16, x: 0, y: 10)
+                                    .fill(theme.primaryAccent)
+                                    .shadow(color: theme.primaryAccent.opacity(0.24), radius: 16, x: 0, y: 10)
                             )
                     }
                     .buttonStyle(.plain)
@@ -375,13 +382,13 @@ private struct MainMenuView: View {
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
                 Text("Potion Shop")
                     .font(.system(size: 34, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
 
                 Text("Potion orders await")
                     .font(DSTypography.headline)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .foregroundStyle(theme.textPrimary.opacity(0.72))
                     .lineLimit(1)
             }
 
@@ -390,12 +397,12 @@ private struct MainMenuView: View {
             VStack(alignment: .trailing, spacing: DSSpacing.sm) {
                 Label("\(herbsBalance)", systemImage: "leaf.fill")
                     .font(DSTypography.headline)
-                    .foregroundStyle(GameColor.controlSurface)
+                    .foregroundStyle(theme.textOnAccent)
                     .padding(.horizontal, DSSpacing.md)
                     .frame(height: 38)
                     .background(
                         Capsule()
-                            .fill(GameColor.successAccent)
+                            .fill(theme.success)
                     )
                     .accessibilityLabel("\(herbsBalance) herbs")
 
@@ -423,30 +430,30 @@ private struct MainMenuView: View {
             HStack(spacing: DSSpacing.sm) {
                 Text("Level \(levelNumber)")
                     .font(DSTypography.caption)
-                    .foregroundStyle(GameColor.controlSurface)
+                    .foregroundStyle(theme.textOnAccent)
                     .padding(.horizontal, DSSpacing.sm)
                     .frame(height: 26)
                     .background(
                         Capsule()
-                            .fill(GameColor.controlAccent)
+                            .fill(theme.primaryAccent)
                     )
 
                 Spacer()
 
                 RewardValueView(value: rewardText, font: DSTypography.caption)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.84))
+                    .foregroundStyle(theme.textPrimary.opacity(0.76))
             }
 
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
                 Text(orderTitle)
                     .font(DSTypography.title)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
 
                 Text(orderSubtitle)
                     .font(DSTypography.body)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .foregroundStyle(theme.textPrimary.opacity(0.72))
                     .lineLimit(2)
             }
 
@@ -462,19 +469,19 @@ private struct MainMenuView: View {
 
                     Text(objectiveSummary.potionName)
                         .font(DSTypography.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
 
                     Spacer()
 
                     Text(objectiveSummary.progressText)
                         .font(DSTypography.headline)
-                        .foregroundStyle(GameColor.controlSurface)
+                        .foregroundStyle(theme.textOnAccent)
                         .padding(.horizontal, DSSpacing.sm)
                         .frame(height: 28)
                         .background(
                             Capsule()
-                                .fill(GameColor.controlAccent)
+                                .fill(theme.primaryAccent)
                         )
                 }
             }
@@ -483,10 +490,10 @@ private struct MainMenuView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: DSCornerRadius.lg)
-                .fill(GameColor.controlSurface.opacity(0.78))
+                .fill(theme.surface.opacity(0.78))
                 .overlay(
                     RoundedRectangle(cornerRadius: DSCornerRadius.lg)
-                        .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                        .stroke(theme.softAccent.opacity(0.16), lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.24), radius: 16, x: 0, y: 10)
@@ -507,20 +514,20 @@ private struct MainMenuView: View {
             HStack(spacing: DSSpacing.md) {
                 Image(systemName: "paintpalette.fill")
                     .font(.system(size: 22, weight: .black, design: .rounded))
-                    .foregroundStyle(GameColor.controlSurface)
+                    .foregroundStyle(theme.textOnAccent)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(GameColor.controlAccent))
+                    .background(Circle().fill(theme.primaryAccent))
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Theme Shop")
                         .font(DSTypography.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
 
                     Text("\(selectedThemeName) active")
                         .font(DSTypography.caption)
-                        .foregroundStyle(GameColor.glassStroke.opacity(0.76))
+                        .foregroundStyle(theme.textPrimary.opacity(0.68))
                         .lineLimit(1)
                 }
 
@@ -528,17 +535,17 @@ private struct MainMenuView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+                    .foregroundStyle(theme.textPrimary.opacity(0.72))
                     .accessibilityHidden(true)
             }
             .padding(DSSpacing.md)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: DSCornerRadius.md)
-                    .fill(GameColor.controlSurface.opacity(0.64))
+                    .fill(theme.surface.opacity(0.64))
                     .overlay(
                         RoundedRectangle(cornerRadius: DSCornerRadius.md)
-                            .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                            .stroke(theme.softAccent.opacity(0.14), lineWidth: 1)
                     )
             )
         }
@@ -553,26 +560,26 @@ private struct MainMenuView: View {
             } label: {
                 Image(systemName: "minus")
                     .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(GameColor.controlSurface.opacity(0.68)))
+                    .background(Circle().fill(theme.surface.opacity(0.68)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Previous test level")
 
             Text("Level \(testLevelNumber)")
                 .font(DSTypography.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(theme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(
                     Capsule()
-                        .fill(GameColor.controlSurface.opacity(0.68))
+                        .fill(theme.surface.opacity(0.68))
                         .overlay(
                             Capsule()
-                                .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                                .stroke(theme.softAccent.opacity(0.16), lineWidth: 1)
                         )
                 )
 
@@ -581,9 +588,9 @@ private struct MainMenuView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(GameColor.controlSurface.opacity(0.68)))
+                    .background(Circle().fill(theme.surface.opacity(0.68)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Next test level")
@@ -593,12 +600,12 @@ private struct MainMenuView: View {
             } label: {
                 Label("Go", systemImage: "arrow.turn.down.right")
                     .font(DSTypography.headline)
-                    .foregroundStyle(GameColor.controlSurface)
+                    .foregroundStyle(theme.textOnAccent)
                     .padding(.horizontal, DSSpacing.md)
                     .frame(height: 44)
                     .background(
                         Capsule()
-                            .fill(GameColor.successAccent)
+                            .fill(theme.success)
                     )
             }
             .buttonStyle(.plain)
@@ -611,15 +618,15 @@ private struct MainMenuView: View {
             isResetConfirmationPresented = true
         }
         .font(DSTypography.headline)
-        .foregroundStyle(GameColor.glassStroke.opacity(0.82))
+        .foregroundStyle(theme.textPrimary.opacity(0.78))
         .frame(maxWidth: .infinity)
         .frame(height: 44)
         .background(
             Capsule()
-                .fill(GameColor.controlSurface.opacity(0.64))
+                .fill(theme.surface.opacity(0.64))
                 .overlay(
                     Capsule()
-                        .stroke(GameColor.glassStroke.opacity(0.14), lineWidth: 1)
+                        .stroke(theme.softAccent.opacity(0.14), lineWidth: 1)
                 )
         )
         .buttonStyle(.plain)
@@ -627,6 +634,7 @@ private struct MainMenuView: View {
 }
 
 private struct MenuStatView: View {
+    @Environment(\.gameTheme) private var theme
     let title: String
     let value: String
     var systemImage: String?
@@ -637,31 +645,31 @@ private struct MenuStatView: View {
                 if let systemImage {
                     Image(systemName: systemImage)
                         .font(.system(size: 18, weight: .black, design: .rounded))
-                        .foregroundStyle(GameColor.successAccent)
+                        .foregroundStyle(theme.success)
                         .accessibilityHidden(true)
                 }
 
                 if !value.isEmpty {
                     Text(value)
                         .font(.system(size: 24, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
                 }
             }
 
             Text(title)
                 .font(DSTypography.caption)
-                .foregroundStyle(GameColor.glassStroke.opacity(0.76))
+                .foregroundStyle(theme.textPrimary.opacity(0.66))
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 82)
         .background(
             RoundedRectangle(cornerRadius: DSCornerRadius.md)
-                .fill(GameColor.controlSurface.opacity(0.64))
+                .fill(theme.surface.opacity(0.64))
                 .overlay(
                     RoundedRectangle(cornerRadius: DSCornerRadius.md)
-                        .stroke(GameColor.glassStroke.opacity(0.12), lineWidth: 1)
+                        .stroke(theme.softAccent.opacity(0.12), lineWidth: 1)
                 )
         )
     }
@@ -686,6 +694,7 @@ private struct RewardValueView: View {
 }
 
 private struct MenuToggleButton: View {
+    @Environment(\.gameTheme) private var theme
     let systemImage: String
     let isEnabled: Bool
     let accessibilityLabel: String
@@ -695,14 +704,14 @@ private struct MenuToggleButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 16, weight: .black, design: .rounded))
-                .foregroundStyle(isEnabled ? GameColor.controlSurface : GameColor.glassStroke.opacity(0.72))
+                .foregroundStyle(isEnabled ? theme.textOnAccent : theme.textPrimary.opacity(0.62))
                 .frame(width: 36, height: 36)
                 .background(
                     Circle()
-                        .fill(isEnabled ? GameColor.controlAccent : GameColor.controlSurface.opacity(0.58))
+                        .fill(isEnabled ? theme.primaryAccent : theme.surface.opacity(0.58))
                         .overlay(
                             Circle()
-                                .stroke(GameColor.glassStroke.opacity(isEnabled ? 0.18 : 0.1), lineWidth: 1)
+                                .stroke(theme.softAccent.opacity(isEnabled ? 0.18 : 0.1), lineWidth: 1)
                         )
                 )
         }
@@ -712,6 +721,7 @@ private struct MenuToggleButton: View {
 }
 
 private struct ThemeShopView: View {
+    @Environment(\.gameTheme) private var theme
     let herbsBalance: Int
     let selectedThemeID: String
     let ownedThemeIDs: Set<String>
@@ -736,7 +746,7 @@ private struct ThemeShopView: View {
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         Text("New Looks")
                             .font(DSTypography.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(theme.textPrimary)
 
                         ForEach(GameThemeCatalog.shopThemes) { theme in
                             themeButton(for: theme)
@@ -761,7 +771,7 @@ private struct ThemeShopView: View {
                         onUnlockWithAd(theme.id)
                     }
                 )
-                .presentationDetents([.height(330)])
+                .presentationDetents([.height(390)])
                 .presentationDragIndicator(.visible)
             }
         }
@@ -799,12 +809,12 @@ private struct ThemeShopView: View {
             Button(action: onClose) {
                 Image(systemName: "xmark")
                     .font(.system(size: 17, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .frame(width: 48, height: 48)
-                    .background(Circle().fill(GameColor.controlSurface.opacity(0.7)))
+                    .background(Circle().fill(theme.surface.opacity(0.7)))
                     .overlay(
                         Circle()
-                            .stroke(GameColor.glassStroke.opacity(0.16), lineWidth: 1)
+                            .stroke(theme.softAccent.opacity(0.16), lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
@@ -813,13 +823,13 @@ private struct ThemeShopView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Theme Shop")
                     .font(.system(size: 32, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
 
                 Text("Potion room styles")
                     .font(DSTypography.body)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.78))
+                    .foregroundStyle(theme.textPrimary.opacity(0.72))
                     .lineLimit(1)
             }
 
@@ -827,10 +837,10 @@ private struct ThemeShopView: View {
 
             Label("\(herbsBalance)", systemImage: "leaf.fill")
                 .font(DSTypography.headline)
-                .foregroundStyle(GameColor.controlSurface)
+                .foregroundStyle(theme.textOnAccent)
                 .padding(.horizontal, DSSpacing.md)
                 .frame(height: 38)
-                .background(Capsule().fill(GameColor.successAccent))
+                .background(Capsule().fill(theme.success))
                 .accessibilityLabel("\(herbsBalance) herbs")
         }
     }
@@ -895,16 +905,16 @@ private struct ThemePreview: View {
     var body: some View {
         VStack(spacing: DSSpacing.sm) {
             HStack(spacing: DSSpacing.xs) {
-                ForEach(theme.paletteHexCodes, id: \.self) { hexCode in
+                ForEach(Array(theme.paletteColors.enumerated()), id: \.offset) { _, color in
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(color(for: hexCode))
+                        .fill(color)
                         .frame(width: 38, height: 54)
                 }
             }
 
             Text(theme.subtitle)
                 .font(DSTypography.caption)
-                .foregroundStyle(GameColor.glassStroke.opacity(0.74))
+                .foregroundStyle(theme.tokens.textPrimary.opacity(0.74))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }
@@ -921,33 +931,6 @@ private struct ThemePreview: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(theme.name) theme preview")
     }
-
-    private func color(for hexCode: String) -> Color {
-        switch hexCode.uppercased() {
-        case "#F6F7C5":
-            return Color(hex: 0xF6F7C5)
-        case "#F6A78B":
-            return Color(hex: 0xF6A78B)
-        case "#E7C4F0":
-            return Color(hex: 0xE7C4F0)
-        case "#A5C50B":
-            return Color(hex: 0xA5C50B)
-        case "#E79494":
-            return Color(hex: 0xE79494)
-        case "#4F386D":
-            return Color(hex: 0x4F386D)
-        case "#FFD966":
-            return Color(hex: 0xFFD966)
-        case "#D6C9D8":
-            return Color(hex: 0xD6C9D8)
-        case "#160723":
-            return Color(hex: 0x160723)
-        case "#EEEEEE":
-            return Color(hex: 0xEEEEEE)
-        default:
-            return GameColor.glassStroke
-        }
-    }
 }
 
 private struct ThemeShopCard: View {
@@ -959,9 +942,9 @@ private struct ThemeShopCard: View {
         HStack(alignment: .center, spacing: DSSpacing.md) {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack(spacing: DSSpacing.xs) {
-                    ForEach(theme.paletteHexCodes, id: \.self) { hexCode in
+                    ForEach(Array(theme.paletteColors.enumerated()), id: \.offset) { _, color in
                         RoundedRectangle(cornerRadius: 5)
-                            .fill(color(for: hexCode))
+                            .fill(color)
                             .frame(width: 28, height: 34)
                     }
                 }
@@ -969,13 +952,13 @@ private struct ThemeShopCard: View {
 
                 Text(theme.name)
                     .font(DSTypography.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.tokens.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
 
                 Text(theme.subtitle)
                     .font(DSTypography.caption)
-                    .foregroundStyle(GameColor.glassStroke.opacity(0.72))
+                    .foregroundStyle(theme.tokens.textPrimary.opacity(0.72))
                     .lineLimit(2)
             }
 
@@ -987,7 +970,7 @@ private struct ThemeShopCard: View {
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 22, weight: .black, design: .rounded))
-                        .foregroundStyle(GameColor.successAccent)
+                        .foregroundStyle(theme.tokens.success)
                         .accessibilityLabel("Active")
                 }
             }
@@ -1000,7 +983,7 @@ private struct ThemeShopCard: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: DSCornerRadius.md)
                         .stroke(
-                            isActive ? theme.tokens.primaryAccent : GameColor.glassStroke.opacity(0.16),
+                            isActive ? theme.tokens.primaryAccent : theme.tokens.softAccent.opacity(0.16),
                             lineWidth: isActive ? 2 : 1
                         )
                 )
@@ -1060,55 +1043,31 @@ private struct ThemeShopCard: View {
 
         return "\(theme.name), theme"
     }
-
-    private func color(for hexCode: String) -> Color {
-        switch hexCode.uppercased() {
-        case "#F6F7C5":
-            return Color(hex: 0xF6F7C5)
-        case "#F6A78B":
-            return Color(hex: 0xF6A78B)
-        case "#E7C4F0":
-            return Color(hex: 0xE7C4F0)
-        case "#A5C50B":
-            return Color(hex: 0xA5C50B)
-        case "#E79494":
-            return Color(hex: 0xE79494)
-        case "#4F386D":
-            return Color(hex: 0x4F386D)
-        case "#FFD966":
-            return Color(hex: 0xFFD966)
-        case "#D6C9D8":
-            return Color(hex: 0xD6C9D8)
-        case "#160723":
-            return Color(hex: 0x160723)
-        case "#EEEEEE":
-            return Color(hex: 0xEEEEEE)
-        default:
-            return GameColor.glassStroke
-        }
-    }
 }
 
 private struct MenuBackgroundView: View {
+    @Environment(\.gameTheme) private var theme
+
     var body: some View {
         ZStack {
-            GameColor.potionBackground
+            theme.backgroundPrimary
                 .ignoresSafeArea()
 
             Image("GameBackground")
                 .resizable()
                 .scaledToFill()
-                .opacity(0.82)
+                .saturation(0.74)
+                .opacity(0.78)
                 .ignoresSafeArea()
 
-            GameColor.controlSurface
-                .opacity(0.28)
+            theme.surface
+                .opacity(0.3)
                 .ignoresSafeArea()
 
             LinearGradient(
                 colors: [
                     .clear,
-                    GameColor.controlSurface.opacity(0.36)
+                    theme.backgroundPrimary.opacity(0.44)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
